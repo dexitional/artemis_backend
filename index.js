@@ -14,11 +14,15 @@ const nanopw = customAlphabet('1234567890',8);
 //  Include Routes
 var auth = require('./route/authRoute');
 var admission = require('./route/admissionRoute');
+var site = require('./route/siteRoute');
+var admission = require('./route/admissionRoute');
+app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use("/public",express.static("public"));
 app.use(cors()); 
 app.use(compression()); 
+
 //app.use(helmet()); // Security & Vulnearbilities guard
 //app.use(json2xls.middleware); // Excel Export
 
@@ -40,6 +44,7 @@ app.get('/',(req,res)=>{
 
 app.use('/api',auth); 
 app.use('/api',admission); 
+app.use('/apps',site); 
 
 // Start Server Instance
 var port = process.env.PORT || 5020;
