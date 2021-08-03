@@ -1,0 +1,64 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/Cellar/yarn/1.13.0/libexec/bin/yarn.js add nodemailer
+
+PATH: 
+  /Users/dexitional/_locals/flutter/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/dexitional/Library/Python/2.7/bin:/Applications/VMware Fusion.app/Contents/Public:/Users/dexitional/_locals/flutter/bin:/Users/dexitional/Library/Android/sdk/tools:/Users/dexitional/Library/Android/sdk/platform-tools:/Users/dexitional/Library/Android/sdk/tools:/Users/dexitional/Library/Android/sdk/platform-tools
+
+Yarn version: 
+  1.13.0
+
+Node version: 
+  16.4.1
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: ENOSPC: no space left on device, write
+
+npm manifest: 
+  {
+    "name": "eduhub",
+    "version": "1.0.0",
+    "description": "Eduhub Backend in Node.js",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "start": "nodemon index.js"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/dexitional/pos.git"
+    },
+    "keywords": [
+      "POS"
+    ],
+    "author": "Ebenezer Kwabena Blay Ackah",
+    "license": "ISC",
+    "bugs": {
+      "url": "https://github.com/dexitional/pos/issues"
+    },
+    "homepage": "https://github.com/dexitional/pos#readme",
+    "dependencies": {
+      "bcrypt": "^5.0.1",
+      "body-parser": "^1.19.0",
+      "compression": "^1.7.4",
+      "cors": "^2.8.5",
+      "express": "^4.17.1",
+      "express-fileupload": "^1.2.1",
+      "jsonwebtoken": "^8.5.1",
+      "moment": "^2.29.1",
+      "mongoose": "^5.12.4",
+      "mysql": "^2.18.1",
+      "nanoid": "^3.1.23"
+    },
+    "devDependencies": {
+      "nodemon": "^2.0.8"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

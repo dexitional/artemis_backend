@@ -96,13 +96,47 @@ module.exports.SSO = {
 
    // VOUCHER MODELS
 
-   fetchVouchers : async (session_id) => {
-      const res = await db.query("select v.*,x.vendor_name,g.title as group_name,case when v.sell_type = 0 then g.title when v.sell_type = 1 then 'MATURED' when v.sell_type = 2 then 'INTERNATIONAL' end as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id+" order by serial asc,vendor_id asc, applicant_name asc");
-      return res;
+   fetchVouchers : async (session_id,page,keyword) => {
+      var sql = "select v.*,x.vendor_name,g.title as group_name,case when v.sell_type = 0 then g.title when v.sell_type = 1 then 'MATURED' when v.sell_type = 2 then 'INTERNATIONAL' end as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id
+      var cql = "select count(*) as total from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id;
+      
+      const size = 10;
+      page = parseInt(page) || 0;
+      const offset = (page * size) || 0;
+      
+      if(page) sql += ` limit ${offset},${size}`
+      if(keyword){
+          sql += ` and v.serial like '%${keyword}%' or v.applicant_name like '%${keyword}%' or v.applicant_phone = ${keyword}`
+          cql += ` and v.serial like '%${keyword}%' or v.applicant_name like '%${keyword}%' or v.applicant_phone = ${keyword}`
+      }
+      sql += ` order by serial asc,vendor_id asc, applicant_name asc`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         currentPage: page,
+         data: res,
+         prevPage: (page - 1 >= 0 ? page - 1 : 0),
+         nextPage: (page + 1 < count ? page + 1 : count-1)
+      }
    },
 
    fetchVouchersByType : async (session_id,sell_type) => {
       const res = await db.query("select v.*,x.vendor_name,g.title as group_name,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id+" and sell_type = "+sell_type+" order by serial asc,vendor_id asc, applicant_name asc");
+      return { data:res };
+   },
+
+   fetchVoucherBySerial : async (serial) => {
+      const res = await db.query("select v.*,x.vendor_name,g.title as group_name,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where serial = "+serial);
+      return res;
+   },
+
+   fetchVoucherByPhone: async (phone) => {
+      const res = await db.query("select v.*,x.vendor_name,g.title as group_name,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where v.applicant_phone = '"+phone.trim()+"'");
       return res;
    },
 

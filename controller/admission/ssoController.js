@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
+const mailer = require('../../config/email')
+const sms = require('../../config/sms')
 
 const { SSO } = require('../../model/mysql/ssoModel');
 
@@ -193,13 +195,17 @@ module.exports = {
     try{
         const id = req.params.id;
         const sell_type = req.query.sell_type;
+        const page = req.query.page;
+        const keyword = req.query.keyword;
+
         if(sell_type){
           var vouchers = await SSO.fetchVouchersByType(id,sell_type);
         }else{
-          var vouchers = await SSO.fetchVouchers(id);
+          var vouchers = await SSO.fetchVouchers(id,page,keyword);
+          console.log(vouchers)
         }
        
-        if(vouchers && vouchers.length > 0){
+        if(vouchers && vouchers.data.length > 0){
             res.status(200).json({success:true, data:vouchers});
         }else{
             res.status(200).json({success:false, data: null, msg:"No records!"});
@@ -250,6 +256,39 @@ module.exports = {
         res.status(200).json({success:false, data: null, msg: "Something wrong !"});
     }
   },
+
+  recoverVoucher : async (req,res) => {
+    try{
+      const { serial,email,phone } = req.body;
+      console.log(req.body)
+      var resp
+      if(serial && email){ 
+         const sr = await SSO.fetchVoucherBySerial(serial);
+         if(sr && sr.length > 0){
+           const ms = { title: "AUCC VOUCHER", message : `Your recovered voucher details are: [ SERIAL: ${serial}, PIN: ${sr[0].pin} ]` }
+           mailer(email.trim(),ms.title,ms.message)
+           resp = sr;
+         }
+      }else if(phone){
+         const sr = await SSO.fetchVoucherByPhone(phone);
+         console.log(phone)
+         if(sr && sr.length > 0){
+           const message = `Hello! voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
+           sms(phone,message)
+           resp = sr;
+         }
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"INVALID VOUCHER INFO PROVIDED !"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
 
   
 

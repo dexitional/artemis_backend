@@ -35,6 +35,7 @@ Router.delete('/ams/vendors/:id', SSOController.deleteVendor);
 Router.get('/ams/vouchers/:id', SSOController.fetchVouchers);
 Router.post('/ams/vouchers', SSOController.postVoucher);
 Router.delete('/ams/vouchers/:id', SSOController.deleteVoucher);
+Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
 //Router.post('/ams/genvouchers', SSOController.deleteVoucher);//generateVouchers
 
 
