@@ -36,15 +36,9 @@ app.use(session({
 */
 
 // Initialise App Routes
-app.get('/',(req,res)=>{
-  const pin = nanoid();
-  //const pin = nanopw();
-  res.send(pin)
-})
-
 app.use('/api',auth); 
 app.use('/api',admission); 
-app.use('/apps',site); 
+app.use('/',site); 
 
 // Start Server Instance
 var port = process.env.PORT || 5020;
