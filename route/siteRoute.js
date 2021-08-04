@@ -8,7 +8,7 @@ Router.get('/', (req,res) => {
 
 Router.get('/page/:pageid', (req,res) => {
   const pageid = req.params.pageid;
-  res.render('site/index')
+  res.render('site/page')
 });
 
 

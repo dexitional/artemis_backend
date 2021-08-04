@@ -20,7 +20,7 @@ module.exports = {
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
                 var photo = await SSO.fetchPhoto(user[0].uid,); // Photo
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
-                var data = { roles, photo:`${req.protocol}://${req.get('host')}/api/photos/?tag=${photo[0].tag}`, user:userdata[0] };
+                var data = { roles, photo:`${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`, user:userdata && userdata[0] };
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;

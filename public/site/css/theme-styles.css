@@ -9384,11 +9384,15 @@ only screen and (min-resolution:2dppx) {
 
 .inner-opening .text {
     position: relative;
-    top: 50%;
+    top: 80%;
     -webkit-transform: translateY(-50%);
     transform: translateY(-50%);
     -webkit-transition: .5s ease-out;
     transition: .5s ease-out
+}
+
+.inner-opening .index {
+    top: 50%;
 }
 
 @media only screen and (max-width:899px) {
@@ -9429,7 +9433,13 @@ only screen and (min-resolution:2dppx) {
     letter-spacing: 2px;
     font-weight: 600;
     margin-bottom: 10px;
-    color: #8999ab
+    color: #eee
+}
+
+.inner-opening h2{
+    color: #f59f60;
+    font-size: 48px;
+    letter-spacing: 0.1em;
 }
 
 .inner-opening .text h1 {
