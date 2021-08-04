@@ -449,7 +449,7 @@ h3:after {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -514,7 +514,7 @@ header nav ul li.demo-btn {
     text-align: center;
     font-weight: 600;
     font-family: "Proxima Nova", sans-serif;
-    color: #fff;
+    color: #f59f60;
     text-decoration: none;
     cursor: pointer;
     display: inline-block;
@@ -561,8 +561,8 @@ header .demo-button,
 header .mobile-nav a.demo-button,
 header .mobile-nav ul li.demo-button,
 header nav ul li.demo-btn {
-    background: #d8262e;
-    border: 1px solid #d8262e
+    background: #f59f60;
+    border: 1px solid #f59f60
 }
 
 .advance-explore .text-box a a,
@@ -677,19 +677,19 @@ header nav ul li.demo-btn:hover a {
 
 .job-seekers a.btn {
     background: #fff;
-    border: 1px solid #d8262e;
-    color: #d8262e
+    border: 1px solid #f59f60;
+    color: #f59f60
 }
 
 .job-seekers a.btn a {
-    color: #d8262e;
+    color: #f59f60;
     text-decoration: none
 }
 
 .job-seekers a.btn:before {
     content: "";
     position: absolute;
-    background: #d8262e;
+    background: #f59f60;
     bottom: 0;
     left: 0;
     right: 0;
@@ -700,7 +700,7 @@ header nav ul li.demo-btn:hover a {
 }
 
 .job-seekers a.btn:hover {
-    border: 1px solid #d8262e;
+    border: 1px solid #f59f60;
     color: #fff
 }
 
@@ -834,15 +834,15 @@ header .demo-button {
 .header-scroll .demo-button.white,
 header .demo-button.white {
     background: #fff;
-    border: 1px solid #d8262e;
-    color: #d8262e;
+    border: 1px solid #f59f60;
+    color: #f59f60;
     right: 145px;
     position: absolute
 }
 
 .header-scroll .demo-button.white a,
 header .demo-button.white a {
-    color: #d8262e;
+    color: #f59f60;
     text-decoration: none
 }
 
@@ -1241,7 +1241,7 @@ header nav ul li a:after {
     bottom: -4px;
     left: 0;
     width: 0%;
-    border-bottom: 2px solid #d8262e;
+    border-bottom: 2px solid #f59f60;
     -webkit-transition: .4s;
     transition: .4s
 }
@@ -1701,7 +1701,7 @@ header nav ul li ul.sub-menu>li ul.sub-menu li:hover a:after {
 }
 
 .form-modal .form-header .h-text a {
-    color: #d8262e;
+    color: #f59f60;
     font-weight: 700;
     position: relative;
     margin-left: 15px;
@@ -1823,7 +1823,7 @@ header nav ul li ul.sub-menu>li ul.sub-menu li:hover a:after {
 
 .form-modal .gform_body .gfield_description.validation_message {
     position: absolute;
-    color: #d8262e;
+    color: #f59f60;
     width: 100%;
     text-align: left;
     padding-top: 5px;
@@ -2192,7 +2192,7 @@ header nav ul li ul.sub-menu>li ul.sub-menu li:hover a:after {
 }
 
 .talent-opening p a {
-    color: #d8262e;
+    color: #f59f60;
     font-weight: 700;
     position: relative;
     margin-left: 15px;
@@ -2244,7 +2244,7 @@ header nav ul li ul.sub-menu>li ul.sub-menu li:hover a:after {
 
 .talent-form .gform_body .gfield_description.validation_message {
     position: absolute;
-    color: #d8262e;
+    color: #f59f60;
     width: 100%;
     text-align: left;
     padding-top: 5px;
@@ -2604,7 +2604,7 @@ footer .footer-body .footer-ctas a {
     font-size: 30px;
     line-height: 30px;
     text-decoration: none;
-    border: 1px solid #d8262e;
+    border: 1px solid #f59f60;
     max-width: 49%;
     padding: 50px 0;
     text-align: center;
@@ -2652,7 +2652,7 @@ footer .footer-body .footer-ctas a {
 footer .footer-body .footer-ctas a:before {
     content: "";
     position: absolute;
-    background: #d8262e;
+    background: #f59f60;
     bottom: 0;
     left: 0;
     right: 0;
@@ -3140,7 +3140,7 @@ footer .footer-body .footer-about .line {
     display: inline-block;
     vertical-align: top;
     height: 2px;
-    border-top: 2px solid #d8262e;
+    border-top: 2px solid #f59f60;
     margin-top: 25px;
     margin-left: 50px;
     width: 150px
@@ -3338,7 +3338,7 @@ footer .footer-body .body-links ul.industries li.heading:before {
     content: '';
     width: 5px;
     height: 5px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     top: 7px;
     left: -20px
@@ -3422,7 +3422,7 @@ footer .footer-body .body-links .page-links ul li.menu-item-has-children:before 
     content: '';
     width: 5px;
     height: 5px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     top: 7px;
     left: -20px
@@ -3732,7 +3732,7 @@ footer .footer-copy .copy {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 25px;
     margin-left: 15px
@@ -3915,7 +3915,7 @@ footer .footer-copy .copy {
 
 .home-cta-links a:first-child span,
 .home-cta-links a:first-child svg {
-    color: #d8262e
+    color: #f59f60
 }
 
 .home-industries {
@@ -3971,7 +3971,7 @@ footer .footer-copy .copy {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 40px;
     margin-left: 10px
@@ -3990,7 +3990,7 @@ footer .footer-copy .copy {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -4397,7 +4397,7 @@ footer .footer-copy .copy {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -4554,7 +4554,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 21px;
     margin-left: 0
@@ -4702,7 +4702,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -4776,7 +4776,7 @@ only screen and (min-resolution:2dppx) {
 
 .contact-opening .contact-form .gform_body .gfield_description.validation_message {
     position: absolute;
-    color: #d8262e;
+    color: #f59f60;
     width: 100%;
     text-align: left;
     padding-top: 5px;
@@ -5105,7 +5105,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -5336,7 +5336,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .contact-locations .locations ul li .state {
-    color: #d8262e;
+    color: #f59f60;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-size: 20px;
@@ -5665,7 +5665,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -5789,7 +5789,7 @@ only screen and (min-resolution:2dppx) {
 
 .job-seekers-process ul.icons li.active .title,
 .job-seekers-process ul.icons li:hover .title {
-    color: #d8262e
+    color: #f59f60
 }
 
 .job-seekers-process .tabs-container {
@@ -5881,7 +5881,7 @@ only screen and (min-resolution:2dppx) {
     font-family: "Proxima Nova", sans-serif;
     font-weight: 400;
     font-size: 20px;
-    color: #d8262e;
+    color: #f59f60;
     line-height: 30px;
     padding-bottom: 20px
 }
@@ -5996,7 +5996,7 @@ only screen and (min-resolution:2dppx) {
     font-family: "Proxima Nova", sans-serif;
     font-weight: 400;
     font-size: 20px;
-    color: #d8262e;
+    color: #f59f60;
     line-height: 30px;
     padding-bottom: 20px;
     text-align: left
@@ -6021,7 +6021,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .job-seekers-process .mobile ul li.active .title {
-    color: #d8262e
+    color: #f59f60
 }
 
 .job-seekers-process .mobile ul li:hover .icon {
@@ -6034,7 +6034,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .job-seekers-process .mobile ul li:hover .title {
-    color: #d8262e
+    color: #f59f60
 }
 
 .have-questions {
@@ -6044,7 +6044,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .have-questions h3 {
-    color: #d8262e;
+    color: #f59f60;
     font-size: 45px;
     line-height: 45px;
     font-weight: 400
@@ -6118,7 +6118,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -6391,8 +6391,9 @@ only screen and (min-resolution:2dppx) {
 }
 
 .industries-detail-opening.enterprise h3 {
-    color: #d8262e
+    color: #474747
 }
+
 
 .industries-detail-opening.clinical h3 {
     color: #019e54
@@ -6492,14 +6493,14 @@ only screen and (min-resolution:2dppx) {
 }
 
 .industries-detail-skills.enterprise h3 {
-    color: #d8262e
+    color: #f59f60
 }
 
 .industries-detail-skills.enterprise ul li:before {
     content: '';
     width: 5px;
     height: 5px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     top: 10px;
     left: 0
@@ -6687,7 +6688,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .industries-detail-performance.enterprise h3 {
-    color: #d8262e
+    color: #f59f60
 }
 
 .industries-detail-proven {
@@ -6764,7 +6765,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .industries-detail-proven.government .blue-box svg {
-    color: #d8262e;
+    color: #f59f60;
     font-size: 30px;
     margin: 0 auto 30px
 }
@@ -6784,7 +6785,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 14px;
     margin-left: 5px
@@ -6921,7 +6922,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .industries-detail-proven.government ul li .icon svg {
-    color: #d8262e;
+    color: #f59f60;
     font-size: 25px
 }
 
@@ -7072,7 +7073,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -7475,7 +7476,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -7713,7 +7714,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .about-mobile-buttons a.red {
-    color: #d8262e;
+    color: #f59f60;
     border-right: 2px solid #f6f7f9
 }
 
@@ -7955,7 +7956,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .about-glance .img-container .about-buttons a.red {
-    color: #d8262e;
+    color: #f59f60;
     border-right: 2px solid #f6f7f9
 }
 
@@ -8106,7 +8107,7 @@ only screen and (min-resolution:2dppx) {
     font-family: "Proxima Nova Condensed", sans-serif;
     font-size: 20px;
     font-weight: 700;
-    color: #d8262e;
+    color: #f59f60;
     padding-bottom: 15px
 }
 
@@ -8140,7 +8141,7 @@ only screen and (min-resolution:2dppx) {
 .about-values .vid-container .video {
     position: relative;
     cursor: pointer;
-    border-left: 5px solid #d8262e;
+    border-left: 5px solid #f59f60;
     width: 100%;
     overflow: hidden;
     z-index: 2;
@@ -8542,7 +8543,7 @@ only screen and (min-resolution:2dppx) {
 .working-join .top .vids-container .video {
     position: relative;
     cursor: pointer;
-    border-left: 5px solid #d8262e;
+    border-left: 5px solid #f59f60;
     width: 100%;
     overflow: hidden;
     z-index: 2;
@@ -8784,7 +8785,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 6px;
     height: 6px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     top: 12px;
     left: -20px
@@ -8905,8 +8906,8 @@ only screen and (min-resolution:2dppx) {
 .working-perks ul li.active,
 .working-perks ul li:hover {
     background: #fff;
-    border-left: 5px solid #d8262e;
-    color: #d8262e;
+    border-left: 5px solid #f59f60;
+    color: #f59f60;
     -webkit-box-shadow: 0 3px 40px rgba(1, 40, 86, .1);
     box-shadow: 0 3px 40px rgba(1, 40, 86, .1)
 }
@@ -9166,7 +9167,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .team-piper .text h2 {
-    color: #d8262e;
+    color: #f59f60;
     display: block;
     padding-bottom: 15px
 }
@@ -9225,7 +9226,7 @@ only screen and (min-resolution:2dppx) {
     flex-grow: 1;
     position: relative;
     cursor: pointer;
-    border-left: 5px solid #d8262e;
+    border-left: 5px solid #f59f60;
     max-width: 40%;
     overflow: hidden
 }
@@ -9392,7 +9393,12 @@ only screen and (min-resolution:2dppx) {
 }
 
 .inner-opening .index {
+    position: relative;
     top: 50%;
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+    -webkit-transition: .5s ease-out;
+    transition: .5s ease-out
 }
 
 @media only screen and (max-width:899px) {
@@ -9589,7 +9595,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -9716,7 +9722,7 @@ only screen and (min-resolution:2dppx) {
 
 .partner-with-piper ul li .title-info {
     background: #fff;
-    border-left: 5px solid #d8262e;
+    border-left: 5px solid #f59f60;
     width: 100%;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
@@ -9799,7 +9805,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .partner-with-piper ul li .title-info .text .name {
-    color: #d8262e;
+    color: #f59f60;
     font-weight: 700;
     text-transform: uppercase;
     font-size: 14px;
@@ -9849,7 +9855,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -9910,7 +9916,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .testimonials ul li .name {
-    color: #d8262e;
+    color: #f59f60;
     font-size: 20px;
     line-height: 20px;
     padding-bottom: 15px
@@ -10058,7 +10064,7 @@ only screen and (min-resolution:2dppx) {
     content: '';
     width: 8px;
     height: 8px;
-    background: #d8262e;
+    background: #f59f60;
     position: absolute;
     bottom: 10px;
     margin-left: 10px
@@ -10100,7 +10106,7 @@ only screen and (min-resolution:2dppx) {
 
 .advance-explore .fields h6 {
     text-transform: uppercase;
-    color: #d8262e;
+    color: #f59f60;
     font-weight: 700;
     letter-spacing: 1px;
     font-size: 20px;
@@ -10260,7 +10266,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .mCSB_scrollTools_vertical .mCSB_draggerContainer .mCSB_dragger .mCSB_dragger_bar {
-    background-color: #d8262e;
+    background-color: #f59f60;
     width: 12px;
     border-radius: 0
 }
@@ -10360,7 +10366,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .wpforms-container #wpforms-form-912 .wpforms-field-container .wpforms-field label.wpforms-error {
-    color: #d8262e
+    color: #f59f60
 }
 
 .wpforms-container #wpforms-form-912 .wpforms-field-container .wpforms-field input,
@@ -10592,7 +10598,7 @@ only screen and (min-resolution:2dppx) {
 }
 
 .red-cta {
-    background: #d8262e;
+    background: #f59f60;
     padding: 20px 0
 }
 
