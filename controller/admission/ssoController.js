@@ -9,6 +9,7 @@ const mailer = require('../../config/email')
 const sms = require('../../config/sms')
 
 const { SSO } = require('../../model/mysql/ssoModel');
+const { Admission } = require('../../model/mysql/admissionModel');
 
 module.exports = {
  
@@ -289,6 +290,82 @@ module.exports = {
       res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
     }
 },
+
+
+// VOUCHER CONTROLS
+
+fetchApplicants : async (req,res) => {
+  try{
+      const id = req.params.id;
+      const sell_type = req.query.sell_type;
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      if(sell_type){
+        var applicants = await SSO.fetchApplicantsByType(id,sell_type);
+        console.log(applicants)
+      }else{
+        var applicants = await SSO.fetchApplicants(id,page,keyword);
+        console.log(applicants)
+      }
+     
+      if(applicants && applicants.data.length > 0){
+          res.status(200).json({success:true, data:applicants});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+fetchApplicant : async (req,res) => {
+  try{
+      const { serial } = req.params;
+      var data = {};
+      // Get Instance of Applicant
+      const instance = await Admission.fetchMeta(serial);
+      if(instance && instance.length > 0){
+         data.isNew = false
+         data.user = { photo : instance[0].photo, serial, pin:'', name: instance[0].applicant_name }
+         data.flag_submit = instance[0].flag_submit
+         data.stage_id = instance[0].stage_id
+         data.apply_type = instance[0].apply_type
+         // Load Applicant Form Meta
+         var meta;
+         if(instance[0].meta != null){
+           meta = JSON.parse(instance[0].meta);
+         }else{
+           let stage = await Admission.fetchStageByGroup(applicant[0].group_id);
+           meta = stage && JSON.parse(stage[0].formMeta);
+         }
+         var newMeta = {}
+         for(var mt of meta){
+            if(!['complete','review'].includes(mt.tag)){
+               const vl = await Admission.fetchTagData(serial,mt.tag)
+               if(vl && vl.length > 0) newMeta = { ...newMeta, [mt.tag] : (['profile','guardian'].includes(mt.tag) ? vl[0]:vl) }
+            }
+            if(mt.tag == 'result'){
+              const grades = await Admission.fetchResultGrades(serial);
+              if(grades && grades.length > 0) newMeta = { ...newMeta, grade:grades }
+            }
+         } 
+          data.data = newMeta  
+          data.meta = meta
+          data.count = meta.length;
+          res.json({success:true, data:data});
+
+      }else{
+          res.json({success:false, data: null, msg:"Action failed!"});
+      }
+
+  }catch(e){
+      console.log(e)
+      res.json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 
   
 

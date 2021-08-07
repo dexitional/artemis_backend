@@ -101,15 +101,16 @@ module.exports.SSO = {
       var cql = "select count(*) as total from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id;
       
       const size = 10;
-      page = parseInt(page) || 0;
-      const offset = (page * size) || 0;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
       
-      if(page) sql += ` limit ${offset},${size}`
       if(keyword){
-          sql += ` and v.serial like '%${keyword}%' or v.applicant_name like '%${keyword}%' or v.applicant_phone = ${keyword}`
-          cql += ` and v.serial like '%${keyword}%' or v.applicant_name like '%${keyword}%' or v.applicant_phone = ${keyword}`
+          sql += ` and v.serial = '${keyword}' or v.applicant_name like '%${keyword}%' or v.applicant_phone = '${keyword}'`
+          cql += ` and v.serial = '${keyword}' or v.applicant_name like '%${keyword}%' or v.applicant_phone = '${keyword}'`
       }
+
       sql += ` order by serial asc,vendor_id asc, applicant_name asc`
+      sql += ` limit ${offset},${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
@@ -118,10 +119,10 @@ module.exports.SSO = {
       return {
          totalPages: count,
          totalData: ces[0].total,
-         currentPage: page,
+         currentPage: pg,
          data: res,
-         prevPage: (page - 1 >= 0 ? page - 1 : 0),
-         nextPage: (page + 1 < count ? page + 1 : count-1)
+         prevPage: (pg - 1 >= 0 ? pg - 1 : 0),
+         nextPage: (pg + 1 < count ? pg + 1 : count-1)
       }
    },
 
@@ -160,6 +161,44 @@ module.exports.SSO = {
       if(res && res.length > 0) return res[0].serial;
       const algo = `${moment().format('YY')}${ parseInt(moment().format('YY'))+parseInt(moment().format('MM'))}${1000}`
       return parseInt(algo)
+   },
+
+
+   // APPLICANTS MODELS
+
+   fetchApplicants : async (session_id,page,keyword) => {
+      var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
+      var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
+          cql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
+      }
+
+      sql += ` order by p.serial asc`
+      sql += ` limit ${offset},${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         currentPage: pg,
+         data: res,
+         prevPage: (pg - 1 >= 0 ? pg - 1 : 0),
+         nextPage: (pg + 1 < count ? pg + 1 : count-1),
+      }
+   },
+
+   fetchApplicantsByType : async (session_id,sell_type) => {
+      const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
+      return { data:res };
    },
 
 

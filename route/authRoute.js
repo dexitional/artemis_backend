@@ -36,7 +36,10 @@ Router.get('/ams/vouchers/:id', SSOController.fetchVouchers);
 Router.post('/ams/vouchers', SSOController.postVoucher);
 Router.delete('/ams/vouchers/:id', SSOController.deleteVoucher);
 Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
-//Router.post('/ams/genvouchers', SSOController.deleteVoucher);//generateVouchers
+// APPLICANTS routes
+Router.get('/ams/applicants/:id', SSOController.fetchApplicants);
+Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
+
 
 
 module.exports = Router;
