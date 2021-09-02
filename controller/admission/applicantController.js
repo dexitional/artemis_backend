@@ -18,7 +18,7 @@ module.exports = {
                 const instance = await Admission.fetchMeta(serial);
                 if(instance && instance.length > 0){
                    data.isNew = false
-                   data.user = { photo : instance[0].photo, serial, pin, name: instance[0].applicant_name }
+                   data.user = { photo : instance[0].photo, serial, pin, name: instance[0].applicant_name, group_name: instance[0].group_name }
                    data.flag_submit = instance[0].flag_submit
                    data.stage_id = instance[0].stage_id
                    data.apply_type = instance[0].apply_type

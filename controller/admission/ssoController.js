@@ -19,9 +19,10 @@ module.exports = {
             var user = await SSO.verifyUser({username,password});
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
-                var photo = await SSO.fetchPhoto(user[0].uid,); // Photo
+                var photo = await SSO.fetchPhoto(user[0].uid); // Photo
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
-                var data = { roles, photo:`${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`, user:userdata && userdata[0] };
+                userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
+                var data = { roles, photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
@@ -198,18 +199,17 @@ module.exports = {
         const sell_type = req.query.sell_type;
         const page = req.query.page;
         const keyword = req.query.keyword;
-
+        
         if(sell_type){
           var vouchers = await SSO.fetchVouchersByType(id,sell_type);
         }else{
           var vouchers = await SSO.fetchVouchers(id,page,keyword);
-          console.log(vouchers)
         }
        
         if(vouchers && vouchers.data.length > 0){
-            res.status(200).json({success:true, data:vouchers});
+          res.status(200).json({success:true, data:vouchers});
         }else{
-            res.status(200).json({success:false, data: null, msg:"No records!"});
+          res.status(200).json({success:false, data: null, msg:"No records!"});
         }
     }catch(e){
         console.log(e)
@@ -302,10 +302,8 @@ fetchApplicants : async (req,res) => {
       const keyword = req.query.keyword;
       if(sell_type){
         var applicants = await SSO.fetchApplicantsByType(id,sell_type);
-        console.log(applicants)
       }else{
         var applicants = await SSO.fetchApplicants(id,page,keyword);
-        console.log(applicants)
       }
      
       if(applicants && applicants.data.length > 0){
@@ -328,7 +326,7 @@ fetchApplicant : async (req,res) => {
       const instance = await Admission.fetchMeta(serial);
       if(instance && instance.length > 0){
          data.isNew = false
-         data.user = { photo : instance[0].photo, serial, pin:'', name: instance[0].applicant_name }
+         data.user = { photo : instance[0].photo, serial:instance[0].serial, name: instance[0].applicant_name, group_name: instance[0].group_name }
          data.flag_submit = instance[0].flag_submit
          data.stage_id = instance[0].stage_id
          data.apply_type = instance[0].apply_type
@@ -354,7 +352,8 @@ fetchApplicant : async (req,res) => {
           data.data = newMeta  
           data.meta = meta
           data.count = meta.length;
-          res.json({success:true, data:data});
+          console.log(data.user)
+          res.json({success:true, data});
 
       }else{
           res.json({success:false, data: null, msg:"Action failed!"});

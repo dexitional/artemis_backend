@@ -16,6 +16,7 @@ var auth = require('./route/authRoute');
 var admission = require('./route/admissionRoute');
 var site = require('./route/siteRoute');
 var admission = require('./route/admissionRoute');
+var student = require('./route/studentRoute');
 app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -37,6 +38,7 @@ app.use(session({
 
 // Initialise App Routes
 app.use('/api',auth); 
+app.use('/api',student); 
 app.use('/api',admission); 
 app.use('/',site); 
 

@@ -27,7 +27,7 @@ module.exports.Admission = {
    },
 
    fetchMeta : async (serial) => {
-      const sql = "select * from applicant where serial = "+serial;
+      const sql = "select p.*,g.title as group_name from applicant p left join voucher v on p.serial = v.serial left join `group` g on v.group_id = g.group_id where p.serial = "+serial;
       const res = await db.query(sql);
       return res;
    },

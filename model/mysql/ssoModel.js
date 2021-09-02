@@ -4,7 +4,7 @@ var db = require('../../config/mysql');
 module.exports.SSO = {
    
    verifyUser : async ({username,password}) => {
-      const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = '"+password+"'";
+      const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
       const res = await db.query(sql);
       return res;
    },
@@ -26,9 +26,9 @@ module.exports.SSO = {
       var sql;
       switch(gid){
         case '01': // Student
-           sql = "select from identity.photo p where p.uid = "+uid; break;
+           sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.long_name as unitname from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
@@ -100,7 +100,7 @@ module.exports.SSO = {
       var sql = "select v.*,x.vendor_name,g.title as group_name,case when v.sell_type = 0 then g.title when v.sell_type = 1 then 'MATURED' when v.sell_type = 2 then 'INTERNATIONAL' end as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id
       var cql = "select count(*) as total from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id;
       
-      const size = 10;
+      const size = 3;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
@@ -110,7 +110,7 @@ module.exports.SSO = {
       }
 
       sql += ` order by serial asc,vendor_id asc, applicant_name asc`
-      sql += ` limit ${offset},${size}`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
@@ -119,10 +119,7 @@ module.exports.SSO = {
       return {
          totalPages: count,
          totalData: ces[0].total,
-         currentPage: pg,
          data: res,
-         prevPage: (pg - 1 >= 0 ? pg - 1 : 0),
-         nextPage: (pg + 1 < count ? pg + 1 : count-1)
       }
    },
 
@@ -170,7 +167,7 @@ module.exports.SSO = {
       var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
       var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
       
-      const size = 10;
+      const size = 3;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
@@ -179,8 +176,8 @@ module.exports.SSO = {
           cql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
       }
 
-      sql += ` order by p.serial asc`
-      sql += ` limit ${offset},${size}`
+      sql += ` order by p.serial asc, c.choice_id asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
@@ -189,10 +186,7 @@ module.exports.SSO = {
       return {
          totalPages: count,
          totalData: ces[0].total,
-         currentPage: pg,
          data: res,
-         prevPage: (pg - 1 >= 0 ? pg - 1 : 0),
-         nextPage: (pg + 1 < count ? pg + 1 : count-1),
       }
    },
 
