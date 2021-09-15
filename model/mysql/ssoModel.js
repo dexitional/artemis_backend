@@ -22,6 +22,18 @@ module.exports.SSO = {
       return res;
    },
 
+   fetchSSOUser : async (uid) => {
+      const sql = "select u.*,p.photo_id from identity.user u left join identity.photo p on p.uid on u.u where p.tag = '"+uid+"'";
+      const res = await db.query(sql);
+      return res;
+   },
+
+   insertPhoto : async (uid,tag,group_id,path) => {
+      const sql = "replace or insert into from identity.photo(uid,tag,path,group_id) values("+uid+",'"+tag+"','"+path+"',"+group_id+") where uid = "+uid;
+      const res = await db.query(sql);
+      return res;
+   },
+
    fetchUser : async (uid,gid) => {
       var sql;
       switch(gid){

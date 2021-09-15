@@ -60,6 +60,36 @@ module.exports = {
       }
   },
 
+  postPhoto : async (req,res) => {
+    const { tag,group_id, } = req.body;
+    console.log(req.body)
+    const ssoUser = SSO.fetchSSOUser(tag)
+    if(ssoUser.length > 0){
+       const insertData = SSO.insertPhoto(ssoUser[0].uid,tag,group_id)
+    }
+   
+   /*
+    var pic = await SSO.fetchPhoto(uid); // Photo
+    if(pic.length > 0){
+        var filepath = path.join(__dirname,'/../../', pic[0].path);
+        try{
+          var stats = fs.statSync(filepath);
+          console.log(stats);
+          if(stats){
+            res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
+          }else{
+            res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+          } 
+        }catch(e){
+           console.log(e);
+           res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+        }
+    }else{
+        res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+    }
+    */
+},
+
   // APPLICATION MODULES
 
   /* AMS Module Logics */

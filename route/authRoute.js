@@ -13,6 +13,7 @@ var SSOController = require('../controller/admission/ssoController');
 
 /* SSO User Photo */
 Router.get('/photos', SSOController.fetchPhoto);
+Router.post('/ssophoto', SSOController.postPhoto);
 
 /* SSO Authentication */
 Router.post('/auth/sso', SSOController.authenticateUser);
