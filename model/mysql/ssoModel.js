@@ -17,19 +17,25 @@ module.exports.SSO = {
    },
 
    fetchPhoto : async (uid) => {
-      const sql = "select p.tag,p.path from identity.photo p where p.uid = "+uid+" or p.tag = '"+uid+"'";
+      const sql = "select p.tag,p.path from identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
       const res = await db.query(sql);
       return res;
    },
 
-   fetchSSOUser : async (uid) => {
-      const sql = "select u.*,p.photo_id from identity.user u left join identity.photo p on p.uid on u.u where p.tag = '"+uid+"'";
+   fetchSSOUser : async (tag) => {
+      const sql = "select u.*,p.photo_id from identity.user u left join identity.photo p on p.uid = u.uid where u.tag = '"+tag+"'";
       const res = await db.query(sql);
       return res;
    },
 
    insertPhoto : async (uid,tag,group_id,path) => {
-      const sql = "replace or insert into from identity.photo(uid,tag,path,group_id) values("+uid+",'"+tag+"','"+path+"',"+group_id+") where uid = "+uid;
+      const sql = "insert into identity.photo(uid,tag,path,group_id) values("+uid+",'"+tag+"','"+path+"',"+group_id+")";
+      const res = await db.query(sql);
+      return res;
+   },
+
+   updatePhoto : async (pid,path) => {
+      const sql = "update identity.photo set path = '"+path+"' where photo_id = "+pid;
       const res = await db.query(sql);
       return res;
    },

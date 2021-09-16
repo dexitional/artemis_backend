@@ -10,6 +10,16 @@ const sms = require('../../config/sms')
 
 const { SSO } = require('../../model/mysql/ssoModel');
 const { Admission } = require('../../model/mysql/admissionModel');
+const { Student } = require('../../model/mysql/studentModel');
+
+const decodeBase64Image = (dataString) => {
+  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+  response = {};
+  if (matches.length !== 3) return new Error('Invalid input string');
+  response.type = matches[1];
+  response.data = new Buffer(matches[2], 'base64');
+  return response;
+}
 
 module.exports = {
  
@@ -39,8 +49,8 @@ module.exports = {
 
   
   fetchPhoto : async (req,res) => {
-      const uid = req.query.tag;
-      var pic = await SSO.fetchPhoto(uid); // Photo
+      const tag = req.query.tag;
+      var pic = await SSO.fetchPhoto(tag); // Photo
       if(pic.length > 0){
           var filepath = path.join(__dirname,'/../../', pic[0].path);
           try{
@@ -61,34 +71,36 @@ module.exports = {
   },
 
   postPhoto : async (req,res) => {
-    const { tag,group_id, } = req.body;
-    console.log(req.body)
-    const ssoUser = SSO.fetchSSOUser(tag)
-    if(ssoUser.length > 0){
-       const insertData = SSO.insertPhoto(ssoUser[0].uid,tag,group_id)
-    }
-   
-   /*
-    var pic = await SSO.fetchPhoto(uid); // Photo
-    if(pic.length > 0){
-        var filepath = path.join(__dirname,'/../../', pic[0].path);
-        try{
-          var stats = fs.statSync(filepath);
-          console.log(stats);
-          if(stats){
-            res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
-          }else{
-            res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+      const { tag,group_id,lock } = req.body;
+      var mpath;
+      switch(group_id){
+        case '01': mpath = 'student'; break;
+        case '02': mpath = 'staff'; break;
+        case '03': mpath = 'nss'; break;
+        case '04': mpath = 'applicant'; break;
+        case '05': mpath = 'alumni'; break;
+        default: mpath = 'student'; break;
+      }
+      var imageBuffer = decodeBase64Image(req.body.photo);
+      const dest = path.join(__dirname, '/../../public/cdn/photo/'+mpath, tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]));
+      const dbpath = './public/cdn/photo/'+mpath+'/'+tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]);
+      console.log(`Tag: ${tag}, Group ID: ${group_id}`)
+      fs.writeFile(dest, imageBuffer.data, async function(err) {
+        if(err) res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
+        const ssoUser = await SSO.fetchSSOUser(tag)
+        if(ssoUser.length > 0){
+         
+          const insertData = !ssoUser[0].photo_id ? await SSO.insertPhoto(ssoUser[0].uid,tag,group_id,dbpath) : await SSO.updatePhoto(ssoUser[0].photo_id,dbpath)
+          if(lock){
+            if(group_id == '01'){
+              const slk = await Student.updateStudentProfile(tag,{flag_photo_lock:1})
+            }
           } 
-        }catch(e){
-           console.log(e);
-           res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+          const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}`
+          if(insertData) res.status(200).json({success:true, data:stphoto});
         }
-    }else{
-        res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
-    }
-    */
-},
+      });
+  },
 
   // APPLICATION MODULES
 
