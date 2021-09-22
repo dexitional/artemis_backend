@@ -9,6 +9,12 @@ module.exports.SSO = {
       return res;
    },
 
+   verifyUserByEmail : async ({email}) => {
+      const sql = "select u.* from identity.user u where u.username = '"+email+"'";
+      const res = await db.query(sql);
+      return res;
+   },
+
 
    fetchRoles : async (uid) => {
       const sql = "select u.arole_id,a.role_name,a.role_desc,x.app_name,x.app_tag from identity.user_role u left join identity.app_role a on u.arole_id = a.arole_id left join identity.app x on a.app_id = x.app_id where u.uid = "+uid;
@@ -55,9 +61,14 @@ module.exports.SSO = {
            sql = "select from identity.photo p where p.uid = "+uid; break;
         default :  // Staff
            sql = "select s.*,j.title as designation,x.long_name as unitname from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where u.uid = "+uid; break;
-         
       } const res = await db.query(sql);
         return res;
+   },
+
+   updateUserByEmail : async (email,data) => {
+      const sql = "update identity.user set ? where username = '"+email+"'";
+      const res = await db.query(sql,data);
+      return res;
    },
 
    

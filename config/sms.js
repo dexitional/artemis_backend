@@ -1,21 +1,24 @@
 // SMS 
-var request = require('request');
-module.exports = function(phone,msg) {
+var axios = require('axios');
+
+module.exports = async function(phone,msg) {
     const data = {
-        key : 'pgC2DPZTwdbe68qPkuo4G36bV',//pgC2DPZTwdbe68qPkuo4G36bV //d413ba965ae771f637de
+        //key : 'pgC2DPZTwdbe68qPkuo4G36bV', // Bulksmsgh
+        key : 'B8pRALyxDgt4l5nRLOYVPoIm1', // Mnotify
         from : 'AUCC',
         to : phone,
         content : msg,
     }
-    const url = `http://clientlogin.bulksmsgh.com/smsapi?key=${data.key}&to=${data.to}&msg=${data.content}&sender_id=${data.from}`
+    //const url = `http://clientlogin.bulksmsgh.com/smsapi?key=${data.key}&to=${data.to}&msg=${data.content}&sender_id=${data.from}`
+    const url = `https://apps.mnotify.net/smsapi?key=${data.key}&to=${data.to}&msg=${data.content}&sender_id=${data.from}`
     const options = {
-        method: 'get',
-        json: true,
-        url: encodeURI(url)
+       method: 'get',
+       url: encodeURI(url),
+       responseType: 'json',
     }
-    request(options, function (err, res, body) {
-        if(err) console.err(err)
-        console.log(body);
-        return body;
-    })
+    
+    const res = await axios(options)
+    const resp = await res.data
+    //console.log(resp);
+    return resp
 };

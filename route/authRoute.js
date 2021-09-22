@@ -20,6 +20,11 @@ Router.post('/auth/sso', SSOController.authenticateUser);
 /* Applicant Authentication */
 Router.post('/auth/applicant', ApplicantController.authenticateApplicant);
 
+/* SSO Reset */
+Router.post('/reset/sendotp', SSOController.sendOtp);
+Router.post('/reset/verifyotp', SSOController.verifyOtp);
+Router.post('/reset/sendpwd', SSOController.sendPwd);
+
 
 /* AMS MODULE ROUTES */
 

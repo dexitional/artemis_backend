@@ -2,9 +2,11 @@ var bcrypt = require('bcrypt');
 var moment = require('moment');
 var jwt = require('jsonwebtoken');
 const fs = require('fs');
+const sha1 = require('sha1');
 const path = require('path');
 const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
+const digit = customAlphabet('1234567890', 4)
 const mailer = require('../../config/email')
 const sms = require('../../config/sms')
 
@@ -45,6 +47,68 @@ module.exports = {
           console.log(e)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
+  },
+
+
+  sendOtp : async (req,res) => {
+    const {email} = req.body;
+    try{
+      var user = await SSO.verifyUserByEmail({email});
+      if(user && user.length > 0){
+        const otp = digit() // Generate OTP 
+        const dt = {access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss')}
+        const ups = await SSO.updateUserByEmail(email,dt)
+        var sendcode;
+        if(ups){
+          const person = await SSO.fetchUser(user[0].uid,user[0].gid)
+          // Send OTP-SMS
+          const msg = `Hi ${person[0].fname}, Reset OTP code is ${otp}`
+          const sm = await sms(person && person[0].phone,msg)
+          console.log(sm.code)
+          if(sm && sm.code == '1000') sendcode = '1000'
+        }
+        if(sendcode) { res.status(200).json({success:true, data: otp }) }
+        else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
+        
+      }else{
+        res.status(200).json({ success:false, data: null, msg:"User does not exist!" });
+      }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+    }
+  },
+
+
+  verifyOtp : async (req,res) => {
+    const {email,token} = req.body;
+    try{
+      var user = await SSO.verifyUserByEmail({email});
+      if(user && user.length > 0 && user[0].access_token == token){
+        res.status(200).json({success:true, data: token }) 
+      }else{
+        res.status(200).json({ success:false, data: null, msg:"OTP verification failed!" });
+      }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+    }
+  },
+
+
+  sendPwd : async (req,res) => {
+    const {email,password} = req.body;
+    try{
+      const dt = { password : sha1(password.trim()) }
+      const ups = await SSO.updateUserByEmail(email,dt)
+      if(ups){ res.status(200).json({success:true, data: 'password changed!' }) 
+      }else{
+        res.status(200).json({ success:false, data: null, msg:"Password change failed!" });
+      }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+    }
   },
 
   
