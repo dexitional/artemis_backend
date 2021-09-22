@@ -111,6 +111,41 @@ module.exports = {
     }
   },
 
+  stageusers : async (req,res) => {
+    try{
+        const students = await Student.fetchUsers('01');
+        const staff = await Student.fetchUsers('02');
+        var count = 0;
+        if(students && students.length > 0){
+          for(user of students){
+            const pwd = nanoid()
+            const msg = `Hello ${user.fname}, Your AUCC Login details are: username: ${user.username}, password: ${pwd} .Visit https://portal.aucc.edu.gh to access your new portal!`
+            const resp = sms(user.phone,msg);
+            if(resp.code == '1000'){
+              count += 1;
+              await SSO.updateUserByEmail(username,{password: sha1(pwd)})
+            } 
+          }
+        }
+        if(staff && staff.length > 0){
+          for(user of staff){
+            const pwd = nanoid()
+            const msg = `Hello ${user.fname}, Your AUCC Login details are: username: ${user.username}, password: ${pwd} .Visit https://portal.aucc.edu.gh to access your new portal!`
+            const resp = sms(user.phone,msg);
+            if(resp.code == '1000'){
+              count += 1;
+              await SSO.updateUserByEmail(username,{password: sha1(pwd)})
+            } 
+          } 
+        }
+        res.status(200).json({success:true, data: count })
+       
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+    }
+  },
+
   
   fetchPhoto : async (req,res) => {
       const tag = req.query.tag;
