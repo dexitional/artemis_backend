@@ -85,7 +85,7 @@ module.exports.SSO = {
    },
 
    logger : async (uid,action,meta) => {
-      const data = { uid, title: action, meta }
+      const data = { uid, title: action, meta: JSON.stringify(meta) }
       const res = await db.query("insert into identity.`activity` set ?", data);
       return res;
    },
