@@ -84,6 +84,12 @@ module.exports.SSO = {
       return res;
    },
 
+   logger : async (uid,action,meta) => {
+      const data = { uid, title: action, meta }
+      const res = await db.query("insert into identity.`activity` set ?", data);
+      return res;
+   },
+
    
    // SESSION MODELS
 

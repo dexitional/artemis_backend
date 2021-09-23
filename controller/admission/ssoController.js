@@ -38,13 +38,20 @@ module.exports = {
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
+                
+                const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{username}) // Log Activity
+                console.log(lgs)
                 res.status(200).json({success:true, data});
 
             }else{
+                const lgs = await SSO.logger(0,'LOGIN_FAILED',{username}) // Log Activity
+                console.log(lgs)
                 res.status(200).json({success:false, data: null, msg:"Invalid username or password!"});
             }
       }catch(e){
           console.log(e)
+          const lgs = await await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
+          console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
   },
