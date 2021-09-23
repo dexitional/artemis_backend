@@ -9,11 +9,11 @@ module.exports = async function(phone,msg) {
         to : phone,
         content : msg,
     }
-    const url = `http://clientlogin.bulksmsgh.com/smsapi?key=${data.key}&to=${data.to}&msg=${data.content}&sender_id=${data.from}`
+    const url = `http://clientlogin.bulksmsgh.com/smsapi?key=${data.key}&to=${escape(data.to)}&msg=${data.content}&sender_id=${data.from}`
     //const url = `https://apps.mnotify.net/smsapi?key=${data.key}&to=${data.to}&msg=${data.content}&sender_id=${data.from}`
     const options = {
        method: 'get',
-       url: encodeURI(url),
+       url, //encodeURI(url),
        responseType: 'json',
     }
     

@@ -25,6 +25,7 @@ Router.post('/reset/sendotp', SSOController.sendOtp);
 Router.post('/reset/verifyotp', SSOController.verifyOtp);
 Router.post('/reset/sendpwd', SSOController.sendPwd);
 Router.get('/reset/stageusers', SSOController.stageusers);
+Router.get('/reset/testsms', SSOController.testsms);
 
 
 /* AMS MODULE ROUTES */

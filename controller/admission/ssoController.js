@@ -51,13 +51,13 @@ module.exports = {
 
 
   sendOtp : async (req,res) => {
-    const {email} = req.body;
+    var {email} = req.body;
     try{
-      var user = await SSO.verifyUserByEmail({email});
+      var user = !email.includes('@') ? await SSO.fetchUserByPhone(email) : await SSO.verifyUserByEmail({email});
       if(user && user.length > 0){
         const otp = digit() // Generate OTP 
-        const dt = {access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss')}
-        const ups = await SSO.updateUserByEmail(email,dt)
+        const dt = { access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
+        const ups = await SSO.updateUserByEmail(user[0].username,dt)
         var sendcode;
         if(ups){
           const person = await SSO.fetchUser(user[0].uid,user[0].gid)
@@ -67,7 +67,7 @@ module.exports = {
           console.log(sm.code)
           if(sm && sm.code == '1000') sendcode = '1000'
         }
-        if(sendcode) { res.status(200).json({success:true, data: otp }) }
+        if(sendcode) { res.status(200).json({success:true, data: {otp,email:user[0].username } }) }
         else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
         
       }else{
@@ -145,6 +145,21 @@ module.exports = {
           } 
         }
         res.status(200).json({success:true, data: count })
+       
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+    }
+  },
+
+  testsms : async (req,res) => {
+    try{
+      const pwd = nanoid()
+       const msg = `Hello kobby, Login info, U: test\@st.aucc.edu.gh, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
+       const resp = sms('0277675089',msg);
+       //if(resp.code == '1000') 
+       console.log(resp.code)
+       res.status(200).json({success:true, data: resp })
        
     }catch(e){
         console.log(e)
