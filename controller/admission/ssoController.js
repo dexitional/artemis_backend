@@ -119,23 +119,29 @@ module.exports = {
         if(students && students.length > 0){
           for(user of students){
             const pwd = nanoid()
-            const msg = `Hello ${user.fname}, Your AUCC Login details are: username: ${user.username}, password: ${pwd} .Visit https://portal.aucc.edu.gh to access your new portal!`
-            const resp = sms(user.phone,msg);
-            if(resp.code == '1000'){
-              count += 1;
-              await SSO.updateUserByEmail(username,{password: sha1(pwd)})
-            } 
+            if(user.phone && count < 1){
+              const ups = await SSO.updateUserByEmail(user.username,{password: sha1(pwd)})
+              const msg = `Hello ${user.fname.toLowerCase()}, Login info, U: ${user.username}, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
+              const resp = sms(user.phone,msg);
+              //if(resp.code == '1000') 
+              count = count + 1
+              console.log(count)
+              console.log(resp.code)
+            }
           }
         }
         if(staff && staff.length > 0){
           for(user of staff){
             const pwd = nanoid()
-            const msg = `Hello ${user.fname}, Your AUCC Login details are: username: ${user.username}, password: ${pwd} .Visit https://portal.aucc.edu.gh to access your new portal!`
-            const resp = sms(user.phone,msg);
-            if(resp.code == '1000'){
-              count += 1;
-              await SSO.updateUserByEmail(username,{password: sha1(pwd)})
-            } 
+            if(user.phone){
+              const ups = await SSO.updateUserByEmail(user.username,{password: sha1(pwd)})
+              const msg = `Hello ${user.fname.toLowerCase()}, Login info, U: ${user.username}, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
+              const resp = sms(user.phone,msg);
+              //if(resp.code == '1000') 
+              count += 1
+              console.log(count)
+              console.log(resp.code)
+            }
           } 
         }
         res.status(200).json({success:true, data: count })
