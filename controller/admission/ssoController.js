@@ -72,10 +72,13 @@ module.exports = {
           // Send OTP-SMS
           const msg = `Hi ${person[0].fname}, Reset OTP code is ${otp}`
           const sm = await sms(person && person[0].phone,msg)
+          sendcode = sm.code
           console.log(sm.code)
-          if(sm && sm.code == '1000') sendcode = '1000'
+          //if(sm && sm.code == '1000') sendcode = '1000'
+
         }
-        if(sendcode) { res.status(200).json({success:true, data: {otp,email:user[0].username } }) }
+        if(sendcode == 1000) { res.status(200).json({success:true, data: {otp,email:user[0].username } }) }
+        else if(sendcode == 1003) { res.status(200).json({ success:false, data: null, msg:"OTP credit exhausted!" }) }
         else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
         
       }else{
