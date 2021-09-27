@@ -48,6 +48,7 @@ module.exports.SSO = {
    },
 
    fetchUser : async (uid,gid) => {
+      console.log(`uid: ${uid}, gid: ${gid}`)
       var sql;
       switch(gid){
         case '01': // Student

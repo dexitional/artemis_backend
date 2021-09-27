@@ -67,7 +67,8 @@ module.exports = {
         const ups = await SSO.updateUserByEmail(user[0].username,dt)
         var sendcode;
         if(ups){
-          const person = await SSO.fetchUser(user[0].uid,user[0].gid)
+          const person = await SSO.fetchUser(user[0].uid,user[0].group_id)
+          
           // Send OTP-SMS
           const msg = `Hi ${person[0].fname}, Reset OTP code is ${otp}`
           const sm = await sms(person && person[0].phone,msg)
