@@ -461,7 +461,7 @@ module.exports = {
 },
 
 
-// VOUCHER CONTROLS
+// APPLICANTS CONTROLS
 
 fetchApplicants : async (req,res) => {
   try{
@@ -531,6 +531,102 @@ fetchApplicant : async (req,res) => {
   }catch(e){
       console.log(e)
       res.json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+// STUDENT CONTROLS
+
+fetchStudents : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      
+      var students = await SSO.fetchStudents(page,keyword);
+     
+      if(students && students.data.length > 0){
+        res.status(200).json({success:true, data:students});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postVoucher : async (req,res) => {
+    try{
+      const { session_id,quantity,group_id,sell_type,vendor_id,created_by } = req.body;
+      var resp
+      if(session_id && session_id > 0){ 
+        var lastIndex = await SSO.getLastVoucherIndex(session_id)
+        if(quantity > 0){
+          for(var i = 1; i <= quantity; i++){
+            let dt = { serial: lastIndex+i, pin: nanoid(),session_id,group_id,sell_type,vendor_id,created_by}
+            resp = await SSO.insertVoucher(dt);
+          }
+        }
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteVoucher : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteVoucher(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+recoverVoucher : async (req,res) => {
+  try{
+    const { serial,email,phone } = req.body;
+    console.log(req.body)
+    var resp
+    if(serial && email){ 
+       const sr = await SSO.fetchVoucherBySerial(serial);
+       if(sr && sr.length > 0){
+         const ms = { title: "AUCC VOUCHER", message : `Your recovered voucher details are: [ SERIAL: ${serial}, PIN: ${sr[0].pin} ]` }
+         mailer(email.trim(),ms.title,ms.message)
+         resp = sr;
+       }
+    }else if(phone){
+       const sr = await SSO.fetchVoucherByPhone(phone);
+       console.log(phone)
+       if(sr && sr.length > 0){
+         const message = `Hello! voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
+         sms(phone,message)
+         resp = sr;
+       }
+    }
+
+    if(resp){
+      res.status(200).json({success:true, data:resp});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"INVALID VOUCHER INFO PROVIDED !"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
   }
 },
 

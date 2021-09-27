@@ -142,7 +142,7 @@ module.exports.SSO = {
       return res; 
    },
 
-   // VOUCHER MODELS
+   // VOUCHER - AMS MODELS
 
    fetchVouchers : async (session_id,page,keyword) => {
       var sql = "select v.*,x.vendor_name,g.title as group_name,case when v.sell_type = 0 then g.title when v.sell_type = 1 then 'MATURED' when v.sell_type = 2 then 'INTERNATIONAL' end as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id
@@ -209,7 +209,7 @@ module.exports.SSO = {
    },
 
 
-   // APPLICANTS MODELS
+   // APPLICANTS - AMS MODELS
 
    fetchApplicants : async (session_id,page,keyword) => {
       var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
@@ -241,6 +241,36 @@ module.exports.SSO = {
    fetchApplicantsByType : async (session_id,sell_type) => {
       const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
       return { data:res };
+   },
+
+
+    // STUDENTS - AIS MODELS
+
+    fetchStudents : async (page,keyword) => {
+      var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id"
+      var cql = "select count(*) as total from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
+          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
+      }
+
+      sql += ` order by s.complete_status asc,s.prog_id asc,s.lname asc, s.fname asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
    },
 
 

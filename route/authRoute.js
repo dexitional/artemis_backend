@@ -50,4 +50,13 @@ Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
 
 
 
+/* AIS MODULE ROUTES */
+
+// STUDENT routes
+Router.get('/ais/students/', SSOController.fetchStudents);
+Router.post('/ais/vouchers', SSOController.postVoucher);
+Router.delete('/ais/vouchers/:id', SSOController.deleteVoucher);
+Router.post('/ais/recovervoucher', SSOController.recoverVoucher);
+
+
 module.exports = Router;
