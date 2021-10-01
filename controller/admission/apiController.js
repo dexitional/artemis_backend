@@ -11,14 +11,11 @@ const { API } = require('../../model/mysql/apiModel');
 const { Student } = require('../../model/mysql/studentModel');
 const { SSO } = require('../../model/mysql/ssoModel');
 
-
 module.exports = {
  
-
   loadservices : async (req,res) => {
     try{
       var services = await API.fetchServices();
-      console.log(services)
       if(services) res.status(200).json({success:true, data: services}) 
     }catch(e){
         console.log(e)

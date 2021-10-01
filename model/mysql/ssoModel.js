@@ -90,6 +90,12 @@ module.exports.SSO = {
       return res;
    },
 
+   apilogger : async (ip,action,meta) => {
+      const data = { ip, title: action, meta: JSON.stringify(meta) }
+      const res = await db.query("insert into fms.`activity_api` set ?", data);
+      return res;
+   },
+
    
    // SESSION MODELS
 
