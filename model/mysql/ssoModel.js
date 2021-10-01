@@ -199,6 +199,7 @@ module.exports.SSO = {
       if(pr && vd){
         const vc = await db.query("select serial,pin from P06.voucher where vendor_id = "+vd[0].vendor_id+" and session_id ="+sessionId+" and group_id = '"+pr[0].group_id+"' and sell_type = "+pr[0].sell_type);
         if(vc && vc.length > 0){
+          console.log(vc);
           const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
           const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
           if(ups) { return vc } else{ return null }
