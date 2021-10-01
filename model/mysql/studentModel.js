@@ -120,7 +120,8 @@ module.exports.Student = {
    // FEES && CHARGES MODELS
 
    fetchFeesAccount : async (refno = null) => {
-      const res = await db.query("select sum(amount) as total from fms.studtrans where refno = '"+refno+"'");
+      const res = await db.query("select ifnull(sum(amount),0) as total from fms.studtrans where refno = '"+refno+"'");
+      console.log(res);
       if(res && res.length > 0) return res[0].total
       return 0.0;
    },
