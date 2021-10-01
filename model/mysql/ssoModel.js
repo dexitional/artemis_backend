@@ -195,7 +195,7 @@ module.exports.SSO = {
 
    sellVoucher : async (formId,collectorId,sessionId,buyerName,buyerPhone) => {
       const pr = await db.query("select * from P06.price p where p.price_id = "+formId);
-      const vd = await db.query("select vendor_id from fms.collector c left join P06.vendor v on c.vendor_id = v.id where c.id = "+collectorId);
+      const vd = await db.query("select c.vendor_id from fms.collector c left join P06.vendor v on c.vendor_id = v.id where c.id = "+collectorId);
       if(pr && vd){
         const vc = await db.query("select serial,pin from P06.voucher where vendor_id = "+vd[0].vendor_id+" and session_id ="+sessionId+" and group_id = '"+pr[0].group_id+"' and sell_type = "+pr[0].sell_type);
         if(vc && vc.length > 0){
