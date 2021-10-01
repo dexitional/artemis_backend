@@ -30,7 +30,8 @@ module.exports = {
     const type = req.params.type;
     const refno = req.params.refno;
     try{
-      if(refno && parseInt(type) !== 1){ // All other services
+      // OTHER services
+      if(refno && parseInt(type) !== 1){ 
         var dt,ft;
         const st = await Student.fetchStudentProfile(refno);
         if(st && st.length > 0){
@@ -43,7 +44,9 @@ module.exports = {
         }else{
           res.status(200).json({success:false, data: null, msg: "Invalid StudentID or Index number"});
         }
-      }else if(type && parseInt(type) === 1){ // Voucher services
+
+      // VOUCHER services
+      }else if(type && parseInt(type) === 1){
         const st = await SSO.fetchVoucherGroups();
         res.status(200).json({success:true, data: { serviceId:type,...st }}) 
       }else{

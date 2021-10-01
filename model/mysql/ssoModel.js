@@ -188,7 +188,7 @@ module.exports.SSO = {
 
    fetchVoucherGroups : async () => {
       const res = await db.query("select p.price_id as formId,p.title as formName,p.currency,p.amount as serviceCharge from P06.price p where p.status = 1");
-      const resm = await db.query("select s.title as `session` from P06.session s where s.status = 1");
+      const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
       if(res && res.length > 0 && resm && resm.length > 0) return {...resm[0],forms:[...res]}
       return null;
    },
