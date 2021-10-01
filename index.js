@@ -17,6 +17,7 @@ var admission = require('./route/admissionRoute');
 var site = require('./route/siteRoute');
 var admission = require('./route/admissionRoute');
 var student = require('./route/studentRoute');
+var api = require('./route/apiRoute');
 app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -40,6 +41,7 @@ app.use(session({
 app.use('/api',auth); 
 app.use('/api',student); 
 app.use('/api',admission); 
+app.use('/api/v1',api); 
 app.use('/',site); 
 
 // Start Server Instance

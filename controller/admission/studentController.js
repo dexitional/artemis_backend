@@ -216,6 +216,53 @@ module.exports = {
       }
   },
 
+  // Fees && Charges
+
+  fetchFeesAccount : async (req,res) => {
+    const indexno = req.query.indexno
+    try{
+        var rows = await Student.fetchStudentResults(indexno);
+        if(rows && rows.length > 0){
+            res.status(200).json({success:true, data:rows});
+        }else{
+            res.status(200).json({success:true, data:[], msg:"No records!"});
+        }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Something went wrong!"});
+    }
+  },
+
+  fetchResitAccount : async (req,res) => {
+    const refno = req.query.re
+    try{
+        var rows = await Student.fetchStudentResults(indexno);
+        if(rows && rows.length > 0){
+            res.status(200).json({success:true, data:rows});
+        }else{
+            res.status(200).json({success:true, data:[], msg:"No records!"});
+        }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Something went wrong!"});
+    }
+  },
+
+  fetchGraduationAccount : async (req,res) => {
+    const indexno = req.query.indexno
+    try{
+        var rows = await Student.fetchStudentResults(indexno);
+        if(rows && rows.length > 0){
+            res.status(200).json({success:true, data:rows});
+        }else{
+            res.status(200).json({success:true, data:[], msg:"No records!"});
+        }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Something went wrong!"});
+    }
+  },
+
   
 
 

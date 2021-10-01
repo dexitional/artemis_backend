@@ -110,11 +110,36 @@ module.exports.Student = {
       return res;
    },
 
-   // REGISTRATION MODELS
+   // RESULTS MODELS
 
    fetchStudentResults : async (indexno = null) => {
       const res = await db.query("select concat(s.academic_year,' SEMESTER ',s.academic_sem) as name,c.title as course_name,x.credit,x.semester,c.id as course_id,c.course_code,x.class_score,x.exam_score,x.total_score,x.score_type,x.flag_visible,m.grade_meta from ais.assessment x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id left join utility.scheme m on m.id = x.scheme_id  where x.indexno = '"+indexno+"' order by s.id asc");
       return res;
+   },
+
+   // FEES && CHARGES MODELS
+
+   fetchFeesAccount : async (refno = null) => {
+      const res = await db.query("select sum(amount) as total from fms.studtrans where refno = '"+refno+"'");
+      if(res && res.length > 0) return res[0].total
+      return 0.0;
+   },
+
+
+   fetchResitAccount : async (indexno = null) => {
+      const res = await db.query("select * from ais.resit where paid = 0 and indexno = '"+indexno+"'");
+      const resm = await db.query("select amount from fms.servicefee where transtype_id = 03");
+      if(res && (resm && resm.length > 0)) return res.length * resm[0].amount
+      return 0.0;
+   },
+
+
+
+   fetchGraduationAccount : async (indexno = null) => {
+      const res = await db.query("select * from ais.graduation where indexno = '"+indexno+"'");
+      const resm = await db.query("select amount from fms.servicefee where transtype_id = 04");
+      if(res && (resm && resm.length > 0)) return res.length * resm[0].amount
+      return 0.0;
    },
 
 

@@ -1,10 +1,9 @@
-const moment =  require('moment');
 var db = require('../../config/mysql');
 
-module.exports.SSO = {
+module.exports.API = {
    
-   verifyUser : async ({username,password}) => {
-      const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
+   fetchServices : async () => {
+      const sql = "select id as serviceId,title as serviceName from fms.transtype where status = 1 and visibility = 'PUBLIC'";
       const res = await db.query(sql);
       return res;
    },
@@ -186,31 +185,6 @@ module.exports.SSO = {
       return res;
    },
 
-   fetchVoucherGroups : async () => {
-      const res = await db.query("select p.price_id as formId,p.title as formName,p.currency,p.amount as serviceCharge from P06.price p where p.status = 1");
-      const resm = await db.query("select s.title as `session` from P06.session s where s.status = 1");
-      if(res && res.length > 0 && resm && resm.length > 0) return {...resm[0],forms:[...res]}
-      return null;
-   },
-
-   sellVoucher : async (formId,collectorId,sessionId,buyerName,buyerPhone) => {
-      const pr = await db.query("select * from P06.price p where p.price_id = "+formId);
-      const vd = await db.query("select vendor_id from fms.collector c left join P06.vendor v on c.vendor_id = v.id where c.id = "+collectorId);
-      if(pr && vd){
-        const vc = await db.query("select serial,pin from P06.voucher where vendor_id = "+vd[0].vendor_id+" and session_id ="+sessionId+" and group_id = '"+pr[0].group_id+"' and sell_type = "+pr[0].sell_type);
-        if(vc && vc.length > 0){
-          const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
-          const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
-          if(ups) { return dm } else{ return null }
-        }else{
-          return null
-        }
-      }else{
-         return null
-      }
-   },
-
-
    insertVoucher : async (data) => {
       const res = await db.query("insert into voucher set ?", data);
       return res;
@@ -298,13 +272,6 @@ module.exports.SSO = {
       }
    },
 
-
-   // TRANSACTION - FMS
-  
-   sendTransaction : async (data) => {
-      const res = await db.query("insert into fms.transaction set ?", data);
-      return res;
-   },
 
 
 };
