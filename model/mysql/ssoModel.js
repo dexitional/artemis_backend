@@ -201,7 +201,7 @@ module.exports.SSO = {
         if(vc && vc.length > 0){
           const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
           const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
-          if(ups) { return { voucherSerial:vc[0].serial,voucherPin:vc[0].pin,...dm } } else{ return null }
+          if(ups) { return vc } else{ return null }
         }else{
           return null
         }
