@@ -62,7 +62,9 @@ module.exports = {
   payservice : async (req,res) => {
     try{
       const api = req.query.api;
-      const cl = await SSO.fetchCollector(api);
+      //const cl = await SSO.fetchCollector(api);
+      const cl = { id : 1, vendor_id: 1, collector_name:'Calbank Limited'}
+      
       const { serviceId,amountPaid,currency,studentId,refNote,transRef,buyerName,buyerPhone,formId } = req.body
       const dt = { collector_id:cl.id,transtype_id:serviceId,currency,amount:amountPaid,paytype:'BANK',reference:refNote,refno:studentId }
           
