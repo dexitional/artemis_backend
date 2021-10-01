@@ -65,14 +65,14 @@ module.exports = {
       //const cl = await SSO.fetchCollector(api);
       const cl = { id : 1, vendor_id: 1, collector_name:'Calbank Limited'}
 
-      const { serviceId,amountPaid,currency,studentId,refNote,transRef,buyerName,buyerPhone,formId } = req.body
+      const { serviceId,amountPaid,currency,studentId,refNote,transRef,buyerName,buyerPhone,formId,sessionId } = req.body
       const dt = { collector_id:cl.id,transtype_id:serviceId,currency,amount:amountPaid,paytype:'BANK',reference:refNote,refno:studentId,transtag:transRef }
           
       if(parseInt(serviceId) === 1 ){ // Voucher service
           // Check for Empty field and return
           const ins = await SSO.sendTransaction(dt);
           if(ins){
-            const vouch = await SSO.sellVoucher(formId,cl.id,buyerName,buyerPhone);
+            const vouch = await SSO.sellVoucher(formId,cl.id,sessionId,buyerName,buyerPhone);
             if(vouch){ res.status(200).json({success:true, data: { voucherSerial:vouch.serial,voucherPin:vouch.pin,buyerName,buyerPhone,transId:ins.insertId,serviceId } }) }
             else{ res.status(200).json({success:false, data: null, msg: `Voucher quota exhausted`}) }
           
