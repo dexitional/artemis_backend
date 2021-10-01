@@ -34,7 +34,7 @@ module.exports = {
         var dt,ft;
         const st = await Student.fetchStudentProfile(refno);
         if(st && st.length > 0){
-          dt = { studentId:st[0].refno,indexNo:st[0].indexno, name:`${st[0].lname.trim()}, ${st[0].fname.trim()} ${st[0].mname ? ' '+st[0].mname.trim():''}`, program:`${st[0].program_name}${st[0].major_name ?'- '+st[0].major_name:''}`,year: st[0].semester ? Math.ceil(st[0].semester/2) : 'none',serviceId:type }
+          dt = { studentId:st[0].refno,indexNo:st[0].indexno, name:`${st[0].lname ?st[0].lname.trim():''}, ${st[0].fname ? st[0].fname.trim():''} ${st[0].mname ? ' '+st[0].mname.trim():''}`, program:`${st[0].program_name}${st[0].major_name ?'- '+st[0].major_name:''}`,year: st[0].semester ? Math.ceil(st[0].semester/2) : 'none',serviceId:type }
           switch(parseInt(type)){
             case 2: ft = await Student.fetchFeesAccount(refno);break;
             case 3: ft = await Student.fetchResitAccount(st[0].indexno);break; // Retire resit account on successful payment ( flag paid to '1')
