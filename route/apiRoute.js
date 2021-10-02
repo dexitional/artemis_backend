@@ -8,15 +8,21 @@ const parseIp = (req) => req.headers['x-forwarded-for']?.split(',').shift() || r
 const apiLogger = (action) => {
     return async (req, res, next) => {
         const api = req.query.api
-        const log = await SSO.apilogger(parseIp(req),action,{api})
+        const refno = req.params.refno
+        const body = req.body
+        var dt = {}
+        if(refno) dt.studentId = refno
+        if(api) dt.apiToken = api
+        if(body) dt.data = body
+        const log = await SSO.apilogger(parseIp(req),action,dt)
         return next();
     }  
 }
 
 /* GET SERVICES TYPES */
 Router.get('/services',apiLogger('LOAD_API_SERVICES'),ApiController.loadservices);
-Router.get('/services/:type', ApiController.loadservice);
-Router.get('/services/:type/:refno', ApiController.loadservice);
-Router.post('/payservice', ApiController.payservice);
+Router.get('/services/:type',apiLogger('LOAD_VOUCHER_FORMS'), ApiController.loadservice);
+Router.get('/services/:type/:refno',apiLogger('VERIFY_STUDENT'), ApiController.loadservice);
+Router.post('/payservice',apiLogger('SEND_TRANSACTION'), ApiController.payservice);
 
 module.exports = Router;
