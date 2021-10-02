@@ -13,7 +13,7 @@ const apiLogger = (action) => {
         var dt = {}
         if(refno) dt.studentId = refno
         if(api) dt.apiToken = api
-        if(body) dt.data = body
+        if(body && Object.keys(body).length > 0) dt.data = body
         const log = await SSO.apilogger(parseIp(req),action,dt)
         return next();
     }  
