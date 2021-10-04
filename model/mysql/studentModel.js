@@ -52,8 +52,13 @@ module.exports.Student = {
       return res;
    },
 
+   fetchStProfile : async (refno) => {
+      const res = await db.query("select * from ais.student where refno = '"+refno+"'");
+      return res;
+   },
+
    findEmail : async (email) => {
-      const res = await db.query("select * from ais.student where s.institute_mail = '"+email+"'");
+      const res = await db.query("select * from ais.student where institute_email = '"+email+"'");
       return res;
    },
    
@@ -81,22 +86,22 @@ module.exports.Student = {
    // REGISTRATION MODELS
 
    fetchStudentSlip : async (session_id = null,indexno = null) => {
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,x.score_type from ais.assessment x left join utility.course c on x.course_id = c.id  where x.session_id = "+session_id+" and x.indexno = '"+indexno+"'");
+      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.score_type from ais.assessment x left join utility.course c on x.course_id = c.id  where x.session_id = "+session_id+" and x.indexno = '"+indexno+"'");
       return res;
    },
 
    fetchStudentCE : async (prog_id = null ,semester = null) => { // Core & Non-Major Electives
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = "+semester+" and x.prog_id = "+prog_id);
+      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = "+semester+" and x.prog_id = "+prog_id);
       return res;
    },
 
    fetchStudentME : async (major_id = null,prog_id = null,semester = null) => { // Major's Electives
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = "+major_id+" and x.semester = "+semester+" and x.prog_id = "+prog_id);
+      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = "+major_id+" and x.semester = "+semester+" and x.prog_id = "+prog_id);
       return res;
    },
 
    fetchStudentRT : async (indexno = null) => { // Resit
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,x.paid,x.semester from ais.resit x left join utility.course c on x.course_id = c.id  where x.taken = 0 and x.indexno = '"+indexno+"'");
+      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester from ais.resit x left join utility.course c on x.course_id = c.id  where x.taken = 0 and x.indexno = '"+indexno+"'");
       return res;
    },
 

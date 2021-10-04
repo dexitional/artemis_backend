@@ -113,4 +113,22 @@ Router.get('/setupstaffaccess', async(req,res)=>{
 });
 
 
+Router.get('/loadfreshers', async(req,res)=>{
+   const ss = await db.query("select phone,inst_mail,staff_no from hrs.staff where phone is not NULL and inst_mail is not null")
+   console.log(ss)
+   if(ss.length > 0){
+     var count = 1000;
+     for(var s of ss){
+        const pwd = nanoid()
+        console.log(pwd)
+        const ins = await db.query("insert into identity.user set ?",{group_id:02,tag:s.staff_no,username:s.inst_mail.trim(),password:sha1(pwd)})
+        if(ins.insertId > 0){
+           await db.query("insert into identity.photo set ?",{group_id:02,tag:s.staff_no,uid:ins.insertId,path:'./public/cdn/photo/none.png'})
+        }
+        setTimeout(()=> console.log('delay of 300ms'),3000)
+     }  
+   } res.json(ss)
+});
+
+
 module.exports = Router;

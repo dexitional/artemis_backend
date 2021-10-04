@@ -67,6 +67,29 @@ const getSemestersByCode = (group_code) => {
   return yr
 }
 
+const getUsername = (fname,lname) => {
+   var username,fr,lr;
+   let fs = fname ? fname.trim().split(' '):null
+   let ls = lname ? lname.trim().split(' '):null
+   if(fs && fs.length > 0){
+     for(var i = 0; i < fs.length; i++){
+        if(i == 0) fr = fs[i].trim()
+     }
+   }
+   if(ls && ls.length > 0){
+      for(var i = 0; i < ls.length; i++){
+        if(i == ls.length-1) lr = ls[i].split('-')[0].trim()
+      }
+    }
+    if(!lr && fs.length > 1) lr = fs[1] 
+    if(!fr && ls.length > 1){
+       fr = fs[1].trim()
+       lr = ls[ls.length-1].split('-')[0].trim()
+    } 
+
+    return `${fr}.${lr}`.toLowerCase();
+}
+
 module.exports = {
  
   authenticateUser : async (req,res) => {
@@ -610,7 +633,8 @@ postStudentAIS : async (req,res) => {
     //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
     if(req.body.major_id == '') delete req.body.major_id
     if(req.body.prog_id == '') delete req.body.prog_id
-    if(req.body.dob == '') delete req.body.dob
+    if(req.body.dob == ''){ delete req.body.dob}
+    else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
     delete req.body.uid;delete req.body.flag_locked;
     delete req.body.flag_disabled;delete req.body.program_name;
     delete req.body.major_name;delete req.body.name;
@@ -693,14 +717,18 @@ stageAccount : async (req,res) => {
 generateMail : async (req,res) => {
   try{
       const { refno } = req.params;
-      const pwd = nanoid()
-      var resp = await Student.fetchStudentProfile(refno);
+      var resp = await Student.fetchStProfile(refno);
+      console.log(resp)
       var ups;
       var email;
+      
       if(resp && resp.length > 0){
-          const username = `${resp[0].fname.replace('/\ /g').toLowerCase()}.${resp[0].lname.trim().replace('/\ /g').split('-')[0].toLowerCase()}`
-            email = `${username}@st.aucc.edu.gh`
+          //const username = `${resp[0].fname ? resp[0].fname.split(' ')[0].replace('/\-/g').toLowerCase():''}.${resp[0].lname ? (resp[0].lname.split('-').length > 0 ? resp[0].lname.split('-')[0].replace('/\ /g').toLowerCase() : ''):''}`
+          const username = getUsername(resp[0].fname,resp[0].lname)
+          email = `${username}@st.aucc.edu.gh`
           const isExist = await Student.findEmail(email)
+          console.log(email)
+          console.log(isExist)
           if(isExist && isExist.length > 0){
             email = `${username}${isExist.length+1}@st.aucc.edu.gh`
             ups = await Student.updateStudentProfile(refno,{ institute_email:email })

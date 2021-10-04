@@ -1,11 +1,11 @@
 self.__precacheManifest = [
   {
-    "revision": "da1f1f1f1101bd3bc139",
+    "revision": "bbb5608a84f0736f91b1",
     "url": "/static/css/main.e938d0d4.chunk.css"
   },
   {
-    "revision": "da1f1f1f1101bd3bc139",
-    "url": "/static/js/main.c162e002.chunk.js"
+    "revision": "bbb5608a84f0736f91b1",
+    "url": "/static/js/main.73991fad.chunk.js"
   },
   {
     "revision": "32893c1a2f0138f1f836",
@@ -24,6 +24,10 @@ self.__precacheManifest = [
     "url": "/static/media/logo.8a585515.png"
   },
   {
+    "revision": "a1ecc3b826d01251edddf29c3e4e1e97",
+    "url": "/static/media/themify.a1ecc3b8.woff"
+  },
+  {
     "revision": "2c454669bdf3aebf32a1bd8ac1e0d2d6",
     "url": "/static/media/themify.2c454669.eot"
   },
@@ -32,24 +36,24 @@ self.__precacheManifest = [
     "url": "/static/media/themify.e23a7dca.ttf"
   },
   {
-    "revision": "a1ecc3b826d01251edddf29c3e4e1e97",
-    "url": "/static/media/themify.a1ecc3b8.woff"
-  },
-  {
-    "revision": "9c8e96ecc7fa01e6ebcd196495ed2db5",
-    "url": "/static/media/themify.9c8e96ec.svg"
+    "revision": "cac68c831145804808381a7032fdc7c2",
+    "url": "/static/media/fa-brands-400.cac68c83.woff2"
   },
   {
     "revision": "0fabb6606be4c45acfeedd115d0caca4",
     "url": "/static/media/fa-brands-400.0fabb660.eot"
   },
   {
-    "revision": "cac68c831145804808381a7032fdc7c2",
-    "url": "/static/media/fa-brands-400.cac68c83.woff2"
-  },
-  {
     "revision": "dc0bd022735ed218df547742a1b2f172",
     "url": "/static/media/fa-brands-400.dc0bd022.woff"
+  },
+  {
+    "revision": "9c8e96ecc7fa01e6ebcd196495ed2db5",
+    "url": "/static/media/themify.9c8e96ec.svg"
+  },
+  {
+    "revision": "ad3a7c0d77e09602f4ab73db3660ffd8",
+    "url": "/static/media/fa-regular-400.ad3a7c0d.eot"
   },
   {
     "revision": "085b1dd8427dbeff10bd55410915a3f6",
@@ -68,14 +72,6 @@ self.__precacheManifest = [
     "url": "/static/media/fa-regular-400.1a78af41.ttf"
   },
   {
-    "revision": "ad3a7c0d77e09602f4ab73db3660ffd8",
-    "url": "/static/media/fa-regular-400.ad3a7c0d.eot"
-  },
-  {
-    "revision": "ee09ad7553b8ad3d81150d609d5341a0",
-    "url": "/static/media/fa-solid-900.ee09ad75.woff"
-  },
-  {
     "revision": "e75dfd904d366a2560c63c23cfc98ef8",
     "url": "/static/media/fa-regular-400.e75dfd90.svg"
   },
@@ -92,12 +88,20 @@ self.__precacheManifest = [
     "url": "/static/media/ikon.fd8e7fe0.eot"
   },
   {
-    "revision": "a827498d7dc8f149c5d38554a6911b55",
-    "url": "/static/media/ikon.a827498d.ttf"
+    "revision": "ee09ad7553b8ad3d81150d609d5341a0",
+    "url": "/static/media/fa-solid-900.ee09ad75.woff"
+  },
+  {
+    "revision": "781e85bb50c8e8301c30de56b31b1f04",
+    "url": "/static/media/fa-solid-900.781e85bb.ttf"
   },
   {
     "revision": "a827498d7dc8f149c5d38554a6911b55",
     "url": "/static/media/ikon.a827498d.woff"
+  },
+  {
+    "revision": "a827498d7dc8f149c5d38554a6911b55",
+    "url": "/static/media/ikon.a827498d.ttf"
   },
   {
     "revision": "9df02f8bd23b1bc4602f185b88409145",
@@ -105,15 +109,11 @@ self.__precacheManifest = [
   },
   {
     "revision": "6ea44f1f105ad7c7d8de96ff0891e192",
-    "url": "/static/media/cryptofont-webfont.6ea44f1f.eot"
-  },
-  {
-    "revision": "6ea44f1f105ad7c7d8de96ff0891e192",
     "url": "/static/media/cryptofont-webfont.6ea44f1f.woff"
   },
   {
-    "revision": "781e85bb50c8e8301c30de56b31b1f04",
-    "url": "/static/media/fa-solid-900.781e85bb.ttf"
+    "revision": "6ea44f1f105ad7c7d8de96ff0891e192",
+    "url": "/static/media/cryptofont-webfont.6ea44f1f.eot"
   },
   {
     "revision": "6ea44f1f105ad7c7d8de96ff0891e192",
@@ -164,6 +164,10 @@ self.__precacheManifest = [
     "url": "/static/media/eagle.807c854d.png"
   },
   {
+    "revision": "098192f2c1d3d43f63e1dab2593f9728",
+    "url": "/static/media/icon_gauth.098192f2.svg"
+  },
+  {
     "revision": "acf76b99902c45d0c447bf5ab09ba96f",
     "url": "/static/media/icon_signup.acf76b99.svg"
   },
@@ -172,12 +176,12 @@ self.__precacheManifest = [
     "url": "/static/media/layout-login__card_blue.3c005a78.svg"
   },
   {
-    "revision": "098192f2c1d3d43f63e1dab2593f9728",
-    "url": "/static/media/icon_gauth.098192f2.svg"
-  },
-  {
     "revision": "c285dbfcc4b39df4d970520c2a21200d",
     "url": "/static/media/layout-login__card_pink.c285dbfc.svg"
+  },
+  {
+    "revision": "75ae74a0ae0a78fe0a611b434d852b31",
+    "url": "/static/media/layout-login__card_purple.75ae74a0.svg"
   },
   {
     "revision": "e46088ee064d9a17bcb35ef348060db6",
@@ -186,10 +190,6 @@ self.__precacheManifest = [
   {
     "revision": "a0a692d9ca8039ea02d145f0c18f392e",
     "url": "/static/media/layout-login__card_black.a0a692d9.svg"
-  },
-  {
-    "revision": "75ae74a0ae0a78fe0a611b434d852b31",
-    "url": "/static/media/layout-login__card_purple.75ae74a0.svg"
   },
   {
     "revision": "68ea8bef9ad86ceecf9dd63c104397a7",
@@ -213,19 +213,19 @@ self.__precacheManifest = [
   },
   {
     "revision": "efddd1f4c765109d7bafa809364de39c",
-    "url": "/static/media/buoycons.efddd1f4.woff"
+    "url": "/static/media/buoycons.efddd1f4.eot"
   },
   {
     "revision": "d76a46f2084fef124993be048228cb1c",
     "url": "/static/media/buoycons.d76a46f2.ttf"
   },
   {
-    "revision": "efddd1f4c765109d7bafa809364de39c",
-    "url": "/static/media/buoycons.efddd1f4.eot"
-  },
-  {
     "revision": "3e6502693184d52055fbac8f3bf3b6d7",
     "url": "/static/media/proximanova-regular-webfont.3e650269.woff"
+  },
+  {
+    "revision": "efddd1f4c765109d7bafa809364de39c",
+    "url": "/static/media/buoycons.efddd1f4.woff"
   },
   {
     "url": "/static/media/info-icon-8784a0dbabafa3ae29133717d221ccd1.8784a0db.svg"
@@ -238,14 +238,17 @@ self.__precacheManifest = [
     "url": "/static/media/proximanova-regular-webfont.0af7d745.ttf"
   },
   {
-    "url": "/static/media/error-icon-57c1f4e634cf39efc62c981b2d5b39a8.57c1f4e6.svg"
-  },
-  {
     "revision": "2db7208012d67221dca01dd0832ddeba",
     "url": "/static/media/sprites.2db72080.png"
   },
   {
+    "url": "/static/media/error-icon-57c1f4e634cf39efc62c981b2d5b39a8.57c1f4e6.svg"
+  },
+  {
     "url": "/static/media/external-link-41ecf45824c75eda965b3f0fecf5e187.41ecf458.svg"
+  },
+  {
+    "url": "/static/media/warning-icon-58608039fefce11db496f91aff858e0d.58608039.svg"
   },
   {
     "url": "/static/media/external-link--blue-761205eecce377e9c181c4984b63029d.761205ee.svg"
@@ -257,13 +260,10 @@ self.__precacheManifest = [
     "url": "/static/media/k8s-hero-bg-e20aea7aeeb95c52715afe5fe4ff25ab.e20aea7a.png"
   },
   {
-    "url": "/static/media/warning-icon-58608039fefce11db496f91aff858e0d.58608039.svg"
-  },
-  {
     "url": "/static/media/receipt-graphic-b9c1bf721f66a2894eede5db2ee4ffc6.b9c1bf72.svg"
   },
   {
-    "revision": "9e1df90c2e56927bf0aa3aaed79bab5f",
+    "revision": "9c985a32a8f4c62c752ca3b2a66bf5d4",
     "url": "/index.html"
   }
 ];
