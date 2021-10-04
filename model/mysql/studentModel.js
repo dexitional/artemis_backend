@@ -52,6 +52,11 @@ module.exports.Student = {
       return res;
    },
 
+   findEmail : async (email) => {
+      const res = await db.query("select * from ais.student where s.institute_mail = '"+email+"'");
+      return res;
+   },
+   
    insertStudentProfile : async (data) => {
       const res = await db.query("insert into ais.student set ?", data);
       return res;

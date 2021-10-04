@@ -9,11 +9,11 @@ const apiLogger = (action) => {
     return async (req, res, next) => {
         const api = req.query.api
         const refno = req.params.refno
-        const body = req.body
+        const dm = req.body
         var dt = {}
         if(refno) dt.studentId = refno
         if(api) dt.apiToken = api
-        if(body && Object.keys(body).length > 0) dt.data = body
+        if(dm && Object.keys(dm).length > 0) dt.data = dm
         const log = await SSO.apilogger(parseIp(req),action,dt)
         return next();
     }  

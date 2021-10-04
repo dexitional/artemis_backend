@@ -1,6 +1,11 @@
 var express = require('express');
 var Router = express.Router();
+const db = require('../config/mysql')
 var jwt = require('jsonwebtoken');
+const sha1 = require('sha1')
+const { customAlphabet } = require('nanoid')
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
+
 /* Controllers */
 var ApplicantController = require('../controller/admission/applicantController');
 var SSOController = require('../controller/admission/ssoController');
@@ -54,9 +59,58 @@ Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
 
 // STUDENT routes
 Router.get('/ais/students/', SSOController.fetchStudents);
-Router.post('/ais/vouchers', SSOController.postVoucher);
-Router.delete('/ais/vouchers/:id', SSOController.deleteVoucher);
-Router.post('/ais/recovervoucher', SSOController.recoverVoucher);
+Router.post('/ais/students', SSOController.postStudentAIS);
+Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
+Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
+Router.get('/ais/genmail/:refno', SSOController.generateMail);
+Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
+//Router.post('/ais/students', SSOController.recoverVoucher);
+
+
+/* FMS MODULE ROUTES */
+
+// BILLS routes
+Router.get('/fms/sbills/', SSOController.fetchBills);
+Router.get('/fms/sbills/:bid', SSOController.fetchBill);
+Router.post('/fms/sbills', SSOController.postBill);
+Router.delete('/fms/sbills/:id', SSOController.deleteBill);
+Router.post('/fms/sendbill', SSOController.sendBill);
+
+
+/* HELPERS */
+Router.get('/fms/helpers', SSOController.fetchFMShelpers);
+Router.get('/ais/helpers', SSOController.fetchAIShelpers);
+
+
+// SCRIPTS
+Router.get('/setupstaffno', async(req,res)=>{
+     const ss = await db.query("select * from hrs.staff order by lname asc")
+     console.log(ss)
+     if(ss.length > 0){
+       var count = 1000;
+       for(var s of ss){
+          await db.query("update hrs.staff set staff_no = "+count+" where id = "+s.id)
+          count++
+       }  
+     } res.json(ss)
+});
+
+Router.get('/setupstaffaccess', async(req,res)=>{
+    const ss = await db.query("select phone,inst_mail,staff_no from hrs.staff where phone is not NULL and inst_mail is not null")
+    console.log(ss)
+    if(ss.length > 0){
+      var count = 1000;
+      for(var s of ss){
+         const pwd = nanoid()
+         console.log(pwd)
+         const ins = await db.query("insert into identity.user set ?",{group_id:02,tag:s.staff_no,username:s.inst_mail.trim(),password:sha1(pwd)})
+         if(ins.insertId > 0){
+            await db.query("insert into identity.photo set ?",{group_id:02,tag:s.staff_no,uid:ins.insertId,path:'./public/cdn/photo/none.png'})
+         }
+         setTimeout(()=> console.log('delay of 300ms'),3000)
+      }  
+    } res.json(ss)
+});
 
 
 module.exports = Router;

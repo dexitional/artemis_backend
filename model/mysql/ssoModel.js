@@ -84,6 +84,13 @@ module.exports.SSO = {
       return res;
    },
 
+   insertSSOUser : async (data) => {
+      const sql = "insert into identity.user set ?";
+      const res = await db.query(sql,data);
+      return res;
+   },
+   
+
    logger : async (uid,action,meta) => {
       const data = { uid, title: action, meta: JSON.stringify(meta) }
       const res = await db.query("insert into identity.`activity` set ?", data);
@@ -304,6 +311,20 @@ module.exports.SSO = {
          data: res,
       }
    },
+   insertAISStudent : async (data) => {
+      const res = await db.query("insert into ais.student set ?", data);
+      return res;
+   },
+
+   updateAISStudent : async (id,data) => {
+      const res = await db.query("update ais.student set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISStudent : async (id) => {
+      const res = await db.query("delete from ais.student where id = "+id);
+      return res;
+   },
 
 
    // TRANSACTION - FMS
@@ -313,6 +334,135 @@ module.exports.SSO = {
       return res;
    },
 
+   
+   // BILLS - FMS
+   
+   fetchBills : async (page,keyword) => {
+      var sql = "select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id"
+      var cql = "select count(*) as total from fms.billinfo b";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+          cql += ` where b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+      }
 
+      sql += ` order by b.bid desc,b.narrative asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+   fetchBill : async (id) => {
+      const res = await db.query("select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id where bid = "+id);
+      return res;
+   },
+
+   fetchItemsByBid: async (id) => {
+      const res = await db.query("select b.* from fms.billitem b where find_in_set('"+id+"',bid) > 0 and status = 1");
+      return res;
+   },
+
+   insertBill : async (data) => {
+      const res = await db.query("insert into fms.billinfo set ?", data);
+      return res;
+   },
+
+   updateBill : async (id,data) => {
+      const res = await db.query("update fms.billinfo set ? where bid = "+id,data);
+      return res;
+   },
+
+   deleteBill : async (id) => {
+      const res = await db.query("delete from fms.billinfo where bid = "+id);
+      return res;
+   },
+
+   sendStudentBillGh : async (bid,bname,amount,prog_id,sem) => {
+      var count = 0;
+      const sess = await db.query("select id from utility.session where mode_id = 1 and `default` = 1");
+      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.prog_id  = "+prog_id+" and find_in_set(s.semester,'"+sem+"') > 0");
+      if(sts.length > 0){
+         for(var st of sts){
+            const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess[0].id})
+            if(ins.insertId > 0) count++;
+         }
+      }
+      return count;
+   },
+
+   sendStudentBillInt : async (bid,bname,amount,sem) => {
+      var count = 0;
+      const sess = await db.query("select id from utility.session where mode_id = 1 and `default` = 1");
+      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.entry_mode = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
+      if(sts.length > 0){
+         for(var st of sts){
+            const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess[0].id})
+            if(ins.insertId > 0) count++;
+         }
+      }
+      return count;
+   },
+
+
+   // BILL ITEMS - FMS
+
+   fetchBillItems : async (page,keyword) => {
+      var sql = "select b.* from fms.billitem i left join fms.billinfo b on find_in_set(b.bid,i.bid) > 0"
+      var cql = "select count(*) as total from fms.billitem i left join fms.billinfo b on find_in_set(b.bid,i.bid) > 0";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where i.narrative like '%${keyword}%' or b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+          cql += ` where i.narrative like '%${keyword}%' or b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+      }
+
+      sql += ` order by i.narrative asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+
+   // HELPERS
+
+   fetchFMShelpers : async () => {
+      const progs = await db.query("select * from utility.program where status = 1");
+      //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
+      if(progs && progs.length > 0) return { programs:progs }
+      return null;
+   },
+
+   fetchAIShelpers : async () => {
+      const progs = await db.query("select * from utility.program where status = 1");
+      const majs = await db.query("select * from ais.major where status = 1");
+      //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
+      if(progs && majs) return { programs:progs,majors:majs }
+      return null;
+   },
+
+   
 };
 

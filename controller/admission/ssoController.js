@@ -23,6 +23,50 @@ const decodeBase64Image = (dataString) => {
   return response;
 }
 
+const getTargetGroup = (group_code) => {
+   var yr
+   switch(group_code){
+     case '1000':  yr = `Year 1 Only`; break;
+     case '0100':  yr = `Year 2 Only`; break;
+     case '0010':  yr = `Year 3 Only`; break;
+     case '0001':  yr = `Year 4 Only`; break;
+     case '1100':  yr = `Year 1 & Year 2`; break;
+     case '1010':  yr = `Year 1 & Year 3`; break;
+     case '1001':  yr = `Year 1 & Year 4`; break;
+     case '1110':  yr = `Year 1,Year 2 & Year 3`; break;
+     case '1101':  yr = `Year 1,Year 2 & Year 4`; break;
+     case '1111':  yr = `Year 1,Year 2,Year 3 & Year 4`; break;
+     case '0000':  yr = `International students`; break;
+     default: yr = `International students`; break;
+   }
+   return yr
+}
+
+const getSemestersByCode = (group_code) => {
+  console.log(group_code)
+  var yr
+  switch(group_code){
+    case '1000':  yr = `1,2`; break;
+    case '0100':  yr = `3,4`; break;
+    case '0010':  yr = `5,6`; break;
+    case '0001':  yr = `7,8`; break;
+    case '0011':  yr = `5,6,7,8`; break;
+    case '0101':  yr = `3,4,7,8`; break;
+    case '0110':  yr = `3,4,5,6`; break;
+    case '0111':  yr = `3,4,5,6,7,8`; break;
+    case '1011':  yr = `1,2,5,6,7,8`; break;
+    case '1100':  yr = `1,2,3,4`; break;
+    case '1010':  yr = `1,2,5,6`; break;
+    case '1001':  yr = `1,2,7,8`; break;
+    case '1110':  yr = `1,2,3,4,5,6`; break;
+    case '1101':  yr = `1,2,3,4,7,8`; break;
+    case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
+    case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
+  }
+  console.log(yr)
+  return yr
+}
+
 module.exports = {
  
   authenticateUser : async (req,res) => {
@@ -561,20 +605,19 @@ fetchStudents : async (req,res) => {
 },
 
 
-postVoucher : async (req,res) => {
+postStudentAIS : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.major_id == '') delete req.body.major_id
+    if(req.body.prog_id == '') delete req.body.prog_id
+    if(req.body.dob == '') delete req.body.dob
+    delete req.body.uid;delete req.body.flag_locked;
+    delete req.body.flag_disabled;delete req.body.program_name;
+    delete req.body.major_name;delete req.body.name;
+    console.log(req.body)
     try{
-      const { session_id,quantity,group_id,sell_type,vendor_id,created_by } = req.body;
-      var resp
-      if(session_id && session_id > 0){ 
-        var lastIndex = await SSO.getLastVoucherIndex(session_id)
-        if(quantity > 0){
-          for(var i = 1; i <= quantity; i++){
-            let dt = { serial: lastIndex+i, pin: nanoid(),session_id,group_id,sell_type,vendor_id,created_by}
-            resp = await SSO.insertVoucher(dt);
-          }
-        }
-      }
-
+      var resp = id <= 0 ? await SSO.insertAISStudent(req.body) : await SSO.updateAISStudent(id,req.body) ;
+      console.log(resp)
       if(resp){
         res.status(200).json({success:true, data:resp});
       }else{
@@ -586,7 +629,7 @@ postVoucher : async (req,res) => {
     }
 },
 
-deleteVoucher : async (req,res) => {
+deleteStudentAIS : async (req,res) => {
   try{
       const { id } = req.params;
       var resp = await SSO.deleteVoucher(id);
@@ -600,6 +643,83 @@ deleteVoucher : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+resetAccount : async (req,res) => {
+  try{
+      const { refno } = req.params;
+      const pwd = nanoid()
+      var resp = await Student.fetchStudentProfile(refno);
+      const ups = await SSO.updateUserByEmail(resp[0].institute_email,{password:sha1(pwd)})
+      const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+      const sm = sms(resp[0].phone,msg)
+      if(ups){
+          res.status(200).json({success:true, data:msg});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+stageAccount : async (req,res) => {
+  try{
+      const { refno } = req.params;
+      const pwd = nanoid()
+      var resp = await Student.fetchStudentProfile(refno);
+      if(resp && resp.length > 0){
+         if(!resp[0].institute_email && !resp[0].phone){
+            const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
+            if(ups){
+                const pic = await SSO.insertPhoto({ uid:ups.insertId,username:resp[0].institute_email,group_id:1,tag:refno,path:'./public/cdn/photo/none.png'})
+                const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+                const sm = sms(resp[0].phone,msg)
+              
+                res.status(200).json({success:true, data:msg});
+            }else{
+                res.status(200).json({success:false, data: null, msg:"Action failed!"});
+            }
+         }else{
+            res.status(200).json({success:false, data: null, msg:"Please update institutional Email!"});
+         }
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+generateMail : async (req,res) => {
+  try{
+      const { refno } = req.params;
+      const pwd = nanoid()
+      var resp = await Student.fetchStudentProfile(refno);
+      var ups;
+      var email;
+      if(resp && resp.length > 0){
+          const username = `${resp[0].fname.replace('/\ /g').toLowerCase()}.${resp[0].lname.trim().replace('/\ /g').split('-')[0].toLowerCase()}`
+            email = `${username}@st.aucc.edu.gh`
+          const isExist = await Student.findEmail(email)
+          if(isExist && isExist.length > 0){
+            email = `${username}${isExist.length+1}@st.aucc.edu.gh`
+            ups = await Student.updateStudentProfile(refno,{ institute_email:email })
+          }else{
+            ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
+          }
+      }
+     
+      if(ups){
+          res.status(200).json({success:true, data:email});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 
 recoverVoucher : async (req,res) => {
   try{
@@ -635,7 +755,129 @@ recoverVoucher : async (req,res) => {
 },
 
 
-  
+
+// BILLS CONTROLS - FMS
+
+fetchBills : async (req,res) => {
+  try{
+    const page = req.query.page;
+    const keyword = req.query.keyword;
+    var bills = await SSO.fetchBills(page,keyword);
+    if(bills && bills.data.length > 0){
+      res.status(200).json({success:true, data:bills});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+fetchBill : async (req,res) => {
+  try{
+      const bid = req.params.bid;
+      var bill = await SSO.fetchBill(bid);
+      var items = await SSO.fetchItemsByBid(bid)
+     
+      if(bill && bill.length > 0){
+        res.status(200).json({success:true, data:{ data:bill[0],items }});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postBill : async (req,res) => {
+    const { bid } = req.body;
+    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
+    try{
+      var resp = bid <=0 ? await SSO.insertBill(dt) : await SSO.updateBill(bid,dt) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteBill : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteBill(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+sendBill : async (req,res) => {
+  try{
+    const { id } = req.body;
+    var bl = await SSO.fetchBill(id);
+    var b = bl[0];
+    const sem = getSemestersByCode(b.group_code)
+    var count;
+    if(b.post_status == 0){
+         if(b.post_type == 'GH'){
+            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem)
+         }else if(b.post_type == 'INT'){
+            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem)
+         }
+    }
+    if(count){
+      const su = await SSO.updateBill(b.bid,{post_status:1})
+      console.log(su)
+      res.status(200).json({success:true, data:count});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Bill not posted"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+
+// HELPERS 
+
+
+fetchFMShelpers : async (req,res) => {
+  try{
+    const hp = await SSO.fetchFMShelpers();
+    res.status(200).json({success:true, data:hp});
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+fetchAIShelpers : async (req,res) => {
+  try{
+    const hp = await SSO.fetchAIShelpers();
+    res.status(200).json({success:true, data:hp});
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
 
 
    
