@@ -446,6 +446,92 @@ module.exports.SSO = {
    },
 
 
+   // FEE PAYMENTS - FMS
+   
+   fetchPayments : async (page,keyword) => {
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name from fms.transaction t left join ais.student s on s.refno = t.refno"
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
+          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
+      }
+
+      sql += ` order by t.id desc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+   fetchPayment : async (id) => {
+      const res = await db.query("select * from fms.transaction where id = "+id);
+      return res;
+   },
+
+   fetchItemsByBid: async (id) => {
+      const res = await db.query("select b.* from fms.billitem b where find_in_set('"+id+"',bid) > 0 and status = 1");
+      return res;
+   },
+
+   insertPayment : async (data) => {
+      const res = await db.query("insert into fms.transaction set ?", data);
+      return res;
+   },
+
+   updatePayment : async (id,data) => {
+      const res = await db.query("update fms.transaction set ? where id = "+id,data);
+      return res;
+   },
+
+   deletePayment : async (id) => {
+      const res = await db.query("delete from fms.transaction where id = "+id);
+      return res;
+   },
+
+   updateStudFinance : async (tid,refno,amount) => {
+      const fin = await db.query("select * fms.studtrans where tid = "+tid);
+      const dt = { tid,amount,refno,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
+      var resp;
+      var fid;
+      if(fin && fin.length > 0){
+         resp = await db.query("update fms.studtrans set ? where tid = "+tid,dt);
+         fid = resp && fin[0].id
+      }else{r
+         resp = await db.query("insert into fms.studtrans set ?",dt);
+         fid = resp && resp.insertId
+      }
+      return fid;
+   },
+
+   verifyFeesQuota : async (refno) => {
+      const fin = await db.query("select * fms.studtrans where tid = "+tid);
+      const dt = { tid,amount,refno,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
+      var resp;
+      var fid;
+      if(fin && fin.length > 0){
+         resp = await db.query("update fms.studtrans set ? where tid = "+tid,dt);
+         fid = resp && fin[0].id
+      }else{r
+         resp = await db.query("insert into fms.studtrans set ?",dt);
+         fid = resp && resp.insertId
+      }
+      return fid;
+   },
+
+
+
    // HELPERS
 
    fetchFMShelpers : async () => {

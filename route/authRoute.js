@@ -10,7 +10,6 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 var ApplicantController = require('../controller/admission/applicantController');
 var SSOController = require('../controller/admission/ssoController');
 
-
 /* Voucher Recovery */
 //Router.post('/auth/voucher', AuthController.verifyVoucher);
 /* Developer & Vendor API */
@@ -76,6 +75,15 @@ Router.post('/fms/sbills', SSOController.postBill);
 Router.delete('/fms/sbills/:id', SSOController.deleteBill);
 Router.post('/fms/sendbill', SSOController.sendBill);
 
+// FEE PAYMENTS routes
+Router.get('/fms/feestrans/', SSOController.fetchPayments);
+Router.get('/fms/feestrans/:bid', SSOController.fetchPayment);
+Router.post('/fms/feestrans', SSOController.postPayment);
+Router.delete('/fms/feestrans/:id', SSOController.deletePayment);
+Router.post('/fms/sfeestrans', SSOController.sendBill);
+
+
+
 
 /* HELPERS */
 Router.get('/fms/helpers', SSOController.fetchFMShelpers);
@@ -112,23 +120,8 @@ Router.get('/setupstaffaccess', async(req,res)=>{
     } res.json(ss)
 });
 
+Router.get('/loadfreshers', SSOController.loadFresher)  // LOAD FRESHERS
 
-Router.get('/loadfreshers', async(req,res)=>{
-   const ss = await db.query("select phone,inst_mail,staff_no from hrs.staff where phone is not NULL and inst_mail is not null")
-   console.log(ss)
-   if(ss.length > 0){
-     var count = 1000;
-     for(var s of ss){
-        const pwd = nanoid()
-        console.log(pwd)
-        const ins = await db.query("insert into identity.user set ?",{group_id:02,tag:s.staff_no,username:s.inst_mail.trim(),password:sha1(pwd)})
-        if(ins.insertId > 0){
-           await db.query("insert into identity.photo set ?",{group_id:02,tag:s.staff_no,uid:ins.insertId,path:'./public/cdn/photo/none.png'})
-        }
-        setTimeout(()=> console.log('delay of 300ms'),3000)
-     }  
-   } res.json(ss)
-});
 
 
 module.exports = Router;

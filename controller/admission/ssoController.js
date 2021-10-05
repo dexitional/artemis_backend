@@ -9,6 +9,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const digit = customAlphabet('1234567890', 4)
 const mailer = require('../../config/email')
 const sms = require('../../config/sms')
+const db = require('../../config/mysql')
 
 const { SSO } = require('../../model/mysql/ssoModel');
 const { Admission } = require('../../model/mysql/admissionModel');
@@ -23,72 +24,74 @@ const decodeBase64Image = (dataString) => {
   return response;
 }
 
-const getTargetGroup = (group_code) => {
-   var yr
-   switch(group_code){
-     case '1000':  yr = `Year 1 Only`; break;
-     case '0100':  yr = `Year 2 Only`; break;
-     case '0010':  yr = `Year 3 Only`; break;
-     case '0001':  yr = `Year 4 Only`; break;
-     case '1100':  yr = `Year 1 & Year 2`; break;
-     case '1010':  yr = `Year 1 & Year 3`; break;
-     case '1001':  yr = `Year 1 & Year 4`; break;
-     case '1110':  yr = `Year 1,Year 2 & Year 3`; break;
-     case '1101':  yr = `Year 1,Year 2 & Year 4`; break;
-     case '1111':  yr = `Year 1,Year 2,Year 3 & Year 4`; break;
-     case '0000':  yr = `International students`; break;
-     default: yr = `International students`; break;
-   }
-   return yr
-}
 
-const getSemestersByCode = (group_code) => {
-  console.log(group_code)
+const getTargetGroup = (group_code) => {
   var yr
   switch(group_code){
-    case '1000':  yr = `1,2`; break;
-    case '0100':  yr = `3,4`; break;
-    case '0010':  yr = `5,6`; break;
-    case '0001':  yr = `7,8`; break;
-    case '0011':  yr = `5,6,7,8`; break;
-    case '0101':  yr = `3,4,7,8`; break;
-    case '0110':  yr = `3,4,5,6`; break;
-    case '0111':  yr = `3,4,5,6,7,8`; break;
-    case '1011':  yr = `1,2,5,6,7,8`; break;
-    case '1100':  yr = `1,2,3,4`; break;
-    case '1010':  yr = `1,2,5,6`; break;
-    case '1001':  yr = `1,2,7,8`; break;
-    case '1110':  yr = `1,2,3,4,5,6`; break;
-    case '1101':  yr = `1,2,3,4,7,8`; break;
-    case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
-    case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
+    case '1000':  yr = `Year 1 Only`; break;
+    case '0100':  yr = `Year 2 Only`; break;
+    case '0010':  yr = `Year 3 Only`; break;
+    case '0001':  yr = `Year 4 Only`; break;
+    case '1100':  yr = `Year 1 & Year 2`; break;
+    case '1010':  yr = `Year 1 & Year 3`; break;
+    case '1001':  yr = `Year 1 & Year 4`; break;
+    case '1110':  yr = `Year 1,Year 2 & Year 3`; break;
+    case '1101':  yr = `Year 1,Year 2 & Year 4`; break;
+    case '1111':  yr = `Year 1,Year 2,Year 3 & Year 4`; break;
+    case '0000':  yr = `International students`; break;
+    default: yr = `International students`; break;
   }
-  console.log(yr)
   return yr
 }
 
+const getSemestersByCode = (group_code) => {
+ console.log(group_code)
+ var yr
+ switch(group_code){
+   case '1000':  yr = `1,2`; break;
+   case '0100':  yr = `3,4`; break;
+   case '0010':  yr = `5,6`; break;
+   case '0001':  yr = `7,8`; break;
+   case '0011':  yr = `5,6,7,8`; break;
+   case '0101':  yr = `3,4,7,8`; break;
+   case '0110':  yr = `3,4,5,6`; break;
+   case '0111':  yr = `3,4,5,6,7,8`; break;
+   case '1011':  yr = `1,2,5,6,7,8`; break;
+   case '1100':  yr = `1,2,3,4`; break;
+   case '1010':  yr = `1,2,5,6`; break;
+   case '1001':  yr = `1,2,7,8`; break;
+   case '1110':  yr = `1,2,3,4,5,6`; break;
+   case '1101':  yr = `1,2,3,4,7,8`; break;
+   case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
+   case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
+ }
+ console.log(yr)
+ return yr
+}
+
 const getUsername = (fname,lname) => {
-   var username,fr,lr;
-   let fs = fname ? fname.trim().split(' '):null
-   let ls = lname ? lname.trim().split(' '):null
-   if(fs && fs.length > 0){
-     for(var i = 0; i < fs.length; i++){
-        if(i == 0) fr = fs[i].trim()
+  var username,fr,lr;
+  let fs = fname ? fname.trim().split(' '):null
+  let ls = lname ? lname.trim().split(' '):null
+  if(fs && fs.length > 0){
+    for(var i = 0; i < fs.length; i++){
+       if(i == 0) fr = fs[i].trim()
+    }
+  }
+  if(ls && ls.length > 0){
+     for(var i = 0; i < ls.length; i++){
+       if(i == ls.length-1) lr = (ls[i].split('-')[0].trim()).split('.').join("")
      }
    }
-   if(ls && ls.length > 0){
-      for(var i = 0; i < ls.length; i++){
-        if(i == ls.length-1) lr = ls[i].split('-')[0].trim()
-      }
-    }
-    if(!lr && fs.length > 1) lr = fs[1] 
-    if(!fr && ls.length > 1){
-       fr = fs[1].trim()
-       lr = ls[ls.length-1].split('-')[0].trim()
-    } 
+   if(!lr && fs.length > 1) lr = (fs[fs.length-1].split('-')[0].trim()).split('.').join("") 
+   if(!fr && ls.length > 1){
+      fr = (fs[1].trim()).split('.').join("")
+      lr = (ls[ls.length-1].split('-')[0].trim()).split('.').join("")
+   } 
 
-    return `${fr}.${lr}`.toLowerCase();
+   return `${fr}.${lr}`.toLowerCase();
 }
+
 
 module.exports = {
  
@@ -692,20 +695,20 @@ stageAccount : async (req,res) => {
       const { refno } = req.params;
       const pwd = nanoid()
       var resp = await Student.fetchStudentProfile(refno);
+      console.log(resp)
       if(resp && resp.length > 0){
-         if(!resp[0].institute_email && !resp[0].phone){
+         if(resp[0].institute_email && resp[0].phone){
             const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
             if(ups){
-                const pic = await SSO.insertPhoto({ uid:ups.insertId,username:resp[0].institute_email,group_id:1,tag:refno,path:'./public/cdn/photo/none.png'})
+                const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/photo/none.png')
                 const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
                 const sm = sms(resp[0].phone,msg)
-              
                 res.status(200).json({success:true, data:msg});
             }else{
                 res.status(200).json({success:false, data: null, msg:"Action failed!"});
             }
          }else{
-            res.status(200).json({success:false, data: null, msg:"Please update institutional Email!"});
+            res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
          }
       }
   }catch(e){
@@ -724,7 +727,7 @@ generateMail : async (req,res) => {
       
       if(resp && resp.length > 0){
           //const username = `${resp[0].fname ? resp[0].fname.split(' ')[0].replace('/\-/g').toLowerCase():''}.${resp[0].lname ? (resp[0].lname.split('-').length > 0 ? resp[0].lname.split('-')[0].replace('/\ /g').toLowerCase() : ''):''}`
-          const username = getUsername(resp[0].fname,resp[0].lname)
+          const username = getUsernam(resp[0].fname,resp[0].lname)
           email = `${username}@st.aucc.edu.gh`
           const isExist = await Student.findEmail(email)
           console.log(email)
@@ -747,6 +750,56 @@ generateMail : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+
+loadFresher  : async (req,res) => {
+  try{
+      
+    const sm = await db.query("insert into ais.student(refno,fname,disability,prog_id,major_id,doa) select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa from ais.student_new")
+    const ss = await db.query("select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa from ais.student_new")
+    console.log(sm)
+    var count = 0
+    if(ss.length > 0 && sm){
+      for(var s of ss){
+          var ups;
+          var email;
+          var eCount = 2;
+
+          const username = getUsername(s.fname,s.lname)
+          email = `${username}@st.aucc.edu.gh`
+          
+          while(true){
+             const isStudExist = await Student.findEmail(email)
+             const isUserExist = await Student.findUserEmail(email)
+             if((isStudExist && isStudExist.length > 0) || (isUserExist && isUserExist.length > 0)){
+                email = `${username}${eCount}@st.aucc.edu.gh`
+                eCount++;
+             }else{
+                break;
+             }
+          }
+          console.log(email)
+          //email = (isExist && isExist.length > 0) ? `${username}${isExist.length+1}@st.aucc.edu.gh` : email
+          const pwd = nanoid()
+          const ins = await db.query("insert into identity.user set ?",{group_id:01,tag:s.refno,username:email,password:sha1(pwd)})
+          if(ins.insertId){
+            ups = await Student.updateStudentProfile(s.refno,{ institute_email:email }) 
+            count++
+          }
+          setTimeout(()=> console.log(`delay of 300ms`),300)
+      }  
+      res.status(200).json({success:true, data:count});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Action failed!"});
+    }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
 
 
 recoverVoucher : async (req,res) => {
@@ -854,6 +907,120 @@ deleteBill : async (req,res) => {
 },
 
 sendBill : async (req,res) => {
+  try{
+    const { id } = req.body;
+    var bl = await SSO.fetchBill(id);
+    var b = bl[0];
+    const sem = getSemestersByCode(b.group_code)
+    var count;
+    if(b.post_status == 0){
+         if(b.post_type == 'GH'){
+            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem)
+         }else if(b.post_type == 'INT'){
+            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem)
+         }
+    }
+    if(count){
+      const su = await SSO.updateBill(b.bid,{post_status:1})
+      console.log(su)
+      res.status(200).json({success:true, data:count});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Bill not posted"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+// FEE PAYMENTS CONTROLS - FMS
+
+fetchPayments : async (req,res) => {
+  try{
+    const page = req.query.page;
+    const keyword = req.query.keyword;
+    var payments = await SSO.fetchPayments(page,keyword);
+    if(payments && payments.data.length > 0){
+      res.status(200).json({success:true, data:payments});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+fetchPayment : async (req,res) => {
+  try{
+      const id = req.params.id;
+      var payment = await SSO.fetchPayment(id);
+      
+      if(bill && bill.length > 0){
+        res.status(200).json({success:true, data:{ data:bill[0],items }});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postPayment : async (req,res) => {
+    const { id,refno } = req.body;
+    let dt = {refno:req.body.refno,paydate:req.body.paydate,amount: req.body.amount,currency:req.body.currency,paytype:'BANK',collector_id:2,transtype_id:2,reference:'ACADEMIC FEES',transtag:'AUCC_FIN'}
+   
+    try{
+      const verifyRef = await Student.fetchStProfile(refno)
+      if(verifyRef && verifyRef.length > 0){
+        var tid;
+        var resp;
+        if(id <= 0){
+          resp = await SSO.insertPayment(dt)
+          tid = resp && resp.insertId;
+        }else{
+          resp = await SSO.updatePayment(id,dt);
+          tid = id
+        } 
+        console.log(`tid : ${tid}`)
+        if(resp){
+          // Update or Insert into Student Account
+          //const qt = await SSO.updateStudFinance(refno,(-1*parseInt(amount)))
+          // Check for Quota & Generate Indexno
+          // const qt = await SSO.verifyFeesQuota(refno)
+          res.status(200).json({success:true, data:resp});
+        }else{
+          res.status(200).json({success:false, data: null, msg:"Action Failed"});
+        }
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Student Doesn't Exist"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something Wrong Happened"});
+    }
+},
+
+deletePayment : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteBill(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+sendPayment : async (req,res) => {
   try{
     const { id } = req.body;
     var bl = await SSO.fetchBill(id);
