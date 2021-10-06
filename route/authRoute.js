@@ -77,10 +77,11 @@ Router.post('/fms/sendbill', SSOController.sendBill);
 
 // FEE PAYMENTS routes
 Router.get('/fms/feestrans/', SSOController.fetchPayments);
-Router.get('/fms/feestrans/:bid', SSOController.fetchPayment);
+Router.get('/fms/feestrans/:id', SSOController.fetchPayment);
 Router.post('/fms/feestrans', SSOController.postPayment);
 Router.delete('/fms/feestrans/:id', SSOController.deletePayment);
-Router.post('/fms/sfeestrans', SSOController.sendBill);
+Router.post('/fms/genindexno', SSOController.generateIndexNo);
+
 
 
 

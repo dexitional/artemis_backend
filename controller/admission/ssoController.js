@@ -636,11 +636,13 @@ postStudentAIS : async (req,res) => {
     //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
     if(req.body.major_id == '') delete req.body.major_id
     if(req.body.prog_id == '') delete req.body.prog_id
-    if(req.body.dob == ''){ delete req.body.dob}
+    if(req.body.dob == '' || !req.body.dob){ delete req.body.dob }
+    if(req.body.doa == '' || !req.body.doa){ delete req.body.doa }
+    if(req.body.doc == '' || !req.body.doc){ delete req.body.doc }
     else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
     delete req.body.uid;delete req.body.flag_locked;
     delete req.body.flag_disabled;delete req.body.program_name;
-    delete req.body.major_name;delete req.body.name;
+    delete req.body.major_name;delete req.body.name; delete req.body.doc;
     console.log(req.body)
     try{
       var resp = id <= 0 ? await SSO.insertAISStudent(req.body) : await SSO.updateAISStudent(id,req.body) ;
@@ -726,8 +728,7 @@ generateMail : async (req,res) => {
       var email;
       
       if(resp && resp.length > 0){
-          //const username = `${resp[0].fname ? resp[0].fname.split(' ')[0].replace('/\-/g').toLowerCase():''}.${resp[0].lname ? (resp[0].lname.split('-').length > 0 ? resp[0].lname.split('-')[0].replace('/\ /g').toLowerCase() : ''):''}`
-          const username = getUsernam(resp[0].fname,resp[0].lname)
+          const username = getUsername(resp[0].fname,resp[0].lname)
           email = `${username}@st.aucc.edu.gh`
           const isExist = await Student.findEmail(email)
           console.log(email)
@@ -755,7 +756,7 @@ generateMail : async (req,res) => {
 loadFresher  : async (req,res) => {
   try{
       
-    const sm = await db.query("insert into ais.student(refno,fname,disability,prog_id,major_id,doa) select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa from ais.student_new")
+    const sm = await db.query("insert into ais.student(refno,fname,disability,prog_id,major_id,doa,complete_status,semester) select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa,complete_status as 0,semester as 1 from ais.student_new")
     const ss = await db.query("select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa from ais.student_new")
     console.log(sm)
     var count = 0
@@ -958,8 +959,8 @@ fetchPayment : async (req,res) => {
       const id = req.params.id;
       var payment = await SSO.fetchPayment(id);
       
-      if(bill && bill.length > 0){
-        res.status(200).json({success:true, data:{ data:bill[0],items }});
+      if(payment && payment.length > 0){
+        res.status(200).json({success:true, data:payment});
       }else{
         res.status(200).json({success:false, data: null, msg:"No records!"});
       }
@@ -972,7 +973,7 @@ fetchPayment : async (req,res) => {
 
 postPayment : async (req,res) => {
     const { id,refno } = req.body;
-    let dt = {refno:req.body.refno,paydate:req.body.paydate,amount: req.body.amount,currency:req.body.currency,paytype:'BANK',collector_id:2,transtype_id:2,reference:'ACADEMIC FEES',transtag:'AUCC_FIN'}
+    let dt = {refno:req.body.refno,paydate:req.body.paydate,amount: req.body.amount,currency:req.body.currency,paytype:req.body.paytype,collector_id:2,transtype_id:2,reference:req.body.reference,bankacc_id:req.body.bankacc_id,transtag:'AUCC_FIN'}
    
     try{
       const verifyRef = await Student.fetchStProfile(refno)
@@ -986,12 +987,11 @@ postPayment : async (req,res) => {
           resp = await SSO.updatePayment(id,dt);
           tid = id
         } 
-        console.log(`tid : ${tid}`)
         if(resp){
           // Update or Insert into Student Account
-          //const qt = await SSO.updateStudFinance(refno,(-1*parseInt(amount)))
+          const qt = await SSO.updateStudFinance(tid,refno,(-1*parseInt(req.body.amount)))
           // Check for Quota & Generate Indexno
-          // const qt = await SSO.verifyFeesQuota(refno)
+          //const rt = await SSO.verifyFeesQuota(refno)
           res.status(200).json({success:true, data:resp});
         }else{
           res.status(200).json({success:false, data: null, msg:"Action Failed"});
@@ -1008,7 +1008,7 @@ postPayment : async (req,res) => {
 deletePayment : async (req,res) => {
   try{
       const { id } = req.params;
-      var resp = await SSO.deleteBill(id);
+      var resp = await SSO.deletePayment(id);
       if(resp){
           res.status(200).json({success:true, data:resp});
       }else{
@@ -1044,6 +1044,37 @@ sendPayment : async (req,res) => {
   }catch(e){
     console.log(e)
     res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+generateIndexNo : async (req,res) => {
+  try{
+      const refno = req.body.refno;
+      var indexNo = await SSO.generateIndexNo(refno);
+      var resp = await Student.fetchStProfile(refno);
+      var ups;
+      var email;
+      
+      if(resp && resp.length > 0){
+          const username = getUsername(resp[0].fname,resp[0].lname)
+          email = `${username}@st.aucc.edu.gh`
+          const isExist = await Student.findEmail(email)
+          if(isExist && isExist.length > 0){
+            email = `${username}${isExist.length+1}@st.aucc.edu.gh`
+            ups = await Student.updateStudentProfile(refno,{ institute_email:email })
+          }else{
+            ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
+          }
+      }
+      
+      if(indexNo && email){
+        res.status(200).json({success:true, data: { indexno: indexNo, email }});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
 

@@ -449,7 +449,7 @@ module.exports.SSO = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name from fms.transaction t left join ais.student s on s.refno = t.refno"
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id"
       var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno";
       
       const size = 10;
@@ -476,7 +476,7 @@ module.exports.SSO = {
    },
 
    fetchPayment : async (id) => {
-      const res = await db.query("select * from fms.transaction where id = "+id);
+      const res = await db.query("select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id where t.id = "+id);
       return res;
    },
 
@@ -496,19 +496,21 @@ module.exports.SSO = {
    },
 
    deletePayment : async (id) => {
+      const resm = await db.query("delete from fms.studtrans where tid = "+id);
       const res = await db.query("delete from fms.transaction where id = "+id);
       return res;
    },
 
    updateStudFinance : async (tid,refno,amount) => {
-      const fin = await db.query("select * fms.studtrans where tid = "+tid);
-      const dt = { tid,amount,refno,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
+      const st = await db.query("select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = "+refno);
+      const fin = await db.query("select * from fms.studtrans where tid = "+tid);
+      const dt = { tid,amount,refno,session_id:st && st[0].id,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
       var resp;
       var fid;
       if(fin && fin.length > 0){
          resp = await db.query("update fms.studtrans set ? where tid = "+tid,dt);
          fid = resp && fin[0].id
-      }else{r
+      }else{
          resp = await db.query("insert into fms.studtrans set ?",dt);
          fid = resp && resp.insertId
       }
@@ -516,7 +518,8 @@ module.exports.SSO = {
    },
 
    verifyFeesQuota : async (refno) => {
-      const fin = await db.query("select * fms.studtrans where tid = "+tid);
+      const st = await db.query("select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = "+refno);
+      const fin = await db.query("select * fms.studtrans where bill is not null and session_id = "+st[0].id);
       const dt = { tid,amount,refno,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
       var resp;
       var fid;
@@ -528,6 +531,40 @@ module.exports.SSO = {
          fid = resp && resp.insertId
       }
       return fid;
+   },
+
+   generateIndexNo : async (refno) => {
+      const st = await db.query("select x.id,p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = '"+refno+"'");
+      if(st && st.length > 0){
+         const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
+         var newIndex, resp, no;
+         const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
+         if(sm && sm.length > 0){
+            no = sm[0].prog_count+1;
+            var newNo;
+            switch(no.toString().length){
+               case 1: newNo = `00${no}`; break;
+               case 2: newNo = `0${no}`; break;
+               case 3: newNo = `${no}`; break;
+            }
+            newIndex = `${prefix}${newNo}`
+
+         }else{
+            no = 1
+            newIndex = `${prefix}00${no}`
+         }
+
+         while(true){
+            const sf = await db.query("select indexno from ais.student where indexno = '"+newIndex+"'");
+            if(sf && sf.length <= 0) break;
+            no++
+         }
+
+         resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no });
+         if(resp) return newIndex
+      }
+
+      return null;
    },
 
 
@@ -536,8 +573,9 @@ module.exports.SSO = {
 
    fetchFMShelpers : async () => {
       const progs = await db.query("select * from utility.program where status = 1");
+      const bankacc = await db.query("select * from fms.bankacc where status = 1");
       //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
-      if(progs && progs.length > 0) return { programs:progs }
+      if(progs && progs.length > 0) return { programs:progs, bankacc }
       return null;
    },
 
