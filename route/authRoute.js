@@ -63,7 +63,10 @@ Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
 Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
 Router.get('/ais/genmail/:refno', SSOController.generateMail);
 Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
-//Router.post('/ais/students', SSOController.recoverVoucher);
+
+// REGISTRATIONS routes
+Router.get('/ais/regdata/', SSOController.fetchRegsData);
+
 
 
 /* FMS MODULE ROUTES */

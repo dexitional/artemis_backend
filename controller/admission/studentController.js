@@ -160,7 +160,6 @@ module.exports = {
         const { session_id,scheme_id,semester,indexno,core,elective,trail } = req.body;
         var resp
         if(indexno){ 
-          //resp = await Student.updateStudentProfile(refno,req.body);
           var courses = []
           if(core && core.length > 0){ // Core
              for(var row of core){
@@ -186,6 +185,10 @@ module.exports = {
               }
             } 
           }
+          // Log Activity
+          const dm = { session_id, indexno:indexno, course_count:courses.length, credits_count: courses.reduce((acc,val) => acc+parseInt(val.credit),0), meta_dump: JSON.stringify(courses) }
+          const logReg = await Student.insertRegLog(dm);
+          
         }
         if(resp){
           res.status(200).json({success:true, data:resp});

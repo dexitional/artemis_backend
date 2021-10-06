@@ -122,9 +122,16 @@ module.exports.Student = {
    },
 
    insertRegData : async data => { // Core & Non-Major Electives
-      const res = await db.query("insert into ais.assessment set ? ", data);
+      const res = await db.query("insert into ais.assessment set ?", data);
       return res;
    },
+
+   insertRegLog : async data => { // Registration Logs
+      const res = await db.query("insert into ais.`activity_register` set ?", data);
+      return res;
+   },
+
+   
 
    // RESULTS MODELS
 

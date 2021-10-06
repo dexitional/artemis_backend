@@ -800,9 +800,6 @@ loadFresher  : async (req,res) => {
 },
 
 
-
-
-
 recoverVoucher : async (req,res) => {
   try{
     const { serial,email,phone } = req.body;
@@ -833,6 +830,25 @@ recoverVoucher : async (req,res) => {
   }catch(e){
     console.log(e)
     res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+// REGISTRATIONS
+fetchRegsData : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      
+      var regs = await SSO.fetchRegsData(page,keyword);
+      if(regs && regs.data.length > 0){
+        res.status(200).json({success:true, data:regs});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
 
