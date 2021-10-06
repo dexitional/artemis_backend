@@ -756,7 +756,7 @@ generateMail : async (req,res) => {
 loadFresher  : async (req,res) => {
   try{
       
-    const sm = await db.query("insert into ais.student(refno,fname,disability,prog_id,major_id,doa,complete_status,semester) select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa,complete_status as 0,semester as 1 from ais.student_new")
+    const sm = await db.query("insert into ais.student(refno,fname,disability,prog_id,major_id,doa,complete_status,semester) select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa,'0' as complete_status,'1' as semester from ais.student_new")
     const ss = await db.query("select refno,fname,disability,prog_id,major_id,'2021-09-01' as doa from ais.student_new")
     console.log(sm)
     var count = 0
