@@ -16,6 +16,7 @@ Router.get('/student/fetchstudentdata/:refno', StudentController.fetchStudentDat
 Router.post('/student/poststprofile', StudentController.postStudentData);
 // REGISTRATION routes
 Router.get('/student/semesterslip', StudentController.fetchStudentSlip);
+Router.get('/student/semregslip', StudentController.fetchStudentSlipAIS)
 Router.get('/student/semesterreg', StudentController.fetchStudentReg);
 Router.post('/student/semesterreg', StudentController.postStudentReg);
 // RESULTS routes

@@ -852,6 +852,22 @@ fetchRegsData : async (req,res) => {
   }
 },
 
+fetchRegsList : async (req,res) => {
+  const sid = req.params.sessionId
+  try{
+      var regs = await SSO.fetchRegsList(sid);
+      if(regs && regs.data.length > 0){
+        res.status(200).json({success:true, data:regs});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
 
 
 // BILLS CONTROLS - FMS

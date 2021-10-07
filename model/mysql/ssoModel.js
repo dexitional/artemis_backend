@@ -356,6 +356,17 @@ module.exports.SSO = {
       }
    },
 
+   fetchRegsList : async (session_id) => {
+      var data = []
+      const res = await db.query("select distinct r.indexno from ais.activity_register r where r.session_id = "+session_id);
+      if(res && res.length > 0){
+         for(var r of res){
+            const resm = await db.query("select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where r.indexno = '"+r.indexno+"' and r.session_id = "+session_id+" order by r.id desc limit 1");
+            if(resm && resm.length > 0) data.push(resm[0])
+         }
+      }
+      return data
+   },
 
    // TRANSACTION - FMS
   

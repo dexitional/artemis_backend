@@ -99,6 +99,24 @@ module.exports = {
           res.status(200).json({success:false, data: null, msg: "Something went wrong!"});
       }
   },
+  
+
+  fetchStudentSlipAIS : async (req,res) => {
+      const indexno = req.query.indexno
+      const session_id = req.query.session_id
+      try{
+          var user = await Student.fetchStudentProfile(indexno);
+          var slip = await Student.fetchStudentSlip(session_id,indexno);
+          if(slip && slip.length > 0){
+              res.status(200).json({success:true, data:{ regdata:slip, user: user && user[0] }});
+          }else{
+              res.status(200).json({success:true, data:[], msg:"No records!"});
+          }
+      }catch(e){
+          console.log(e)
+          res.status(200).json({success:false, data: null, msg: "Something went wrong!"});
+      }
+  },  
 
   fetchStudentReg : async (req,res) => {
       const refno = req.query.refno
