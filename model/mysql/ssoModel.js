@@ -329,17 +329,17 @@ module.exports.SSO = {
 
    // REGISTRATIONS - AIS
 
-   fetchRegsData : async (page,keyword) => {
-      var sql = "select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id"
-      var cql = "select count(*) as total from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id";
+   fetchRegsData : async (mode_id,page,keyword) => {
+      var sql = "select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where x.mode_id = "+mode_id
+      var cql = "select count(*) as total from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where x.mode_id = "+mode_id
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
-          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
+          sql += ` and (s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}')`
+          cql += ` and (s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}')`
       }
 
       sql += ` order by r.created_at`
@@ -367,6 +367,47 @@ module.exports.SSO = {
       }
       return data
    },
+
+   fetchMountList : async (session_no) => {
+      var data = []
+      var sql = "select distinct x.prog_id,x.major_id,x.semester,p.`short` as program_name,m.title as major_name,t.info from utility.`structure` x left join utility.program p on p.id = x.prog_id left join ais.major m on m.id = x.major_id left join utility.structmeta t on (t.prog_id=x.prog_id and x.semester = t.semester) "
+      sql += session_no == 1 ? "where mod(ceil(x.semester),2) = 1 ": "where mod(ceil(x.semester),2) = 0 " 
+      sql += "order by x.prog_id,x.semester,x.major_id"
+      console.log(sql)
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var r of res){
+            var dt = { program_name:r.program_name, major_name:r.major_name,semester:r.semester}
+            const info = JSON.parse(r.info)
+            if(info && info.length > 0){
+               for(var f of info){
+                  if(f.major_id == r.major_id){
+                     dt = f.major_id ? 
+                       {...dt, max_credit:f.max_credit, min_credit:f.min_credit, max_elective:f.max_elective } :
+                       {...dt, max_credit:f.max_credit, min_credit:f.min_credit }
+                       
+                  }
+               }
+            }
+            const resm = await db.query("select r.*,c.course_code,c.title as course_title,c.credit from utility.structure r left join utility.course c on c.id = r.course_id where r.prog_id = "+r.prog_id+" and r.semester = "+r.semester+" and (r.`type` = 'C' or (r.`type` = 'E' and r.major_id is null) or r.major_id = "+r.major_id+") order by r.type");
+            if(resm && resm.length > 0) dt.data = resm
+
+            data.push(dt)
+         }
+      }
+      return data
+   },
+
+   
+
+
+   // CALENDAR -AIS
+   
+   getActiveSessionByMode : async (mode_id) => {
+      const res = await db.query("select * from utility.session where `default` = 1  and mode_id = "+mode_id);
+      return res && res[0]
+   },
+
 
    // TRANSACTION - FMS
   

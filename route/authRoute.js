@@ -66,7 +66,8 @@ Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
 
 // REGISTRATIONS routes
 Router.get('/ais/regdata/', SSOController.fetchRegsData);
-Router.get('/ais/reglist/:sessionId', SSOController.fetchRegsList);
+Router.get('/ais/reglist/', SSOController.fetchRegsList);
+Router.get('/ais/regmount/', SSOController.fetchMountList);
 
 
 

@@ -840,7 +840,7 @@ fetchRegsData : async (req,res) => {
       const page = req.query.page;
       const keyword = req.query.keyword;
       
-      var regs = await SSO.fetchRegsData(page,keyword);
+      var regs = await SSO.fetchRegsData(01,page,keyword);
       if(regs && regs.data.length > 0){
         res.status(200).json({success:true, data:regs});
       }else{
@@ -853,11 +853,26 @@ fetchRegsData : async (req,res) => {
 },
 
 fetchRegsList : async (req,res) => {
-  const sid = req.params.sessionId
   try{
-      var regs = await SSO.fetchRegsList(sid);
-      if(regs && regs.data.length > 0){
-        res.status(200).json({success:true, data:regs});
+      var session = await SSO.getActiveSessionByMode(01)
+      var regs = await SSO.fetchRegsList(session.id);
+      if(regs && regs.length > 0){
+        res.status(200).json({success:true, data:{ regdata:regs, session } });
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+}, 
+
+fetchMountList : async (req,res) => {
+  try{
+      var session = await SSO.getActiveSessionByMode(01)
+      var regs = await SSO.fetchMountList(session.academic_sem);
+      if(regs && regs.length > 0){
+        res.status(200).json({success:true, data:{ data:regs, session } });
       }else{
         res.status(200).json({success:false, data: null, msg:"No records!"});
       }
@@ -866,6 +881,7 @@ fetchRegsList : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
+
 
 
 
