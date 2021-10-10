@@ -373,7 +373,6 @@ module.exports.SSO = {
       var sql = "select distinct x.prog_id,x.major_id,x.semester,p.`short` as program_name,m.title as major_name,t.info from utility.`structure` x left join utility.program p on p.id = x.prog_id left join ais.major m on m.id = x.major_id left join utility.structmeta t on (t.prog_id=x.prog_id and x.semester = t.semester) "
       sql += session_no == 1 ? "where mod(ceil(x.semester),2) = 1 ": "where mod(ceil(x.semester),2) = 0 " 
       sql += "order by x.prog_id,x.semester,x.major_id"
-      console.log(sql)
       const res = await db.query(sql);
       if(res && res.length > 0){
          for(var r of res){
@@ -391,7 +390,6 @@ module.exports.SSO = {
             }
             const resm = await db.query("select r.*,c.course_code,c.title as course_title,c.credit from utility.structure r left join utility.course c on c.id = r.course_id where r.prog_id = "+r.prog_id+" and r.semester = "+r.semester+" and (r.`type` = 'C' or (r.`type` = 'E' and r.major_id is null) or r.major_id = "+r.major_id+") order by r.type");
             if(resm && resm.length > 0) dt.data = resm
-
             data.push(dt)
          }
       }
