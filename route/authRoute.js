@@ -89,10 +89,20 @@ Router.delete('/fms/feestrans/:id', SSOController.deletePayment);
 Router.post('/fms/genindexno', SSOController.generateIndexNo);
 
 
+/* HRS MODULE ROUTES */
+
+// STUDENT routes
+Router.get('/hrs/hrstaff/', SSOController.fetchHRStaffDataHRS);
+Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
+Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
+Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
+Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
+Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);
 
 
 
 /* HELPERS */
+Router.get('/hrs/helpers', SSOController.fetchHRShelpers);
 Router.get('/fms/helpers', SSOController.fetchFMShelpers);
 Router.get('/ais/helpers', SSOController.fetchAIShelpers);
 

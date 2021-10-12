@@ -89,6 +89,12 @@ module.exports.SSO = {
       const res = await db.query(sql,data);
       return res;
    },
+
+   insertSSORole : async (data) => {
+      const sql = "insert into identity.user_role set ?";
+      const res = await db.query(sql,data);
+      return res;
+   },
    
 
    logger : async (uid,action,meta) => {
@@ -649,6 +655,83 @@ module.exports.SSO = {
 
 
 
+    // HRSTAFF - HRS MODELS
+
+    fetchHRStaff : async (page,keyword) => {
+      var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,ifnull(j.title,s.position) as designation,m.long_name as unit_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id"
+      var cql = "select count(*) as total from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.staff_no = '${keyword}' or s.staff_no = '${keyword}' or s.title like '${keyword}%' or j.title like '${keyword}%' or s.position like '${keyword}%'`
+          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.staff_no = '${keyword}' or s.staff_no = '${keyword}' or s.title like '${keyword}%' or j.title like '${keyword}%' or s.position like '${keyword}%'`
+      }
+
+      sql += ` order by s.staff_no asc,s.lname asc, s.fname asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+   insertHRStaff : async (data) => {
+      const res = await db.query("insert into hrs.staff set ?", data);
+      return res;
+   },
+
+   updateHRStaff : async (id,data) => {
+      const res = await db.query("update hrs.staff set ? where id = "+id,data);
+      return res;
+   },
+
+
+   deleteHRStaff : async (id) => {
+      const st = await db.query("select u.uid from hrs.staff s left join identity.user u on u.tag = s.staff_no where s.id = "+id);
+      var resp;
+      if(st && st.length > 0){
+         var res = await db.query("delete from identity.photo where uid = "+st[0].uid);
+         var res = await db.query("delete from identity.user where uid = "+st[0].uid);
+         var res = await db.query("delete from identity.user_role where uid = "+st[0].uid);
+         resp = await db.query("delete from hrs.staff where id = "+id);
+      }
+      return res;
+   },
+
+   getNewStaffNo : async () => {
+      const res = await db.query("select staff_no+1 as staff_no from hrs.staff where staff_no not in ('15666','16000') order by staff_no desc limit 1");
+      if(res && res.length > 0) return res[0].staff_no;
+      return null;
+   },
+
+   fetchStaffProfile : async (staff_no) => {
+      const res = await db.query("select s.*,x.long_name as unit_name,m.title as designation,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on u.tag = s.staff_no left join utility.unit x on s.unit_id = x.id left join hrs.job m on s.job_id = m.id  where s.staff_no = "+staff_no);
+      return res;
+   },
+
+   updateStaffProfile : async (staff_no,data) => {
+      const res = await db.query("update hrs.staff s set ? where s.staff_no = "+staff_no,data);
+      return res;
+   },
+
+   findEmail : async (email) => {
+      const res = await db.query("select * from hrs.staff where inst_mail = '"+email+"'");
+      return res;
+   },
+
+
+
+
+
+
    // HELPERS
 
    fetchFMShelpers : async () => {
@@ -664,6 +747,16 @@ module.exports.SSO = {
       const majs = await db.query("select * from ais.major where status = 1");
       //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
       if(progs && majs) return { programs:progs,majors:majs }
+      return null;
+   },
+
+   fetchHRShelpers : async () => {
+      const countries = await db.query("select * from utility.country where status = 1");
+      const regions = await db.query("select * from utility.region where status = 1");
+      const units = await db.query("select * from utility.unit where active = '1'");
+      const jobs = await db.query("select * from hrs.job where active = '1'");
+      //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
+      if(jobs && units) return { units,jobs,countries,regions }
       return null;
    },
 

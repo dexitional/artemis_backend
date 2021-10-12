@@ -1128,6 +1128,154 @@ generateIndexNo : async (req,res) => {
 
 
 
+// HRStaff  - HRS
+
+fetchHRStaffDataHRS : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      
+      var staff = await SSO.fetchHRStaff(page,keyword);
+     
+      if(staff && staff.data.length > 0){
+        res.status(200).json({success:true, data:staff});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postHRStaffDataHRS : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.unit_id == '') delete req.body.unit_id
+    if(req.body.job_id == '') delete req.body.job_id  
+    if(req.body.mstatus == '') delete req.body.mstatus  
+    if(req.body.region_id == '') delete req.body.region_id  
+    if(req.body.email == '') delete req.body.email  
+    if(req.body.dob == ''){delete req.body.dob}  
+    else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
+    delete req.body.uid;delete req.body.flag_locked;
+    delete req.body.flag_disabled;delete req.body.unit_name;
+    delete req.body.designation;delete req.body.name;
+    delete req.body.first_appoint;delete req.body.pnit_id;
+    delete req.body.scale_id;delete req.body.updated_at;
+    delete req.body.created_at
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        const sno = await SSO.getNewStaffNo()
+        req.body.staff_no = sno
+        resp = await SSO.insertHRStaff(req.body)
+
+      }else{
+        resp = await SSO.updateHRStaff(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRStaffDataHRS : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRStaff(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+resetAccountHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      const pwd = nanoid()
+      var resp = await SSO.fetchStaffProfile(staff_no);
+      const ups = await SSO.updateUserByEmail(resp[0].inst_mail,{password:sha1(pwd)})
+      const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+      const sm = sms(resp[0].phone,msg)
+      if(ups){
+          res.status(200).json({success:true, data:msg});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+stageAccountHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      const pwd = nanoid()
+      var resp = await SSO.fetchStaffProfile(staff_no);
+      console.log(resp)
+      if(resp && resp.length > 0){
+         if(resp[0].inst_mail && resp[0].phone){
+            const ups = await SSO.insertSSOUser({username:resp[0].inst_mail,password:sha1(pwd),group_id:2,tag:staff_no})
+            if(ups){
+                const role = await SSO.insertSSORole({uid:ups.insertId,arole_id:11}) // Unit Staff Role
+                const pic = await SSO.insertPhoto(ups.insertId,staff_no,2,'./public/cdn/photo/none.png')   // Initial Photo 
+                const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+                const sm = sms(resp[0].phone,msg)
+                res.status(200).json({success:true, data:msg});
+            }else{
+                res.status(200).json({success:false, data: null, msg:"Action failed!"});
+            }
+         }else{
+            res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
+         }
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+generateMailHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      var resp = await SSO.fetchStaffProfile(staff_no);
+      var ups;
+      var email;
+      
+      if(resp && resp.length > 0){
+          const username = getUsername(resp[0].fname,resp[0].lname)
+          email = `${username}@aucc.edu.gh`
+          const isExist = await SSO.findEmail(email)
+          if(isExist && isExist.length > 0) email = `${username}${isExist.length+1}@aucc.edu.gh`
+          ups = await SSO.updateStaffProfile(staff_no,{ inst_mail:email })
+      }
+     
+      if(ups){
+          res.status(200).json({success:true, data:email});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
 // HELPERS 
 
 
@@ -1144,6 +1292,16 @@ fetchFMShelpers : async (req,res) => {
 fetchAIShelpers : async (req,res) => {
   try{
     const hp = await SSO.fetchAIShelpers();
+    res.status(200).json({success:true, data:hp});
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+fetchHRShelpers : async (req,res) => {
+  try{
+    const hp = await SSO.fetchHRShelpers();
     res.status(200).json({success:true, data:hp});
   }catch(e){
     console.log(e)
