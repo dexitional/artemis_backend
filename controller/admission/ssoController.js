@@ -1149,6 +1149,21 @@ fetchHRStaffDataHRS : async (req,res) => {
 },
 
 
+fetchActiveStListHRS : async (req,res) => {
+  try{
+      var sts = await SSO.fetchActiveStListHRS();
+      if(sts && sts.length > 0){
+        res.status(200).json({success:true, data:sts});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+}, 
+
+
 postHRStaffDataHRS : async (req,res) => {
     const { id } = req.body;
     //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
@@ -1266,6 +1281,127 @@ generateMailHRS : async (req,res) => {
      
       if(ups){
           res.status(200).json({success:true, data:email});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+// HRStaff  - HRS
+
+fetchHRUnitDataHRS : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var staff = await SSO.fetchHRUnit(page,keyword);
+      if(staff && staff.data.length > 0){
+        res.status(200).json({success:true, data:staff});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postHRUnitDataHRS : async (req,res) => {
+    const { id } = req.body;
+    if(req.body.lev1_id == '') req.body.lev1_id = null
+    if(req.body.lev2_id == '') req.body.lev2_id = null
+    if(req.body.lev3_id == '') req.body.lev3_id = null
+    if(req.body.head == '') req.body.head = null
+    delete req.body.head_name;delete req.body.head_no;
+    delete req.body.parent;delete req.body.school;
+    delete req.body.subhead;
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        resp = await SSO.insertHRUnit(req.body)
+      }else{
+        resp = await SSO.updateHRUnit(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRUnitDataHRS : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRStaff(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+// HRJOB  - HRS
+fetchHRJobData : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var jobs = await SSO.fetchHRJob(page,keyword);
+      console.log(jobs)
+      if(jobs && jobs.data.length > 0){
+        res.status(200).json({success:true, data:jobs});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postHRJobData : async (req,res) => {
+    const { id } = req.body;
+    //if(req.body.lev1_id == '') req.body.lev1_id = null
+    //delete req.body.subhead;
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        resp = await SSO.insertHRJob(req.body)
+      }else{
+        resp = await SSO.updateHRJob(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRJobData : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRJob(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
       }else{
           res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }

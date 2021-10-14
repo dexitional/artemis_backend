@@ -63,7 +63,6 @@ Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
 Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
 Router.get('/ais/genmail/:refno', SSOController.generateMail);
 Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
-
 // REGISTRATIONS routes
 Router.get('/ais/regdata/', SSOController.fetchRegsData);
 Router.get('/ais/reglist/', SSOController.fetchRegsList);
@@ -80,7 +79,6 @@ Router.get('/fms/sbills/:bid', SSOController.fetchBill);
 Router.post('/fms/sbills', SSOController.postBill);
 Router.delete('/fms/sbills/:id', SSOController.deleteBill);
 Router.post('/fms/sendbill', SSOController.sendBill);
-
 // FEE PAYMENTS routes
 Router.get('/fms/feestrans/', SSOController.fetchPayments);
 Router.get('/fms/feestrans/:id', SSOController.fetchPayment);
@@ -91,14 +89,22 @@ Router.post('/fms/genindexno', SSOController.generateIndexNo);
 
 /* HRS MODULE ROUTES */
 
-// STUDENT routes
+// HR Staff routes
 Router.get('/hrs/hrstaff/', SSOController.fetchHRStaffDataHRS);
 Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
+Router.get('/hrs/stactive', SSOController.fetchActiveStListHRS);
 Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
 Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
 Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
 Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);
-
+// HR Unit routes
+Router.get('/hrs/hrunit/', SSOController.fetchHRUnitDataHRS);
+Router.post('/hrs/hrunit', SSOController.postHRUnitDataHRS);
+Router.delete('/hrs/hrunit/:id', SSOController.deleteHRUnitDataHRS);
+// HR Job routes
+Router.get('/hrs/hrsjob/', SSOController.fetchHRJobData);
+Router.post('/hrs/hrsjob', SSOController.postHRJobData);
+Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
 
 
 /* HELPERS */

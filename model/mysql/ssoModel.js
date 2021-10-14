@@ -24,7 +24,8 @@ module.exports.SSO = {
    },
 
    fetchPhoto : async (uid) => {
-      const sql = "select p.tag,p.path from identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
+      //const sql = "select p.tag,p.path from identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
+      const sql = "select p.tag,p.path from identity.photo p where p.tag = '"+uid+"'";
       const res = await db.query(sql);
       return res;
    },
@@ -53,7 +54,7 @@ module.exports.SSO = {
         case '01': // Student
            sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
@@ -61,7 +62,7 @@ module.exports.SSO = {
         case '05': // Alumni
            sql = "select from identity.photo p where p.uid = "+uid; break;
         default :  // Staff
-           sql = "select s.*,j.title as designation,x.long_name as unitname from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id where u.uid = "+uid; break;
       } const res = await db.query(sql);
         return res;
    },
@@ -70,7 +71,7 @@ module.exports.SSO = {
         // Student
         const res1 = await db.query("select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.phone = "+phone);
         // Staff
-        const res2 = await db.query("select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where s.phone = "+phone);
+        const res2 = await db.query("select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id where s.phone = "+phone);
         // NSS
         // Applicant (Job)
         // Alumni
@@ -658,7 +659,7 @@ module.exports.SSO = {
     // HRSTAFF - HRS MODELS
 
     fetchHRStaff : async (page,keyword) => {
-      var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,ifnull(j.title,s.position) as designation,m.long_name as unit_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id"
+      var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,ifnull(j.title,s.position) as designation,m.title as unit_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id"
       var cql = "select count(*) as total from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id";
       
       const size = 10;
@@ -683,6 +684,13 @@ module.exports.SSO = {
          data: res,
       }
    },
+
+   
+   fetchActiveStListHRS : async () => {
+      const res = await db.query("select s.*,u.uid,u.flag_locked,u.flag_disabled,ifnull(j.title,s.position) as designation,m.title as unit_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id");
+      return res;
+   },
+
    insertHRStaff : async (data) => {
       const res = await db.query("insert into hrs.staff set ?", data);
       return res;
@@ -728,7 +736,97 @@ module.exports.SSO = {
    },
 
 
+   
+   // HRUNIT - HRS MODELS
 
+   fetchHRUnit : async (page,keyword) => {
+      var sql = "select u.*,upper(concat(s.fname,' ',s.lname)) as head_name,s.staff_no as head_no,m.title as school from utility.unit u left join hrs.staff s on u.head = s.staff_no left join utility.unit m on u.lev2_id = m.id"
+      var cql = "select count(*) as total from utility.unit u left join hrs.staff s on u.head = s.staff_no left join utility.unit m on u.lev2_id = m.id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
+          cql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
+      }
+
+      sql += ` order by u.title`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+   insertHRUnit : async (data) => {
+      const res = await db.query("insert into utility.unit set ?", data);
+      return res;
+   },
+
+   updateHRUnit : async (id,data) => {
+      const res = await db.query("update utility.unit set ? where id = "+id,data);
+      return res;
+   },
+
+
+   deleteHRUnit : async (id) => {
+      var res = await db.query("delete from utility.unit where id = "+id);
+      return res;
+   },
+
+
+   
+  // HRUNIT - HRS MODELS
+
+  fetchHRJob : async (page,keyword) => {
+      var sql = "select j.* from hrs.job j"
+      var cql = "select count(*) as total from hrs.job j";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+         sql += " where j.title like '%${keyword}%' or j.`type` like '%${keyword}%'"
+         cql += " where j.title like '%${keyword}%' or j.`type` like '%${keyword}%'"
+      }
+
+      sql += ` order by j.title`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+   insertHRJob : async (data) => {
+      const res = await db.query("insert into hrs.job set ?", data);
+      return res;
+   },
+
+   updateHRJob : async (id,data) => {
+      const res = await db.query("update hrs.job set ? where id = "+id,data);
+      return res;
+   },
+
+
+   deleteHRJob : async (id) => {
+      var res = await db.query("delete from hrs.job where id = "+id);
+      return res;
+   },
 
 
 
@@ -755,8 +853,10 @@ module.exports.SSO = {
       const regions = await db.query("select * from utility.region where status = 1");
       const units = await db.query("select * from utility.unit where active = '1'");
       const jobs = await db.query("select * from hrs.job where active = '1'");
-      //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
-      if(jobs && units) return { units,jobs,countries,regions }
+      const parents = await db.query("select * from utility.unit where active = '1'");
+      const schools = await db.query("select * from utility.unit where level = '2' and active = '1'");
+      const depts = await db.query("select * from utility.unit where level = '3' and active = '1'");
+      if(jobs && units) return { units,jobs,countries,regions,parents,schools,depts }
       return null;
    },
 
