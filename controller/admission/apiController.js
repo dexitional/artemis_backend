@@ -74,7 +74,7 @@ module.exports = {
             if(vouch){ 
               // Send SMS to Buyer
               const msg = `Hi! AUCC Voucher info are, Serial: ${vouch.serial} Pin: ${vouch.pin} Goto https://portal.aucc.edu.gh/applicant to apply!`
-              const send = sms(buyerPhone,msg)
+              const send = await sms(buyerPhone,msg)
               // Log SMS Status
               if(send) await SSO.updateVoucherLog(vouch.logId, { sms_code:send.code }) 
               res.status(200).json({success:true, data: { voucherSerial:vouch.serial,voucherPin:vouch.pin,buyerName,buyerPhone,transId:ins.insertId,serviceId } })
@@ -96,6 +96,10 @@ module.exports = {
               // Send to studtrans tbl, If Payservice = Academic Fees
               const dt = { tid: ins.insertId,refno:studentId, amount: (-1*amountPaid),currency,narrative:`Online Fees Payment, StudentID: ${studentId}`}
               const insm = await SSO.savePaymentToAccount(dt)
+              // Send SMS to Buyer
+              const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId is ${transRef}`
+              if(insm) await sms(buyerPhone,msg)
+              
             }
             res.status(200).json({success:true, data: { transId: ins.insertId,studentId,serviceId } }) 
           }else{
