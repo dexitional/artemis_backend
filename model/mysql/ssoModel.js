@@ -443,7 +443,7 @@ module.exports.SSO = {
    // TRANSACTION - FMS
   
    sendTransaction : async (data) => {
-      const isRec = await db.query("select * fms.transaction where transtag = '"+data.transtag+"'");
+      const isRec = await db.query("select * from fms.transaction where transtag = '"+data.transtag+"'");
       if(isRec && isRec.length > 0){ 
         return { insertId:isRec[0].id,...isRec[0] }
       }else{
