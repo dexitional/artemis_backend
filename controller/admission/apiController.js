@@ -97,8 +97,8 @@ module.exports = {
               const dt = { tid: ins.insertId,refno:studentId, amount: (-1*amountPaid),currency,narrative:`Online Fees Payment, StudentID: ${studentId}`}
               const insm = await SSO.savePaymentToAccount(dt)
               // Send SMS to Buyer
-              const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId is ${transRef}`
-              if(insm) await sms(buyerPhone,msg)
+              //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
+              //if(insm) await sms(buyerPhone,msg)
               
             }
             res.status(200).json({success:true, data: { transId: ins.insertId,studentId,serviceId } }) 
