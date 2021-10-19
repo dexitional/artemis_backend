@@ -463,6 +463,7 @@ module.exports = {
 
   postVoucher : async (req,res) => {
       try{
+        console.log(req.body)
         const { session_id,quantity,group_id,sell_type,vendor_id,created_by } = req.body;
         var resp
         if(session_id && session_id > 0){ 
@@ -517,7 +518,7 @@ module.exports = {
          const sr = await SSO.fetchVoucherByPhone(phone);
          console.log(phone)
          if(sr && sr.length > 0){
-           const message = `Hello! voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
+           const message = `Hi! AUCC Voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
            sms(phone,message)
            resp = sr;
          }
@@ -1438,6 +1439,16 @@ fetchAIShelpers : async (req,res) => {
 fetchHRShelpers : async (req,res) => {
   try{
     const hp = await SSO.fetchHRShelpers();
+    res.status(200).json({success:true, data:hp});
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+fetchAMShelpers : async (req,res) => {
+  try{
+    const hp = await SSO.fetchAMShelpers();
     res.status(200).json({success:true, data:hp});
   }catch(e){
     console.log(e)

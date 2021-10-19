@@ -143,7 +143,7 @@ module.exports.SSO = {
    // VENDOR MODELS
 
    fetchVendors : async () => {
-      const res = await db.query("select * from vendor order by vendor_id desc");
+      const res = await db.query("select * from vendor order by vendor_id");
       return res;
    },
 
@@ -168,7 +168,7 @@ module.exports.SSO = {
       var sql = "select v.*,x.vendor_name,g.title as group_name,case when v.sell_type = 0 then g.title when v.sell_type = 1 then 'MATURED' when v.sell_type = 2 then 'INTERNATIONAL' end as group_title from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id
       var cql = "select count(*) as total from voucher v left join vendor x on v.vendor_id = x.vendor_id left join `group` g on v.group_id = g.group_id where session_id = "+session_id;
       
-      const size = 3;
+      const size = 20;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
@@ -213,20 +213,39 @@ module.exports.SSO = {
       return null;
    },
 
-   sellVoucher : async (formId,collectorId,sessionId,buyerName,buyerPhone) => {
+   sellVoucher : async (formId,collectorId,sessionId,buyerName,buyerPhone,tid) => {
       const pr = await db.query("select * from P06.price p where p.price_id = "+formId);
       const vd = await db.query("select c.vendor_id from fms.collector c left join P06.vendor v on c.vendor_id = v.vendor_id where c.id = "+collectorId);
       if(pr && vd){
         const vc = await db.query("select serial,pin from P06.voucher where vendor_id = "+vd[0].vendor_id+" and session_id ="+sessionId+" and group_id = '"+pr[0].group_id+"' and sell_type = "+pr[0].sell_type+" and sold_at is null");
         if(vc && vc.length > 0){
-          console.log(vc);
-          const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
-          const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
-          if(ups.affectedRows > 0) { return vc[0] } else{ return null }
+            console.log(vc);
+            // Update Voucher Status & Buyer Details
+            const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
+            const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
+            if(ups.affectedRows > 0) { 
+               // Insert Voucher Sales Log - Success
+               const vlog = { tid,session_id:sessionId,serial:vc[0].serial,pin:vc[0].pin,buyer_name:buyerName,buyer_phone:buyerPhone,generated:1 }
+               const vins = await db.query("insert into fms.voucher_log set ?",vlog);
+               return { ...vc[0],logId:vins.insertId }
+
+            } else{ 
+               // Insert Voucher Sales Log - Error
+               const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
+               const vins = await db.query("insert into fms.voucher_log set ?",vlog);
+               return null
+            }
         }else{
+          
+          // Insert Voucher Sales Log - Error
+          const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
+          const vins = await db.query("insert into fms.voucher_log set ?",vlog);
           return null
         }
       }else{
+         // Insert Voucher Sales Log - Error
+         const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
+         const vins = await db.query("insert into fms.voucher_log set ?",vlog);
          return null
       }
    },
@@ -248,10 +267,17 @@ module.exports.SSO = {
    },
 
    getLastVoucherIndex : async (session) => {
-      const res = await db.query("select serial from voucher where session_id = "+session+" order by serial desc limit 1");
+      const res = await db.query("select serial from P06.voucher where session_id = "+session+" order by serial desc limit 1");
       if(res && res.length > 0) return res[0].serial;
+      const sess = await db.query("select voucher_index from P06.session where session_id = "+session);
       const algo = `${moment().format('YY')}${ parseInt(moment().format('YY'))+parseInt(moment().format('MM'))}${1000}`
-      return parseInt(algo)
+      //return parseInt(algo)
+      return sess && sess[0].voucher_index;
+   },
+
+   updateVoucherLog : async (id,data) => {
+      const res = await db.query("update fms.voucher_log set ? where id = "+id,data);
+      return res;
    },
 
 
@@ -417,8 +443,15 @@ module.exports.SSO = {
    // TRANSACTION - FMS
   
    sendTransaction : async (data) => {
-      const res = await db.query("insert into fms.transaction set ?", data);
-      return res;
+      const isRec = await db.query("select * fms.transaction where transtag = '"+data.transtag+"'");
+      if(isRec && isRec.length > 0){ 
+        return { insertId:isRec[0].id,...isRec[0] }
+      }else{
+        const res = await db.query("insert into fms.transaction set ?", data);
+        return res;
+      }
+     
+      
    },
 
    
@@ -654,6 +687,11 @@ module.exports.SSO = {
       return null;
    },
 
+   savePaymentToAccount : async (data) => {
+      const res = await db.query("insert into fms.studtrans set ?", data);
+      return res;
+   },
+
 
 
     // HRSTAFF - HRS MODELS
@@ -857,6 +895,17 @@ module.exports.SSO = {
       const schools = await db.query("select * from utility.unit where level = '2' and active = '1'");
       const depts = await db.query("select * from utility.unit where level = '3' and active = '1'");
       if(jobs && units) return { units,jobs,countries,regions,parents,schools,depts }
+      return null;
+   },
+
+   fetchAMShelpers : async () => {
+      const vendors = await db.query("select * from P06.vendor where status = 1");
+      const session = await db.query("select * from P06.session where status = 1");
+      const programs = await db.query("select * from utility.program where status = 1");
+      const majors = await db.query("select m.*,p.`short` as program_name from ais.major m left join utility.program p on p.id = m.prog_id where m.status = 1");
+      const stages = await db.query("select * from P06.stage where status = 1");
+      const applytypes = await db.query("select * from P06.apply_type where status = 1");
+      if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0] }
       return null;
    },
 

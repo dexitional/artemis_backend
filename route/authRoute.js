@@ -111,6 +111,7 @@ Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
 Router.get('/hrs/helpers', SSOController.fetchHRShelpers);
 Router.get('/fms/helpers', SSOController.fetchFMShelpers);
 Router.get('/ais/helpers', SSOController.fetchAIShelpers);
+Router.get('/ams/helpers', SSOController.fetchAMShelpers);
 
 
 // SCRIPTS

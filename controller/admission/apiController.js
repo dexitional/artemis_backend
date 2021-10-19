@@ -64,24 +64,39 @@ module.exports = {
 
       const { serviceId,amountPaid,currency,studentId,refNote,transRef,buyerName,buyerPhone,formId,sessionId } = req.body
       const dt = { collector_id:cl.id,transtype_id:serviceId,currency,amount:amountPaid,paytype:'BANK',reference:refNote,refno:studentId,transtag:transRef }
-          
-      if(parseInt(serviceId) === 1 ){ // Voucher service
-          // Check for Empty field and return
+      
+      /* VOUCHER SERVICE */
+      if(serviceId == 1 ){ 
+          if(!sessionId) res.status(200).json({success:false, data: null, msg: `No Admission Session indicated!`})// Check for Required but Empty field and return error
           const ins = await SSO.sendTransaction(dt);
           if(ins){
-            const vouch = await SSO.sellVoucher(formId,cl.id,sessionId,buyerName,buyerPhone);
-            if(vouch){ res.status(200).json({success:true, data: { voucherSerial:vouch.serial,voucherPin:vouch.pin,buyerName,buyerPhone,transId:ins.insertId,serviceId } }) }
-            else{ res.status(200).json({success:false, data: null, msg: `Voucher quota exhausted`}) }
+            const vouch = await SSO.sellVoucher(formId,cl.id,sessionId,buyerName,buyerPhone,ins.insertId);
+            if(vouch){ 
+              // Send SMS to Buyer
+              const msg = `Hi! AUCC Voucher info are, Serial: ${vouch.serial} Pin: ${vouch.pin} Goto https://portal.aucc.edu.gh/applicant to apply!`
+              const send = sms(buyerPhone,msg)
+              // Log SMS Status
+              if(send) await SSO.updateVoucherLog(vouch.logId, { sms_code:send.code }) 
+              res.status(200).json({success:true, data: { voucherSerial:vouch.serial,voucherPin:vouch.pin,buyerName,buyerPhone,transId:ins.insertId,serviceId } })
+            
+            }else{ 
+              res.status(200).json({success:false, data: null, msg: `Voucher quota exhausted`}) 
+            }
           
           }else{ 
             res.status(200).json({success:false, data: null, msg: `Transaction failed`})
           }
           
-         
-      }else{ // Any other service
-          // Check for Empty field and return
+      /* OTHER PAYMENT SERVICE (ACADEMIC FEES, RESIT, GRADUATION) */  
+      }else{ 
           const ins = await SSO.sendTransaction(dt);
           if(ins){
+            
+            if(serviceId == 2){
+              // Send to studtrans tbl, If Payservice = Academic Fees
+              const dt = { tid: ins.insertId,refno:studentId, amount: (-1*amountPaid),currency,narrative:`Online Fees Payment, StudentID: ${studentId}`}
+              const insm = await SSO.savePaymentToAccount(dt)
+            }
             res.status(200).json({success:true, data: { transId: ins.insertId,studentId,serviceId } }) 
           }else{
             res.status(200).json({success:false, data: null, msg: `Transaction failed`})
