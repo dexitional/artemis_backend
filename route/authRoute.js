@@ -81,10 +81,12 @@ Router.delete('/fms/sbills/:id', SSOController.deleteBill);
 Router.post('/fms/sendbill', SSOController.sendBill);
 // FEE PAYMENTS routes
 Router.get('/fms/feestrans/', SSOController.fetchPayments);
+Router.get('/fms/othertrans/', SSOController.fetchOtherPayments);
 Router.get('/fms/feestrans/:id', SSOController.fetchPayment);
 Router.post('/fms/feestrans', SSOController.postPayment);
 Router.delete('/fms/feestrans/:id', SSOController.deletePayment);
 Router.post('/fms/genindexno', SSOController.generateIndexNo);
+Router.get('/fms/movetofees/:id', SSOController.movePaymentToFees);
 
 
 /* HRS MODULE ROUTES */
@@ -97,6 +99,9 @@ Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
 Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
 Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
 Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);
+Router.get('/hrs/upgraderole/:uid/:role', SSOController.upgradeRole);
+Router.get('/hrs/revokerole/:uid/:role', SSOController.revokeRole);
+
 // HR Unit routes
 Router.get('/hrs/hrunit/', SSOController.fetchHRUnitDataHRS);
 Router.post('/hrs/hrunit', SSOController.postHRUnitDataHRS);

@@ -54,7 +54,7 @@ module.exports.SSO = {
         case '01': // Student
            sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
@@ -62,7 +62,7 @@ module.exports.SSO = {
         case '05': // Alumni
            sql = "select from identity.photo p where p.uid = "+uid; break;
         default :  // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
       } const res = await db.query(sql);
         return res;
    },
@@ -94,6 +94,12 @@ module.exports.SSO = {
    insertSSORole : async (data) => {
       const sql = "insert into identity.user_role set ?";
       const res = await db.query(sql,data);
+      return res;
+   },
+
+   deleteSSORole : async (uid,role) => {
+      const sql = "delete from identity.user_role where uid = "+uid+" and arole_id = "+role;
+      const res = await db.query(sql);
       return res;
    },
    
@@ -569,16 +575,16 @@ module.exports.SSO = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno";
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno  where t.transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
-          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
+          sql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
+          cql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
       }
 
       sql += ` order by t.id desc`
@@ -595,8 +601,37 @@ module.exports.SSO = {
       }
    },
 
+   fetchOtherPayments : async (page,keyword) => {
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id not in (1,2)"
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id where t.transtype_id not in (1,2)";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}' or t.reference like '%${keyword}%' or t.transtag like '%${keyword}%' `
+          cql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}' or t.reference like '%${keyword}%' or t.transtag like '%${keyword}%' `
+      }
+
+      sql += ` order by t.id desc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+   
+
    fetchPayment : async (id) => {
-      const res = await db.query("select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id where t.id = "+id);
+      const res = await db.query("select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.id = "+id);
       return res;
    },
 
@@ -621,10 +656,10 @@ module.exports.SSO = {
       return res;
    },
 
-   updateStudFinance : async (tid,refno,amount) => {
-      const st = await db.query("select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = "+refno);
+   updateStudFinance : async (tid,refno,amount,transid) => {
+      const st = await db.query("select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = '"+refno+"'");
       const fin = await db.query("select * from fms.studtrans where tid = "+tid);
-      const dt = { tid,amount,refno,session_id:st && st[0].id,narrative:`${refno} : FEES PAYMENT - AUCC_FIN `}
+      const dt = { tid,amount,refno,session_id:(st && st[0].id),narrative:`${refno} FEES PAYMENT, TRANSID: ${transid}`}
       var resp;
       var fid;
       if(fin && fin.length > 0){
@@ -692,6 +727,15 @@ module.exports.SSO = {
       return res;
    },
 
+   moveToFees : async (id,amount,refno,transid) => {
+      const rs = await db.query("update fms.transaction set transtype_id = 2 where id = "+id);
+      console.log(rs)
+      const ms = await this.SSO.updateStudFinance(id,refno,amount,transid)
+      console.log(ms)
+      if(rs && ms) return rs;
+      return null
+   },
+   
 
 
     // HRSTAFF - HRS MODELS
@@ -894,7 +938,9 @@ module.exports.SSO = {
       const parents = await db.query("select * from utility.unit where active = '1'");
       const schools = await db.query("select * from utility.unit where level = '2' and active = '1'");
       const depts = await db.query("select * from utility.unit where level = '3' and active = '1'");
-      if(jobs && units) return { units,jobs,countries,regions,parents,schools,depts }
+      const roles = await db.query("select a.arole_id,a.role_name,a.role_desc,p.app_name from identity.app_role a left join identity.app p on a.app_id = p.app_id");
+      
+      if(jobs && units) return { units,jobs,countries,regions,parents,schools,depts,roles }
       return null;
    },
 

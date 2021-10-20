@@ -1002,6 +1002,22 @@ fetchPayments : async (req,res) => {
   }
 },
 
+fetchOtherPayments : async (req,res) => {
+  try{
+    const page = req.query.page;
+    const keyword = req.query.keyword;
+    var payments = await SSO.fetchOtherPayments(page,keyword);
+    if(payments && payments.data.length > 0){
+      res.status(200).json({success:true, data:payments});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
 
 fetchPayment : async (req,res) => {
   try{
@@ -1019,10 +1035,29 @@ fetchPayment : async (req,res) => {
   }
 },
 
+movePaymentToFees: async (req,res) => {
+  try{
+      const id = req.params.id;
+      var ps = await SSO.fetchPayment(id);
+      var resp;
+      if(ps && [4,3].includes(ps[0].transtype_id)){
+        resp = await SSO.moveToFees(id,(-1*ps[0].amount),ps[0].refno,ps[0].transtag);
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
 
 postPayment : async (req,res) => {
     const { id,refno } = req.body;
-    let dt = {refno:req.body.refno,paydate:req.body.paydate,amount: req.body.amount,currency:req.body.currency,paytype:req.body.paytype,collector_id:2,transtype_id:2,reference:req.body.reference,bankacc_id:req.body.bankacc_id,transtag:'AUCC_FIN'}
+    let dt = {refno:req.body.refno,transdate:req.body.transdate,transtag:req.body.transtag,amount: req.body.amount,currency:req.body.currency,paytype:req.body.paytype,feetype:req.body.feetype,collector_id:2,transtype_id:2,reference:req.body.reference,bankacc_id:req.body.bankacc_id,transtag:'AUCC_FIN'}
    
     try{
       const verifyRef = await Student.fetchStProfile(refno)
@@ -1038,7 +1073,7 @@ postPayment : async (req,res) => {
         } 
         if(resp){
           // Update or Insert into Student Account
-          const qt = await SSO.updateStudFinance(tid,refno,(-1*parseInt(req.body.amount)))
+          const qt = await SSO.updateStudFinance(tid,refno,(-1*parseInt(req.body.amount)),req.body.transtag)
           // Check for Quota & Generate Indexno
           //const rt = await SSO.verifyFeesQuota(refno)
           res.status(200).json({success:true, data:resp});
@@ -1290,6 +1325,62 @@ generateMailHRS : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+upgradeRole : async (req,res) => {
+  try{
+      const { uid,role } = req.params;
+      const pwd = nanoid()
+      var resp = await SSO.fetchUser(uid,'02');
+      if(resp && resp.length > 0){
+        if(resp[0].phone){
+          const roles = await SSO.insertSSORole({uid,arole_id:role}) // Unit Staff Role
+          const msg = `Hi ${resp.lname}! Your privilege on AUCC EduHub has been upgraded. Goto https://portal.aucc.edu.gh to access portal!`
+          if(roles){
+            const send = await sms(resp[0].phone,msg)
+            console.log(send)
+          }
+          res.status(200).json({success:true, data:roles});
+        }else{
+          res.status(200).json({success:false, data: null, msg:"Please update contact details!"});
+        }
+      }else{
+        res.status(200).json({success:false, data: null, msg:"User not found!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+revokeRole : async (req,res) => {
+  try{
+      const { uid,role } = req.params;
+      const pwd = nanoid()
+      console.log(uid,role)
+      var resp = await SSO.fetchUser(uid,'02');
+      if(resp && resp.length > 0){
+        if(resp[0].phone){
+          const roles = await SSO.deleteSSORole(uid,role) 
+          const msg = `Hi ${resp.lname}! A privilege on AUCC EduHub has been revoked. Goto https://portal.aucc.edu.gh to access portal!`
+          if(roles){
+             const send = await sms(resp[0].phone,msg)
+             console.log(send)
+          }
+          res.status(200).json({success:true, data:roles});
+        }else{
+          res.status(200).json({success:false, data: null, msg:"Please update contact details!"});
+        }
+      }else{
+        res.status(200).json({success:false, data: null, msg:"User not found!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
 
 
 // HRStaff  - HRS
