@@ -18,8 +18,10 @@ module.exports = {
                 const instance = await Admission.fetchMeta(serial);
                 if(instance && instance.length > 0){
                    data.isNew = false
-                   data.user = { photo : instance[0].photo, serial, pin, name: instance[0].applicant_name, group_name: instance[0].group_name }
+                   data.user = { photo : instance[0].photo, serial, pin, name: instance[0].applicant_name, group_name: instance[0].group_name, group_id:applicant[0].group_id, sell_type:applicant[0].sell_type }
                    data.flag_submit = instance[0].flag_submit
+                   data.group_id = applicant[0].group_id
+                   data.sell_type = applicant[0].sell_type
                    data.stage_id = instance[0].stage_id
                    data.apply_type = instance[0].apply_type
                    // Load Applicant Form Meta
@@ -60,7 +62,7 @@ module.exports = {
                    // Make Applicant & Set User
                    let ap = { serial, stage_id:stage[0].stage_id, meta:JSON.stringify(meta) }
                    await Admission.makeApplicant(ap);
-                   data.user = { serial, pin, stage_id:stage[0].stage_id }
+                   data.user = { serial, pin, stage_id:stage[0].stage_id, group_id:applicant[0].group_id, sell_type:applicant[0].sell_type  }
                    
                    // Make Welcome Note
                    let nt = { serial, title:'Welcome ',content:'<p>We are happy to notify you that you have successfully started application procedure. Please feel free to contact support if challenges encountered. Thank you!</p>',excerpt:'We are happy to notify you that you have successfully started application procedure.',receiver:'cherished applicant' }
@@ -69,7 +71,6 @@ module.exports = {
                    const notes = await Admission.fetchNotes(serial);
                    data.notification = notes;
                 }
-                console.log(data);
                 res.status(200).json({success:true, data});
 
             }else if(applicant && applicant.length > 0 && applicant[0].status == 0){
@@ -84,18 +85,14 @@ module.exports = {
   },
 
   saveForm : async (req,res) => {
-      //console.log(req.body);
       const { serial,stage_id,apply_type,photo,meta,flag_submit,grade_value,class_value } = req.body;
       const { profile,guardian,education,result,grade,choice,document,referee,qualification,employment } = req.body.data;
       
       const aplData = { serial,stage_id,apply_type,photo,meta: JSON.stringify(meta),flag_submit,grade_value,class_value }
-      const profileData = { serial,citizen_country:profile.citizen_country,disabilities:profile.disabilities,disabled:profile.disabled,dob:profile.dob,email:profile.email,fname:profile.fname,home_region:profile.home_region,home_town:profile.home_town,lname:profile.lname,mstatus:profile.mstatus,phone:profile.phone,pobox_address:profile.pobox_address,religion:profile.religion,resident_address:profile.resident_address,resident_country:profile.resident_country,title:profile.title,present_occupation:profile.present_occupation,work_place:profile.work_place,gender:profile.gender,bond_status:profile.bond_status,bond_institute:profile.bond_institute,profile_id:profile.profile_id }
+      const profileData = { serial,citizen_country:profile.citizen_country,disabilities:profile.disabilities,disabled:profile.disabled,dob:profile.dob,email:profile.email,fname:profile.fname,home_region:profile.home_region,home_town:profile.home_town,lname:profile.lname,mstatus:profile.mstatus,phone:profile.phone,pobox_address:profile.pobox_address,religion:profile.religion,resident_address:profile.resident_address,resident_country:profile.resident_country,title:profile.title,present_occupation:profile.present_occupation,work_place:profile.work_place,gender:profile.gender,bond_status:profile.bond_status,bond_institute:profile.bond_institute,session_mode:profile.session_mode,profile_id:profile.profile_id }
       const guardianData = { serial,address:guardian.address,email:guardian.email,fname:guardian.fname,lname:guardian.lname,occupation:guardian.occupation,phone:guardian.phone,relation:guardian.relation,title:guardian.title,guardian_id:guardian.guardian_id }
-      console.log(document);
       try{
         // Save Applicant Tbl Data
-        //console.log(aplData);
-        
         var apl = await Admission.updateApplicantTbl(aplData); 
         var output = {};
         // Save Form Data

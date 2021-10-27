@@ -283,7 +283,7 @@ module.exports = {
         default: mpath = 'student'; break;
       }
       var imageBuffer = decodeBase64Image(req.body.photo);
-      const dest = path.join(__dirname, '/../../public/cdn/photo/'+mpath, tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]));
+      const dest = path.join(__dirname, '/../../public/cdn/photo/'+mpath,tag && tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]));
       const dbpath = './public/cdn/photo/'+mpath+'/'+tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]);
       console.log(`Tag: ${tag}, Group ID: ${group_id}`)
       fs.writeFile(dest, imageBuffer.data, async function(err) {
