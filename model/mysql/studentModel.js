@@ -149,6 +149,12 @@ module.exports.Student = {
       return 0.0;
    },
 
+   fetchStudentTrans : async (refno = null) => {
+      const res = await db.query("select t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.bill_id = b.bid where refno = '"+refno+"'");
+      if(res && res.length > 0) return res
+      return null;
+   },
+
 
    fetchResitAccount : async (indexno = null) => {
       const res = await db.query("select * from ais.resit where paid = 0 and indexno = '"+indexno+"'");

@@ -21,5 +21,8 @@ Router.get('/student/semesterreg', StudentController.fetchStudentReg);
 Router.post('/student/semesterreg', StudentController.postStudentReg);
 // RESULTS routes
 Router.get('/student/allresults', StudentController.fetchStudentResults);
+// FEES routes
+Router.get('/student/transactions/:refno', StudentController.fetchStudentTrans);
+//Router.get('/student/bill/:refno', StudentController.fetchStudentBill);
 
 module.exports = Router;

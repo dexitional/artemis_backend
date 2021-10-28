@@ -239,10 +239,11 @@ module.exports = {
 
   // Fees && Charges
 
-  fetchFeesAccount : async (req,res) => {
-    const indexno = req.query.indexno
+  fetchStudentTrans : async (req,res) => {
+    const refno = req.params.refno
     try{
-        var rows = await Student.fetchStudentResults(indexno);
+        var rows = await Student.fetchStudentTrans(refno);
+        console.log(rows)
         if(rows && rows.length > 0){
             res.status(200).json({success:true, data:rows});
         }else{

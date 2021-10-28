@@ -1,6 +1,7 @@
 var express = require('express');
 var Router = express.Router();
 const db = require('../config/mysql')
+const sms = require('../config/sms')
 var jwt = require('jsonwebtoken');
 const sha1 = require('sha1')
 const { customAlphabet } = require('nanoid')
@@ -151,6 +152,22 @@ Router.get('/setupstaffaccess', async(req,res)=>{
 
 Router.get('/loadfreshers', SSOController.loadFresher)  // LOAD FRESHERS
 
-
+// SCRIPTS
+Router.get('/alertapplicants', async(req,res)=>{
+   const ss = await db.query("select l.*,t.amount from fms.voucher_log l left join fms.transaction t on t.id = l.tid")
+   console.log(ss)
+   if(ss.length > 0){
+     var msg = ``
+     for(var s of ss){
+       if(s.amount > 100){
+          msg =  `Hi, The applicant portal shall be opened to applications for applications from 28 Oct, 2021 at 11:59 pm. Goto https://portal.aucc.edu.gh/applicant`
+       }else{
+         msg =  `Hi, visit the applicant portal now to start your AUCC Application. Goto https://portal.aucc.edu.gh/applicant`
+       }
+       const m = await sms(s.phone,msg)
+       console.log(`${s.buyer_name} (${s.phone}) sent with response code : ${m.code}`)
+     }  
+   } 
+});
 
 module.exports = Router;
