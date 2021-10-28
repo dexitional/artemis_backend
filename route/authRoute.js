@@ -164,8 +164,8 @@ Router.get('/alertapplicants', async(req,res)=>{
        }else{
          msg =  `Hi, visit the applicant portal now to start your AUCC Application. Goto https://portal.aucc.edu.gh/applicant`
        }
-       const m = await sms(s.phone,msg)
-       console.log(`${s.buyer_name} (${s.phone}) sent with response code : ${m.code}`)
+       const m = await sms(s.buyer_phone,msg)
+       console.log(`${s.buyer_name} (${s.buyer_phone}) sent with response code : ${m.code}`)
      }  
    } 
 });
