@@ -1,7 +1,13 @@
 var bcrypt = require('bcrypt');
 var moment = require('moment');
+var sha1 = require('sha1')
 var jwt = require('jsonwebtoken');
 const { Admission } = require('../../model/mysql/admissionModel');
+const { SSO } = require('../../model/mysql/ssoModel');
+const { Student } = require('../../model/mysql/studentModel');
+const { customAlphabet } = require('nanoid')
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
+const { getUsername } = require('../../middleware/util')
 
 module.exports = {
  
@@ -169,6 +175,69 @@ module.exports = {
     }
   },
 
+  fetchAdmittedStudent : async (req,res) => {
+    const { serial } = req.params;
+    try{
+      var data = await Admission.fetchAdmittedStudent(serial);
+      if(data){
+        res.status(200).json({success:true, data});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      res.status(200).json({success:false, data: null, msg: "System error detected."});
+    }
+  },
+  
+
+  
+  sendAgreement : async (req,res) => {
+    const { serial,action } = req.body;
+    console.log(req.body);
+    var ok;
+    try{
+      if(action == 1){
+        // Fetch Applicant Data
+        var profile = await Admission.fetchProfile(serial);
+        var guardian = await Admission.fetchGuardian(serial);
+        var admit = await Admission.fetchAdmittedStudent(serial);
+        var password = nanoid();
+        if(profile){
+            const name = profile.fname.split(' ',2)
+            const username = getUsername(name[0],profile.lname)
+            var email = `${username}@st.aucc.edu.gh`
+            const isExist = await Student.findEmail(email)
+            if(isExist && isExist.length > 0) email = `${username}${isExist.length+1}@st.aucc.edu.gh`
+            var insertData = {fname:name[0], mname:name[1], lname:profile.lname, gender:profile.gender, dob:profile.dob, phone: profile.phone, email: profile.email, address:profile.resident_address, hometown:profile.home_town, region_id:profile.home_region, disability:profile.disabilities, session: profile.session_mode, guardian_name: guardian.fname+' '+guardian.lname, guardian_phone:guardian.phone, doa:admit.admission_date,country_id:profile.resident_country  }
+            insertData = {...insertData, prog_id:admit.prog_id, major_id:admit.major_id, entry_group:admit.sell_type == 2 ? 'INT':'GH', institute_email: email, refno: serial,semester:admit.start_semester }
+            const cst = await Student.fetchStudentProfile(serial)
+            if(cst && cst.length <= 0){
+               const ins = Student.insertStudentProfile(insertData)
+               if(ins) { 
+                 // Create Account & Photo & Updated Admit Status
+                 const sdata = { username:email, password:sha1(password), tag: serial, group_id:1 }
+                 const ssoUser = await SSO.insertSSOUser(sdata)
+                 const ssoPhoto = await SSO.insertPhoto(ssoUser.insertId,serial,1,'./public/cdn/photo/none.png')
+                 const ups = await Admission.updateAdmittedTbl(serial,{ accepted:action,username:email,password });
+                 res.status(200).json({success:true, ups}); 
+
+               }else{ 
+                 res.status(200).json({success:false, data: null, msg:"Student creation failed!"});
+               }
+            }else{
+              res.status(200).json({success:false, data: null, msg:"Student already exist!"});
+            }
+        }
+
+      }else{
+        const ups = await Admission.updateAdmittedTbl(serial,{ accepted:action });
+        res.status(200).json({success:true, ups});          
+      }
+     
+    }catch(e){
+      res.status(200).json({success:false, data: null, msg: "System error detected."});
+    }
+  },
 
 }
 

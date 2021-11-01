@@ -50,6 +50,18 @@ module.exports.Admission = {
       return res;
    },
 
+   fetchProfile : async (serial) => {
+      const sql = `select * from step_profile where serial = ${serial}`;
+      const res = await db.query(sql);
+      return res && res[0];
+   },
+
+   fetchGuardian : async (serial) => {
+      const sql = `select * from step_guardian where serial = ${serial}`;
+      const res = await db.query(sql);
+      return res && res[0];
+   },
+
    fetchNotes : async (serial) => {
       const sql = `select * from notification where serial = ${serial}`;
       const res = await db.query(sql);
@@ -71,6 +83,17 @@ module.exports.Admission = {
    updateApplicationStatus : async (serial,status) => {
       const sql = "update applicant set flag_submit = "+status+" where serial = '"+serial+"'";
       const res = await db.query(sql);
+      return res;
+   },
+
+   fetchAdmittedStudent: async (serial) => {
+      const sql = "select s.academic_year,s.cal_lecture_start,t.letter_condition,b.amount,b.currency,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = x.letter_id  left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'";
+      const res = await db.query(sql);
+      return res && res[0];
+   },
+
+   updateAdmittedTbl : async (serial,data) => {
+      var res = await db.query("update P06.admitted set ? where serial = "+serial,data);
       return res;
    },
 

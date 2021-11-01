@@ -395,12 +395,30 @@ module.exports.SSO = {
       }
    },
 
-   fetchRegsList : async (session_id) => {
+   fetchRegsList : async (session_id,query) => {
+      const { level,prog_id,major_id } = query;
+      console.log(query)
+      var sql;
+      if(major_id && prog_id && level){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and (ceil(s.semester/2)*100) = "+level+" and s.prog_id ="+prog_id+" and s.major_id ="+major_id
+      }else if(prog_id && level && !major_id){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and (ceil(s.semester/2)*100) = "+level+" and s.prog_id ="+prog_id
+      }else if(major_id && level && !prog_id){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and (ceil(s.semester/2)*100) = "+level+" and s.major_id ="+major_id
+      }else if(!major_id && level && !prog_id){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and (ceil(s.semester/2)*100) = "+level
+      }else if(!major_id && !level && prog_id){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and s.prog_id ="+prog_id
+      }else if(major_id && !level && !prog_id){
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id+" and s.major_id ="+major_id
+      }else{
+         sql = "select distinct r.indexno from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id where r.session_id = "+session_id
+      }
       var data = []
-      const res = await db.query("select distinct r.indexno from ais.activity_register r where r.session_id = "+session_id);
+      const res = await db.query(sql);
       if(res && res.length > 0){
          for(var r of res){
-            const resm = await db.query("select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where r.indexno = '"+r.indexno+"' and r.session_id = "+session_id+" order by r.id desc limit 1");
+            const resm = await db.query("select r.*,s.fname,s.mname,s.lname,s.refno, ceil(s.semester/2)*100 as level,x.title as session_name,p.`short` as program_name, m.title as major_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.program p on s.prog_id = p.id left join ais.major m on m.id = s.major_id left join utility.session x on x.id = r.session_id where r.indexno = '"+r.indexno+"' and r.session_id = "+session_id+" order by r.id desc limit 1");
             if(resm && resm.length > 0) data.push(resm[0])
          }
       }

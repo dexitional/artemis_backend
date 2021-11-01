@@ -1,4 +1,4 @@
-export const getTargetGroup = (group_code) => {
+const getTargetGroup = (group_code) => {
     var yr
     switch(group_code){
       case '1000':  yr = `Year 1 Only`; break;
@@ -18,8 +18,7 @@ export const getTargetGroup = (group_code) => {
     return yr
 }
 
-
-export const getUsername = (fname,lname) => {
+const getUsername = (fname,lname) => {
   var username,fr,lr;
   let fs = fname ? fname.trim().split(' '):null
   let ls = lname ? lname.trim().split(' '):null
@@ -42,7 +41,7 @@ export const getUsername = (fname,lname) => {
 }
 
 
-export const getSemestersByCode = (group_code) => {
+const getSemestersByCode = (group_code) => {
   console.log(group_code)
   var yr
   switch(group_code){
@@ -65,3 +64,5 @@ export const getSemestersByCode = (group_code) => {
   }
   return yr
 }
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername }

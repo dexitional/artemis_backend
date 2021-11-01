@@ -290,7 +290,6 @@ module.exports = {
         if(err) res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
         const ssoUser = await SSO.fetchSSOUser(tag)
         if(ssoUser.length > 0){
-         
           const insertData = !ssoUser[0].photo_id ? await SSO.insertPhoto(ssoUser[0].uid,tag,group_id,dbpath) : await SSO.updatePhoto(ssoUser[0].photo_id,dbpath)
           if(lock){
             if(group_id == '01'){
@@ -856,7 +855,7 @@ fetchRegsData : async (req,res) => {
 fetchRegsList : async (req,res) => {
   try{
       var session = await SSO.getActiveSessionByMode(01)
-      var regs = await SSO.fetchRegsList(session.id);
+      var regs = await SSO.fetchRegsList(session.id,req.query);
       if(regs && regs.length > 0){
         res.status(200).json({success:true, data:{ regdata:regs, session } });
       }else{

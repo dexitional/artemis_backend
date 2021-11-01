@@ -155,7 +155,6 @@ Router.get('/loadfreshers', SSOController.loadFresher)  // LOAD FRESHERS
 // SCRIPTS
 Router.get('/alertapplicants', async(req,res)=>{
    const ss = await db.query("select l.*,t.amount from fms.voucher_log l left join fms.transaction t on t.id = l.tid")
-   console.log(ss)
    if(ss.length > 0){
      var msg = ``
      for(var s of ss){
