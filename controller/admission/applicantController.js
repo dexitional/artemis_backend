@@ -77,15 +77,19 @@ module.exports = {
                    const notes = await Admission.fetchNotes(serial);
                    data.notification = notes;
                 }
+                await SSO.applicantlogger(serial,'LOGIN_SUCCESS',{serial,pin})
                 res.status(200).json({success:true, data});
 
             }else if(applicant && applicant.length > 0 && applicant[0].status == 0){
+                await SSO.applicantlogger(serial,'LOGIN_FAILED',{serial,pin})
                 res.status(200).json({success:false, data: null, msg:"Voucher is inactive!"});
             }else{
+                await SSO.applicantlogger(serial,'LOGIN_ERROR',{serial,pin}) // Log Activity
                 res.status(200).json({success:false, data: null, msg:"Voucher does not exist!"});
             }
       }catch(e){
           console.log(e)
+          await SSO.applicantlogger(serial,'LOGIN_ERROR',{serial,error:e})
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
   },

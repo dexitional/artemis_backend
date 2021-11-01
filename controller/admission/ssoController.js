@@ -120,7 +120,7 @@ module.exports = {
             }
       }catch(e){
           console.log(e)
-          const lgs = await await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
+          const lgs = await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
           console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }

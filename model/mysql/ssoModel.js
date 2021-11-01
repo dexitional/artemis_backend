@@ -116,6 +116,12 @@ module.exports.SSO = {
       return res;
    },
 
+   applicantlogger : async (serial,action,meta) => {
+      const data = { serial, title: action, meta: JSON.stringify(meta) }
+      const res = await db.query("insert into P06.`activity_applicant` set ?", data);
+      return res;
+   },
+
    
    // SESSION MODELS
 
