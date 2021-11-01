@@ -159,7 +159,7 @@ Router.get('/alertapplicants', async(req,res)=>{
      var msg = ``
      for(var s of ss){
        if(s.amount > 100){
-          msg =  `Hi, The applicant portal shall be opened to applications for applications from 28 Oct, 2021 at 11:59 pm. Goto https://portal.aucc.edu.gh/applicant`
+          msg =  `Hi, The applicant portal shall be opened to applications for applications from 2nd November, 2021 at 11:59 pm. Goto https://portal.aucc.edu.gh/applicant`
        }else{
          msg =  `Hi, visit the applicant portal now to start your AUCC Application. Goto https://portal.aucc.edu.gh/applicant`
        }
