@@ -328,7 +328,11 @@ module.exports = {
     console.log(req.body);
       try{
         const { session_id } = req.body;
-        if(req.body.admission_date) moment(req.body.admission_date).format('YYYY-MM-DD')
+        if(!req.body.exam_start || req.body.exam_start == 'Invalid date') delete req.body.exam_start
+        if(!req.body.exam_end || req.body.exam_end == 'Invalid date') delete req.body.exam_end
+        if(!req.body.admission_date || req.body.admission_date == 'Invalid date') delete req.body.admission_date
+        if(!req.body.apply_start || req.body.apply_start == 'Invalid date') delete req.body.apply_start
+        if(!req.body.apply_end || req.body.apply_end == 'Invalid date') delete req.body.apply_end
         var resp
         if(session_id > 0){ // Updates
           resp = await SSO.updateSession(session_id,req.body);
