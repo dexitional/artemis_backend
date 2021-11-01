@@ -969,6 +969,7 @@ module.exports.SSO = {
       const majors = await db.query("select m.*,p.`short` as program_name from ais.major m left join utility.program p on p.id = m.prog_id where m.status = 1");
       const stages = await db.query("select * from P06.stage where status = 1");
       const applytypes = await db.query("select * from P06.apply_type where status = 1");
+      const letters = await db.query("select * from P06.letter where status = 1");
       var adm_programs = await db.query("select m.title as major_name,m.id as major_id,p.`short` as program_name,p.id as prog_id from ais.major m join utility.program p on m.prog_id = p.id union select null as major_name, null as major_id, `short` as program_name, id as prog_id from utility.program where flag_majors = 0");
       if(adm_programs && adm_programs.length > 0){
          adm_programs = adm_programs.map((row,i) => {
@@ -977,7 +978,7 @@ module.exports.SSO = {
          })
       }
       const countries = await db.query("select code_name,title from utility.country where status = 1 order by title asc");
-      if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries }
+      if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries,letters }
       return null;
    },
 

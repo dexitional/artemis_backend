@@ -328,6 +328,7 @@ module.exports = {
     console.log(req.body);
       try{
         const { session_id } = req.body;
+        if(req.body.admission_date) moment(req.body.admission_date).format('YYYY-MM-DD')
         var resp
         if(session_id > 0){ // Updates
           resp = await SSO.updateSession(session_id,req.body);
