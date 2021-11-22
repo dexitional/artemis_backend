@@ -110,18 +110,15 @@ module.exports = {
                 data.token = token;
                 
                 const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{username}) // Log Activity
-                console.log(lgs)
                 res.status(200).json({success:true, data});
 
             }else{
                 const lgs = await SSO.logger(0,'LOGIN_FAILED',{username}) // Log Activity
-                console.log(lgs)
                 res.status(200).json({success:false, data: null, msg:"Invalid username or password!"});
             }
       }catch(e){
           console.log(e)
           const lgs = await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
-          console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
   },
@@ -614,6 +611,30 @@ fetchApplicant : async (req,res) => {
 },
 
 
+// SORTED APPLICANTS CONTROLS
+fetchSortedApplicants : async (req,res) => {
+  try{
+      const id = req.params.id;
+      const sell_type = req.query.sell_type;
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      if(sell_type){
+        var applicants = await SSO.fetchApplicantsByType(id,sell_type);
+      }else{
+        var applicants = await SSO.fetchSortedApplicants(id,page,keyword);
+      }
+     
+      if(applicants && applicants.data.length > 0){
+          res.status(200).json({success:true, data:applicants});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
 
 // STUDENT CONTROLS
 
@@ -641,10 +662,9 @@ postStudentAIS : async (req,res) => {
     //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
     if(req.body.major_id == '') delete req.body.major_id
     if(req.body.prog_id == '') delete req.body.prog_id
-    if(req.body.dob == '' || !req.body.dob){ delete req.body.dob }
-    if(req.body.doa == '' || !req.body.doa){ delete req.body.doa }
-    if(req.body.doc == '' || !req.body.doc){ delete req.body.doc }
-    else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
+    if(req.body.dob == '' || req.body.dob == 'Invalid date' || !req.body.dob){ delete req.body.dob }else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
+    if(req.body.doa == '' || req.body.doa == 'Invalid date' || !req.body.doa){ delete req.body.doa }else{ req.body.doa = moment(req.body.doa).format('YYYY-MM-DD') }
+    if(req.body.doc == '' || req.body.doc == 'Invalid date' || !req.body.doc){ delete req.body.doc }else{ req.body.doc = moment(req.body.doc).format('YYYY-MM-DD') }
     delete req.body.uid;delete req.body.flag_locked;
     delete req.body.flag_disabled;delete req.body.program_name;
     delete req.body.major_name;delete req.body.name; delete req.body.doc;
@@ -930,7 +950,7 @@ fetchBill : async (req,res) => {
 
 postBill : async (req,res) => {
     const { bid } = req.body;
-    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code,post_status:req.body.post_status, session_id: req.body.session_id}
     if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
     try{
       var resp = bid <=0 ? await SSO.insertBill(dt) : await SSO.updateBill(bid,dt) ;
@@ -944,6 +964,23 @@ postBill : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
     }
 },
+
+revokeBill: async (req,res) => {
+  try{
+    const { id,refno } = req.body;
+    const resp = await SSO.revokeBill(id,refno)
+    if(resp){
+      await SSO.updateBill(id,{post_status:0})
+      res.status(200).json({success:true, data:resp});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Bill not revoked!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
 
 deleteBill : async (req,res) => {
   try{
@@ -966,17 +1003,137 @@ sendBill : async (req,res) => {
     var bl = await SSO.fetchBill(id);
     var b = bl[0];
     const sem = getSemestersByCode(b.group_code)
+    const sess = await SSO.getActiveSessionByMode(1)
     var count;
     if(b.post_status == 0){
          if(b.post_type == 'GH'){
-            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem)
+            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess)
          }else if(b.post_type == 'INT'){
-            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem)
+            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess)
          }
     }
     if(count){
-      const su = await SSO.updateBill(b.bid,{post_status:1})
-      console.log(su)
+      //const su = await SSO.updateBill(b.bid,{post_status:1})
+      //console.log(su)
+      res.status(200).json({success:true, data:count});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Bill not posted"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+
+// BILL ITEMS CONTROLS - FMS
+
+fetchBillItems : async (req,res) => {
+  try{
+    const page = req.query.page;
+    const keyword = req.query.keyword;
+    var bills = await SSO.fetchBillItems(page,keyword);
+    if(bills && bills.data.length > 0){
+      res.status(200).json({success:true, data:bills});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+fetchBillItem : async (req,res) => {
+  try{
+      const bid = req.params.bid;
+      var bill = await SSO.fetchBill(bid);
+      var items = await SSO.fetchItemsByBid(bid)
+     
+      if(bill && bill.length > 0){
+        res.status(200).json({success:true, data:{ data:bill[0],items }});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postBillItem : async (req,res) => {
+    const { id } = req.body;
+    let dt = {narrative:req.body.narrative, tag:req.body.tag, amount: req.body.amount, currency:req.body.currency, status:req.body.status, type:req.body.type, session_id:req.body.session_id}
+    try{
+      var resp = id <=0 ? await SSO.insertBillItem(dt) : await SSO.updateBillItem(id,dt) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+addToBill: async (req,res) => {
+  try{
+    const { id,bid } = req.body;
+    const bill = await SSO.fetchBill(bid)
+    if(bill){
+      const resp = await SSO.addToBill(id,bid)
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Item attachement failed!"});
+      }
+    }else{
+      res.status(200).json({success:false, data: null, msg:"Bill does not exist!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+deleteBillItem : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteBill(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+invokeBillItem : async (req,res) => {
+  try{
+    const { id } = req.body;
+    var bl = await SSO.fetchBill(id);
+    var b = bl[0];
+    const sem = getSemestersByCode(b.group_code)
+    const sess = await SSO.getActiveSessionByMode(1)
+    var count;
+    if(b.post_status == 0){
+         if(b.post_type == 'GH'){
+            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess)
+         }else if(b.post_type == 'INT'){
+            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess)
+         }
+    }
+    if(count){
+      //const su = await SSO.updateBill(b.bid,{post_status:1})
+      //console.log(su)
       res.status(200).json({success:true, data:count});
     }else{
       res.status(200).json({success:false, data: null, msg:"Bill not posted"});
@@ -1022,6 +1179,22 @@ fetchOtherPayments : async (req,res) => {
   }
 },
 
+
+fetchVoucherSales : async (req,res) => {
+  try{
+    const page = req.query.page;
+    const keyword = req.query.keyword;
+    var payments = await SSO.fetchVoucherSales(page,keyword);
+    if(payments && payments.data.length > 0){
+      res.status(200).json({success:true, data:payments});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
 
 fetchPayment : async (req,res) => {
   try{
@@ -1136,27 +1309,57 @@ sendPayment : async (req,res) => {
 },
 
 generateIndexNo : async (req,res) => {
+     console.log(req.body.refno)
   try{
       const refno = req.body.refno;
-      var indexNo = await SSO.generateIndexNo(refno);
       var resp = await Student.fetchStProfile(refno);
-      var ups;
-      var email;
-      
-      if(resp && resp.length > 0){
-          const username = getUsername(resp[0].fname,resp[0].lname)
-          email = `${username}@st.aucc.edu.gh`
-          const isExist = await Student.findEmail(email)
-          if(isExist && isExist.length > 0){
-            email = `${username}${isExist.length+1}@st.aucc.edu.gh`
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email })
-          }else{
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
+      if(resp && resp.length > 0 && resp[0].indexno == 'UNIQUE'){
+          var indexNo = await SSO.generateIndexNo(refno);
+          var ups;
+          var email;
+          if(!resp[0].institute_email){
+            const username = getUsername(resp[0].fname,resp[0].lname)
+            email = `${username}@st.aucc.edu.gh`
+            if(resp && resp.length <= 0){
+              const isExist = await Student.findEmail(email)
+              if(isExist && isExist.length > 0){
+                email = `${username}${isExist.length+1}@st.aucc.edu.gh`
+                ups = await Student.updateStudentProfile(refno,{ institute_email:email })
+              }else{
+                ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
+              }
+            }
           }
-      }
+          
+          if(indexNo && email){
+            res.status(200).json({success:true, data: { indexno: indexNo, email }});
+          }else if(indexNo && !email){
+            res.status(200).json({success:true, data: { indexno: indexNo }});
+          }else{
+            res.status(200).json({success:false, data: null, msg:"No records!"});
+          }
+            
+       }else{
+         res.status(200).json({success:false, data: null, msg:"Index number already exists!"});
+       }
+
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+// Debtors - FMS
+
+fetchDebtors : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
       
-      if(indexNo && email){
-        res.status(200).json({success:true, data: { indexno: indexNo, email }});
+      var students = await SSO.fetchDebtors(page,keyword);
+      if(students && students.data.length > 0){
+        res.status(200).json({success:true, data:students});
       }else{
         res.status(200).json({success:false, data: null, msg:"No records!"});
       }
@@ -1165,7 +1368,6 @@ generateIndexNo : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
-
 
 
 // HRStaff  - HRS

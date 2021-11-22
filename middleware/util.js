@@ -1,3 +1,5 @@
+const { SSO } = require("../model/mysql/ssoModel");
+
 const getTargetGroup = (group_code) => {
     var yr
     switch(group_code){
@@ -65,4 +67,33 @@ const getSemestersByCode = (group_code) => {
   return yr
 }
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername }
+const runBills = async () => {
+      var bl = await SSO.fetchCurrentBills();
+      const sess = await SSO.getActiveSessionByMode(1)
+      var resp = {};
+      if(bl && bl.length > 0){
+        for(var b of bl){
+          const sem = getSemestersByCode(b.group_code)
+          var count;
+          if(b.post_status == 1){
+              if(b.post_type == 'GH'){
+                  count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess)
+                  if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
+              }else if(b.post_type == 'INT'){
+                  count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess)
+                  if(count > 0)resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
+              }
+          }
+        }
+      }
+      return resp;
+}
+
+
+
+const runRetireAccount = async () => {
+  var resp = await SSO.retireAccount();
+  return resp;
+}
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireAccount }

@@ -150,7 +150,7 @@ module.exports.Student = {
    },
 
    fetchStudentTrans : async (refno = null) => {
-      const res = await db.query("select t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.bill_id = b.bid where refno = '"+refno+"'");
+      const res = await db.query("select s.fname,s.mname,s.lname,p.`short` as program_name,t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.bill_id = b.bid left join ais.student s on t.refno = s.refno left join utility.program p on s.prog_id = p.id where t.refno = '"+refno+"'");
       if(res && res.length > 0) return res
       return null;
    },

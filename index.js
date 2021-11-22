@@ -44,6 +44,10 @@ app.use('/api',admission);
 app.use('/api/v1',api); 
 app.use('/',site); 
 
+// Intialise Cron Jobs
+const cron = require('./config/cron');
+
+
 // Start Server Instance
 var port = process.env.PORT || 5020;
 var server = app.listen(port, () => {

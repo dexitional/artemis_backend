@@ -52,6 +52,9 @@ Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
 // APPLICANTS routes
 Router.get('/ams/applicants/:id', SSOController.fetchApplicants);
 Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
+// SORTED routes
+Router.get('/ams/sorted/:id', SSOController.fetchSortedApplicants);
+
 
 
 
@@ -64,12 +67,11 @@ Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
 Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
 Router.get('/ais/genmail/:refno', SSOController.generateMail);
 Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
+
 // REGISTRATIONS routes
 Router.get('/ais/regdata/', SSOController.fetchRegsData);
 Router.get('/ais/reglist/', SSOController.fetchRegsList);
 Router.get('/ais/regmount/', SSOController.fetchMountList);
-
-
 
 
 /* FMS MODULE ROUTES */
@@ -78,17 +80,30 @@ Router.get('/ais/regmount/', SSOController.fetchMountList);
 Router.get('/fms/sbills/', SSOController.fetchBills);
 Router.get('/fms/sbills/:bid', SSOController.fetchBill);
 Router.post('/fms/sbills', SSOController.postBill);
+Router.post('/fms/revokebill', SSOController.revokeBill);
+Router.post('/fms/revokestbill', SSOController.revokeBill);
 Router.delete('/fms/sbills/:id', SSOController.deleteBill);
 Router.post('/fms/sendbill', SSOController.sendBill);
+
+// BILL ITEMS routes
+Router.get('/fms/sbillitems/', SSOController.fetchBillItems);
+Router.get('/fms/sbillitems/:id', SSOController.fetchBillItem);
+Router.post('/fms/sbillitems', SSOController.postBillItem);
+Router.post('/fms/addtobill', SSOController.addToBill);
+Router.delete('/fms/sbillitems/:id', SSOController.deleteBillItem);
+
 // FEE PAYMENTS routes
 Router.get('/fms/feestrans/', SSOController.fetchPayments);
 Router.get('/fms/othertrans/', SSOController.fetchOtherPayments);
+Router.get('/fms/vouchersales/', SSOController.fetchVoucherSales);
 Router.get('/fms/feestrans/:id', SSOController.fetchPayment);
 Router.post('/fms/feestrans', SSOController.postPayment);
 Router.delete('/fms/feestrans/:id', SSOController.deletePayment);
 Router.post('/fms/genindexno', SSOController.generateIndexNo);
 Router.get('/fms/movetofees/:id', SSOController.movePaymentToFees);
 
+// DEBTORS
+Router.get('/fms/debtors/', SSOController.fetchDebtors);
 
 /* HRS MODULE ROUTES */
 
@@ -107,11 +122,11 @@ Router.get('/hrs/revokerole/:uid/:role', SSOController.revokeRole);
 Router.get('/hrs/hrunit/', SSOController.fetchHRUnitDataHRS);
 Router.post('/hrs/hrunit', SSOController.postHRUnitDataHRS);
 Router.delete('/hrs/hrunit/:id', SSOController.deleteHRUnitDataHRS);
+
 // HR Job routes
 Router.get('/hrs/hrsjob/', SSOController.fetchHRJobData);
 Router.post('/hrs/hrsjob', SSOController.postHRJobData);
 Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
-
 
 /* HELPERS */
 Router.get('/hrs/helpers', SSOController.fetchHRShelpers);
