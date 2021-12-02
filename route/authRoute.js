@@ -45,10 +45,11 @@ Router.get('/ams/vendors', SSOController.fetchVendors);
 Router.post('/ams/vendors', SSOController.postVendor);
 Router.delete('/ams/vendors/:id', SSOController.deleteVendor);
 // VOUCHER routes
-Router.get('/ams/vouchers/:id', SSOController.fetchVouchers);
+Router.get('/ams/vouchers', SSOController.fetchVouchers);
 Router.post('/ams/vouchers', SSOController.postVoucher);
 Router.delete('/ams/vouchers/:id', SSOController.deleteVoucher);
 Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
+Router.post('/ams/resendvoucher', SSOController.resendVoucher);
 // APPLICANTS routes
 Router.get('/ams/applicants/:id', SSOController.fetchApplicants);
 Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);

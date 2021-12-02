@@ -225,6 +225,25 @@ module.exports.SSO = {
       return null;
    },
 
+   fetchSMSFailedVouchers: async () => {
+      const res = await db.query("select * from fms.voucher_log where sms_code > 1000");
+      if(res && res.length > 0) return res[0]
+      return null;
+   },
+
+   resendVoucherBySms: async (serial) => {
+      const res = await db.query("select * from fms.voucher_log where serial = "+serial);
+      if(res && res.length > 0) return res[0]
+      return null;
+   },
+
+
+   updateVoucherLogBySerial: async (serial,data) => {
+      const res = await db.query("update fms.voucher_log set ? where serial = "+serial,data);
+      return res;
+   },
+
+
    sellVoucher : async (formId,collectorId,sessionId,buyerName,buyerPhone,tid) => {
       const pr = await db.query("select * from P06.price p where p.price_id = "+formId);
       const vd = await db.query("select c.vendor_id from fms.collector c left join P06.vendor v on c.vendor_id = v.vendor_id where c.id = "+collectorId);
@@ -291,6 +310,8 @@ module.exports.SSO = {
       const res = await db.query("update fms.voucher_log set ? where id = "+id,data);
       return res;
    },
+
+  
 
 
    // APPLICANTS - AMS MODELS
@@ -504,6 +525,11 @@ module.exports.SSO = {
       return res && res[0]
    },
 
+   getActiveSessionByDoa : async (doa) => {
+      const res = await db.query("select s.* from ais.student where `default` = 1  and mode_id = "+doa);
+      return res && res[0]
+   },
+
 
    // TRANSACTION - FMS
   
@@ -593,14 +619,15 @@ module.exports.SSO = {
       return resp;
    },
 
-   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess) => {
+   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess,discount,currency) => {
       var count = 0;
-      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and find_in_set(s.semester,'"+sem+"') > 0");
+      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+sem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
             const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
             if(isExist && isExist.length <= 0){
-               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id})
+               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id, currency})
+               (discount && discount > 0 ) && await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
                if(ins.insertId > 0) count++;
             }
          }
@@ -608,14 +635,15 @@ module.exports.SSO = {
       return count;
    },
 
-   sendStudentBillInt : async (bid,bname,amount,sem,sess) => {
+   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,currency) => {
       var count = 0;
-      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_mode = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
+      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
             const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
             if(isExist && isExist.length <= 0){
                const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id})
+               (discount && discount > 0 ) && await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
                if(ins.insertId > 0) count++;
             }
          }
@@ -638,6 +666,26 @@ module.exports.SSO = {
       }  
       return count;
    },
+
+ 
+   retireFeesTransact : async () => {
+      var count = 0;
+      const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
+      if(st) count = st.affectedRows
+      return count;
+   },
+
+   retireResitTransact : async () => {
+      var count = 0;
+      const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (3 ) and m.tid is null and i.`default` = 1 order by tid")
+      if(st) count = st.affectedRows
+      return count;
+   },
+
+
+
+
+
 
    // BILL ITEMS - FMS
 
@@ -850,19 +898,18 @@ module.exports.SSO = {
 
    generateIndexNo : async (refno) => {
       const st = await db.query("select x.id,p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.`default` = 1 and s.refno = '"+refno+"'");
-      if(st && st.length > 0 && st[0].indexno == 'UNIQUE'){
+      if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
          const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
          var newIndex, resp, no;
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
          if(sm && sm.length > 0){
-            no = sm[0].prog_count+1;
-            console.log(no)
+            no = parseInt(sm[0].prog_count)+1;
             var newNo;
             switch(no.toString().length){
-               case 1: newNo = `00${no}`; break;
-               case 2: newNo = `0${no}`; break;
-               case 3: newNo = `${no}`; break;
-               default: newNo = `${no}`; break;
+              case 1: newNo = `00${no}`; break;
+              case 2: newNo = `0${no}`; break;
+              case 3: newNo = `${no}`; break;
+              default: newNo = `${no}`; break;
             }
             newIndex = `${prefix}${newNo}`
          }else{
@@ -875,7 +922,6 @@ module.exports.SSO = {
             if(sf && sf.length <= 0) break;
             no++
          }
-
          resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no });
          if(resp) return newIndex
       }
@@ -1020,8 +1066,8 @@ module.exports.SSO = {
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
-          cql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
+         sql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
+         cql += ` where u.title like '%${keyword}%' or u.code like '%${keyword}%' or u.location like '%${keyword}%' or u.head = '${keyword}'`
       }
 
       sql += ` order by u.title`
@@ -1037,6 +1083,7 @@ module.exports.SSO = {
          data: res,
       }
    },
+   
    insertHRUnit : async (data) => {
       const res = await db.query("insert into utility.unit set ?", data);
       return res;

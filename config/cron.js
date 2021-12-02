@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runRetireAccount } = require('../middleware/util')
+const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
@@ -13,10 +13,7 @@ cron.schedule('*/1 * * * *', () => {
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
-          // RUN BILLS CHARGED
-          runBills()
-          // RUN STUDENT ACCOUNT RETIREMENTS
-          setTimeout(()=> runRetireAccount(), 200)
+
         }
     });
 });
@@ -28,9 +25,21 @@ cron.schedule('*/30 * * * *', async function() {
     exec(cmd, function(error, stdout, stderr) {
       if(error){ console.log(error) }
       else {
-        // RUN SCRIPT
-        // CHARGE STUDENT BILL
-        //runBills()
+        /* FMS CRON JOBS  */
+
+          // RUN BILLS CHARGED
+          runBills()
+          // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
+          setTimeout(()=> runRetireFeesTransact(), 200)
+          // RUN RETIREMENT ON STUDENT ACCOUNTS 
+          setTimeout(()=> runRetireStudentAccount(), 200)
+          // RUN VOUCHER SENDER
+          setTimeout(()=> runVoucherSender(), 200)
+          // RUN RESIT CHECKER
+          // RUN 
+
+
+        /* AIS CRON JOBS  */
 
       }
     });

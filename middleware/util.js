@@ -67,33 +67,90 @@ const getSemestersByCode = (group_code) => {
   return yr
 }
 
-const runBills = async () => {
-      var bl = await SSO.fetchCurrentBills();
-      const sess = await SSO.getActiveSessionByMode(1)
-      var resp = {};
-      if(bl && bl.length > 0){
-        for(var b of bl){
-          const sem = getSemestersByCode(b.group_code)
-          var count;
-          if(b.post_status == 1){
-              if(b.post_type == 'GH'){
-                  count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess)
-                  if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
-              }else if(b.post_type == 'INT'){
-                  count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess)
-                  if(count > 0)resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
-              }
-          }
-        }
-      }
-      return resp;
+
+const getActiveSessionByDoa = async (doa) => {
+  const sess = await SSO.getActiveSessionByMode(1)
+  console.log(group_code)
+  var yr
+  switch(group_code){
+    case '1000':  yr = `1,2`; break;
+    case '0100':  yr = `3,4`; break;
+    case '0010':  yr = `5,6`; break;
+    case '0001':  yr = `7,8`; break;
+    case '0011':  yr = `5,6,7,8`; break;
+    case '0101':  yr = `3,4,7,8`; break;
+    case '0110':  yr = `3,4,5,6`; break;
+    case '0111':  yr = `3,4,5,6,7,8`; break;
+    case '1011':  yr = `1,2,5,6,7,8`; break;
+    case '1100':  yr = `1,2,3,4`; break;
+    case '1010':  yr = `1,2,5,6`; break;
+    case '1001':  yr = `1,2,7,8`; break;
+    case '1110':  yr = `1,2,3,4,5,6`; break;
+    case '1101':  yr = `1,2,3,4,7,8`; break;
+    case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
+    case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
+  }
+  return yr
 }
 
 
 
-const runRetireAccount = async () => {
+
+// CRON BOTS
+
+const runBills = async () => {
+    var bl = await SSO.fetchCurrentBills();
+    const sess = await SSO.getActiveSessionByMode(1)
+    var resp = {};
+    if(bl && bl.length > 0){
+      for(var b of bl){
+        const sem = getSemestersByCode(b.group_code)
+        var count;
+        if(b.post_status == 1){
+          if(b.post_type == 'GH'){
+            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess,b.discount,b.currency)
+            if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
+          }else if(b.post_type == 'INT'){
+            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess,b.discount,b.currency)
+            if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
+          }
+        }
+      }
+    }
+    return resp;
+}
+
+
+
+const runRetireStudentAccount = async () => {
   var resp = await SSO.retireAccount();
   return resp;
 }
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireAccount }
+const runRetireFeesTransact = async () => {
+  var resp = await SSO.retireFeesTransact();
+  return resp;
+}
+
+const retireResitTransact = async () => {
+  var resp = await SSO.retireResitTransact();
+  return resp;
+}
+
+const runVoucherSender = async () => {
+  var count = 0;
+  var res = await SSO.fetchSMSFailedVouchers();
+  if(res && res.length > 0){
+    for(let vs of res){
+      const msg = `Hi! AUCC Voucher for ${vs[0].buyer_name} is : ( SERIAL: ${vs[0].serial} PIN: ${vs[0].pin} , Goto https://portal.aucc.edu.gh/applicant )`
+      const send = sms(vs[0].buyer_phone,msg)
+      if(send.code == 1000) {
+        await SSO.updateVoucherLogBySerial(serial,{ sms_code:send.code })
+        count++
+      }
+    }
+  }
+  return count;
+}
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact }

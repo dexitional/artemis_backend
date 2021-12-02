@@ -439,17 +439,18 @@ module.exports = {
 
   fetchVouchers : async (req,res) => {
     try{
-        const id = req.params.id;
         const sell_type = req.query.sell_type;
         const page = req.query.page;
         const keyword = req.query.keyword;
+        const helpers = await SSO.fetchAMShelpers()
+        const { session : { session_id:id } } = helpers;
         
         if(sell_type){
           var vouchers = await SSO.fetchVouchersByType(id,sell_type);
         }else{
           var vouchers = await SSO.fetchVouchers(id,page,keyword);
         }
-       
+        
         if(vouchers && vouchers.data.length > 0){
           res.status(200).json({success:true, data:vouchers});
         }else{
@@ -534,6 +535,28 @@ module.exports = {
       console.log(e)
       res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
     }
+},
+
+resendVoucher : async (req,res) => {
+  try{
+    const { serial } = req.body;
+    const vs = await SSO.resendVoucherBySms(serial);
+    if(vs){
+      const msg = `Hi! AUCC Voucher for ${vs[0].buyer_name} is : ( SERIAL: ${vs[0].serial} PIN: ${vs[0].pin} , Goto https://portal.aucc.edu.gh/applicant )`
+      const send = sms(vs[0].buyer_phone,msg)
+      if(send.code == 1000){
+        await SSO.updateVoucherLogBySerial(serial,{ sms_log:send.code })
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"VOUCHER NOT SENT!"});
+      }
+    }else{
+      res.status(200).json({success:false, data: null, msg:"VOUCHER NOT REGISTERED IN LOGS!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
 },
 
 
@@ -950,8 +973,9 @@ fetchBill : async (req,res) => {
 
 postBill : async (req,res) => {
     const { bid } = req.body;
-    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code,post_status:req.body.post_status, session_id: req.body.session_id}
+    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code,post_status:req.body.post_status, session_id:req.body.session_id, discount: req.body.discount }
     if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
+    if(req.body.discount == '' || req.body.discount == 0) delete dt.discount
     try{
       var resp = bid <=0 ? await SSO.insertBill(dt) : await SSO.updateBill(bid,dt) ;
       if(resp){
@@ -1313,7 +1337,7 @@ generateIndexNo : async (req,res) => {
   try{
       const refno = req.body.refno;
       var resp = await Student.fetchStProfile(refno);
-      if(resp && resp.length > 0 && resp[0].indexno == 'UNIQUE'){
+      if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
           var indexNo = await SSO.generateIndexNo(refno);
           var ups;
           var email;
