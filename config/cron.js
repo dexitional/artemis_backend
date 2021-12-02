@@ -20,7 +20,7 @@ cron.schedule('*/1 * * * *', () => {
 
 
 // Schedule @ EVERY 30 MINUTES
-cron.schedule('*/30 * * * *', async function() {
+cron.schedule('*/20 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, function(error, stdout, stderr) {
       if(error){ console.log(error) }
