@@ -627,7 +627,7 @@ module.exports.SSO = {
             const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
             if(isExist && isExist.length <= 0){
                const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id, currency})
-               (discount && discount > 0 ) && await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
+               if(discount && discount > 0) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
                if(ins.insertId > 0) count++;
             }
          }
@@ -643,7 +643,7 @@ module.exports.SSO = {
             const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
             if(isExist && isExist.length <= 0){
                const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id})
-               (discount && discount > 0 ) && await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
+               if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
                if(ins.insertId > 0) count++;
             }
          }
@@ -1083,7 +1083,7 @@ module.exports.SSO = {
          data: res,
       }
    },
-   
+
    insertHRUnit : async (data) => {
       const res = await db.query("insert into utility.unit set ?", data);
       return res;
