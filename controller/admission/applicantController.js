@@ -14,6 +14,7 @@ module.exports = {
   authenticateApplicant : async (req,res) => {
       const { serial,pin } = req.body;
       try{
+            if(serial == '' || pin == '') throw('Please enter serial or pin!')
             var applicant = await Admission.verifyVoucher({serial,pin});
             if(applicant && applicant.length > 0 && applicant[0].status == 1){
                 var data = {};

@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact } = require('../middleware/util')
+const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
@@ -13,7 +13,7 @@ cron.schedule('*/1 * * * *', () => {
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
-
+          runSetupScoresheet()
         }
     });
 });

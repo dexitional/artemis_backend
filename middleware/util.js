@@ -153,4 +153,15 @@ const runVoucherSender = async () => {
   return count;
 }
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact }
+
+const runSetupScoresheet = async () => {
+  var resp = await SSO.setupSchoresheet();
+  return resp;
+}
+
+
+
+
+
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet }

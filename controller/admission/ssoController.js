@@ -931,6 +931,117 @@ fetchMountList : async (req,res) => {
 },
 
 
+// SCOREHEETS CONTROL - AIS
+
+fetchScoresheets : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var session = await SSO.getActiveSessionByMode(1);
+      var sheets = await SSO.fetchScoresheets(session.id,page,keyword);
+     
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postScoresheets : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.major_id == '') delete req.body.major_id
+    if(req.body.prog_id == '') delete req.body.prog_id
+    if(req.body.dob == '' || req.body.dob == 'Invalid date' || !req.body.dob){ delete req.body.dob }else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
+    if(req.body.doa == '' || req.body.doa == 'Invalid date' || !req.body.doa){ delete req.body.doa }else{ req.body.doa = moment(req.body.doa).format('YYYY-MM-DD') }
+    if(req.body.doc == '' || req.body.doc == 'Invalid date' || !req.body.doc){ delete req.body.doc }else{ req.body.doc = moment(req.body.doc).format('YYYY-MM-DD') }
+    delete req.body.uid;delete req.body.flag_locked;
+    delete req.body.flag_disabled;delete req.body.program_name;
+    delete req.body.major_name;delete req.body.name; delete req.body.doc;
+    console.log(req.body)
+    try{
+      var resp = id <= 0 ? await SSO.insertAISStudent(req.body) : await SSO.updateAISStudent(id,req.body) ;
+      console.log(resp)
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteScoresheet : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteVoucher(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+assignSheet : async (req,res) => {
+  try{
+      const { sno } = req.params;
+      const pwd = nanoid()
+      var resp = await Student.fetchStudentProfile(refno);
+      const ups = await SSO.updateUserByEmail(resp[0].institute_email,{password:sha1(pwd)})
+      const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+      const sm = sms(resp[0].phone,msg)
+      if(ups){
+          res.status(200).json({success:true, data:msg});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+unassignSheet : async (req,res) => {
+  try{
+      const { sno } = req.params;
+      const pwd = nanoid()
+      var resp = await Student.fetchStudentProfile(refno);
+      console.log(resp)
+      if(resp && resp.length > 0){
+         if(resp[0].institute_email && resp[0].phone){
+            const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
+            if(ups){
+                const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/photo/none.png')
+                const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+                const sm = sms(resp[0].phone,msg)
+                res.status(200).json({success:true, data:msg});
+            }else{
+                res.status(200).json({success:false, data: null, msg:"Action failed!"});
+            }
+         }else{
+            res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
+         }
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+
 
 
 
@@ -1363,8 +1474,11 @@ generateIndexNo : async (req,res) => {
             res.status(200).json({success:false, data: null, msg:"No records!"});
           }
             
-       }else{
+       }else if(resp && resp.length > 0 && (resp[0].indexno != null && resp[0].indexno != 'UNIQUE')){
          res.status(200).json({success:false, data: null, msg:"Index number already exists!"});
+       }
+       else{
+         res.status(200).json({success:false, data: null, msg:"Student does not exist!"});
        }
 
   }catch(e){

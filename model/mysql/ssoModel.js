@@ -515,13 +515,58 @@ module.exports.SSO = {
       return data
    },
 
+
+
+   // SCORESHEETS - AIS MODELS
+
+   fetchScoresheets : async (session_id,page,keyword) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(u.fname,' ',ifnull(concat(u.mname,' '),''),u.lname) as name,u.staff_no,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join hrs.staff u on find_in_set(u.staff_no,s.tag) > 0 left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
+      var cql = "select count(*) as total from  ais.sheet s left join hrs.staff u on find_in_set(u.staff_no,s.tag) > 0 left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+          cql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
+      }
+
+      sql += ` order by s.session_id desc,s.prog_id asc,s.semester asc, s.major_id asc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+   insertAISSheet : async (data) => {
+      const res = await db.query("insert into ais.sheet set ?", data);
+      return res;
+   },
+
+   updateAISSheet : async (id,data) => {
+      const res = await db.query("update ais.sheet set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISSheet : async (id) => {
+      const res = await db.query("delete from ais.shhet where id = "+id);
+      return res;
+   },
    
 
 
    // CALENDAR -AIS
    
    getActiveSessionByMode : async (mode_id) => {
-      const res = await db.query("select * from utility.session where `default` = 1  and mode_id = "+mode_id);
+      const res = await db.query("select * from utility.session where tag = 'MAIN' and `default` = 1 and mode_id = "+mode_id);
       return res && res[0]
    },
 
@@ -675,6 +720,7 @@ module.exports.SSO = {
       return count;
    },
 
+
    retireResitTransact : async () => {
       var count = 0;
       const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (3 ) and m.tid is null and i.`default` = 1 order by tid")
@@ -682,6 +728,105 @@ module.exports.SSO = {
       return count;
    },
 
+
+   setupSchoresheet: async () => {
+
+      // Diploma Sessions -  M, Undergrat Sessions - M,E,W, Postgrat Sessions - W
+      // Session Groups - Main stream, sub stream
+      /*  STEPS */
+      // 1. Check default Sessions for both stream and loop for all
+      // 2. In Session loop, Fetch all utility.structuremeta and insert into ais.sheet
+      // 3. Whiles in loop check conditions below
+      // #  If session is sub stream, insert for only semester 1,2 with session_id
+      // #  If session is main stream, insert for all semesters 1-8 with session_id
+      // #  Check group_id of utility.stru
+
+      
+      // Get All Streams - Two Streams
+      const main_stream = await db.query("select * from utility.session where tag = 'MAIN' and `default` =  1")
+      const sub_stream = await db.query("select * from utility.session where tag = 'SUB' and `default` =  1")
+      
+      // Stage for Main Stream
+      const main_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1")
+      if(main_meta && main_meta.length > 0 && main_stream && main_stream.length > 0){
+         var data = []
+         for(var meta of main_meta){
+            if(meta.semester%2 ==  (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
+            var loop_count,session_modes;
+            data.push(meta)
+            switch(meta.group_id){
+              case 'CP': 
+               loop_count = 1; 
+               session_modes = ['M'];break;
+              case 'DP': 
+               loop_count = 2; 
+               session_modes = ['M','W'];break;
+              case 'UG': 
+               loop_count = 3; 
+               session_modes = ['M','E','W'];break;
+              case 'PG': 
+               loop_count = 1; 
+               session_modes = ['W'];break;
+            }
+            
+            // Run Data For All Existing Session Modes
+            if(session_modes && session_modes.length > 0){
+               for(var i = 0; i < session_modes.length; i++){
+                  var sql = "select * from ais.sheet where session_id = "+main_stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+session_modes[i]+"' and mode_id = 1"
+                  sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
+                  const isExist = await db.query(sql)
+                  if(isExist && isExist.length <= 0){
+                     const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
+                     const ins = await db.query("insert into ais.sheet set ?",dt)
+                  }
+               }
+            }
+         }
+      }
+
+      // Stage for Sub Stream
+      const sub_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1")
+      if(sub_meta && sub_meta.length > 0 && sub_stream && sub_stream.length > 0){
+         var data = []
+         for(var meta of sub_meta){
+            if(meta.semester%2 ==  (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
+            var loop_count,session_modes;
+            data.push(meta)
+            switch(meta.group_id){
+            case 'CP': 
+               loop_count = 1; 
+               session_modes = ['M'];break;
+            case 'DP': 
+               loop_count = 2; 
+               session_modes = ['M','W'];break;
+            case 'UG': 
+               loop_count = 3; 
+               session_modes = ['M','E','W'];break;
+            case 'PG': 
+               loop_count = 1; 
+               session_modes = ['W'];break;
+            }
+            
+            // Run Data For All Existing Session Modes
+            if(session_modes && session_modes.length > 0){
+               for(var i = 0; i < session_modes.length; i++){
+                  var sql = "select * from ais.sheet where session_id = "+main_stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+session_modes[i]+"' and mode_id = 1"
+                  sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
+                  const isExist = await db.query(sql)
+                  if(isExist && isExist.length <= 0){
+                     const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
+                     const ins = await db.query("insert into ais.sheet set ?",dt)
+                  }
+               }
+            }
+         }
+      }
+
+      
+      
+      
+      return data;
+   },
 
 
 
