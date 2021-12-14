@@ -993,15 +993,14 @@ deleteScoresheet : async (req,res) => {
   }
 },
 
+
 assignSheet : async (req,res) => {
   try{
-      const { sno } = req.params;
-      const pwd = nanoid()
-      var resp = await Student.fetchStudentProfile(refno);
-      const ups = await SSO.updateUserByEmail(resp[0].institute_email,{password:sha1(pwd)})
-      const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
-      const sm = sms(resp[0].phone,msg)
-      if(ups){
+      const { id,sno } = req.body;
+      var resp = await SSO.assignSheet(id,sno);
+      if(resp.count > 0){
+          const msg = `Hi, You have been assigned a new course to assess. Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+          const sm = sms(resp.phone,msg)
           res.status(200).json({success:true, data:msg});
       }else{
           res.status(200).json({success:false, data: null, msg:"Action failed!"});
@@ -1014,24 +1013,14 @@ assignSheet : async (req,res) => {
 
 unassignSheet : async (req,res) => {
   try{
-      const { sno } = req.params;
-      const pwd = nanoid()
-      var resp = await Student.fetchStudentProfile(refno);
-      console.log(resp)
-      if(resp && resp.length > 0){
-         if(resp[0].institute_email && resp[0].phone){
-            const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
-            if(ups){
-                const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/photo/none.png')
-                const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
-                const sm = sms(resp[0].phone,msg)
-                res.status(200).json({success:true, data:msg});
-            }else{
-                res.status(200).json({success:false, data: null, msg:"Action failed!"});
-            }
-         }else{
-            res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
-         }
+      const { id,sno } = req.body;
+      var resp = await SSO.unassignSheet(id,sno);
+      if(resp.count > 0){
+          const msg = `Hi, an assigned course has been removed. Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+          const sm = sms(resp.phone,msg)
+          res.status(200).json({success:true, data:msg});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }
   }catch(e){
       console.log(e)
@@ -1039,6 +1028,111 @@ unassignSheet : async (req,res) => {
   }
 },
 
+
+loadSheet : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.loadSheet(id);
+      if(resp && resp.length > 0){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:" No Data Loaded!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+
+saveSheet : async (req,res) => {
+  try{
+      var resp = await SSO.saveSheet(req.body);
+      if(resp > 0){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:" No Data Loaded!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+importSheet : async (req,res) => {
+  try{
+      var resp = await SSO.saveSheet(req.body);
+      if(resp > 0){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:" No Data Loaded!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+publishSheet : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.publishSheet(id);
+      if(resp){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:"Sheet not submitted!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+certifySheet : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.certifySheet(id);
+      if(resp){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:"Sheet not published!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+uncertifySheet : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.uncertifySheet(id);
+      if(resp){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:"Sheet not unpublished!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
+
+
+loadCourseList : async (req,res) => {
+  try{
+      const {id } = req.params;
+      var resp = await SSO.loadCourseList(id);
+      if(resp && resp.length > 0){
+         res.status(200).json({success:true, data: resp });
+      }else{
+         res.status(200).json({success:false, data: null, msg:" No Data Loaded!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong!"});
+  }
+},
 
 
 
@@ -1542,6 +1636,22 @@ fetchActiveStListHRS : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 }, 
+
+fetchHRStaffHRS : async (req,res) => {
+  try{
+      const { sno } = req.params
+      var staff = await SSO.fetchStaffProfile(sno);
+      if(staff && staff.length > 0){
+        res.status(200).json({success:true, data:staff[0]});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
 
 
 postHRStaffDataHRS : async (req,res) => {

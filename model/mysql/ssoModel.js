@@ -3,13 +3,13 @@ var db = require('../../config/mysql');
 
 module.exports.SSO = {
    
-   verifyUser : async ({username,password}) => {
+   verifyUser : async ({ username,password }) => {
       const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
       const res = await db.query(sql);
       return res;
    },
 
-   verifyUserByEmail : async ({email}) => {
+   verifyUserByEmail : async ({ email }) => {
       const sql = "select u.* from identity.user u where u.username = '"+email+"'";
       const res = await db.query(sql);
       return res;
@@ -520,8 +520,8 @@ module.exports.SSO = {
    // SCORESHEETS - AIS MODELS
 
    fetchScoresheets : async (session_id,page,keyword) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(u.fname,' ',ifnull(concat(u.mname,' '),''),u.lname) as name,u.staff_no,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join hrs.staff u on find_in_set(u.staff_no,s.tag) > 0 left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
-      var cql = "select count(*) as total from  ais.sheet s left join hrs.staff u on find_in_set(u.staff_no,s.tag) > 0 left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id";
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
+      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -532,7 +532,7 @@ module.exports.SSO = {
           cql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
       }
 
-      sql += ` order by s.session_id desc,s.prog_id asc,s.semester asc, s.major_id asc`
+      sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
@@ -557,10 +557,159 @@ module.exports.SSO = {
    },
 
    deleteAISSheet : async (id) => {
-      const res = await db.query("delete from ais.shhet where id = "+id);
+      const res = await db.query("delete from ais.sheet where id = "+id);
       return res;
    },
+
    
+   loadSheet : async (id) => {
+      var data = []
+      const res = await db.query("select * from ais.sheet where id = "+id);
+      if(res && res.length > 0 ){
+         const vs = res[0];
+         let sql = `select x.*,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name,c.grade_meta from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme c on c.id = x.scheme_id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`
+         const rs = await db.query(sql)
+         if(rs && rs.length > 0){
+            for(var r of rs){
+               const c_name = `${r.session_id}_${r.course_id}_${r.indexno}_c`
+               const c_value = r.class_score
+               const e_name = `${r.session_id}_${r.course_id}_${r.indexno}_e`
+               const e_value = r.exam_score
+               let dt = { name:r.name, indexno:r.indexno, refno:r.refno, class: { name:c_name, value:c_value }, exam: { name:e_name, value:e_value }, scheme: r.grade_meta }
+               data.push(dt)
+            }
+         }
+      }
+      return data;
+   },
+
+
+   saveSheet : async (data) => {
+      var count = 0
+      var sid = 0;
+      const keys = Object.keys(data);
+      if(keys.length > 0){
+         for(var key of keys){
+            const keyinfo = key.split('_')
+            if(keyinfo.length > 0){
+               sid = keyinfo[0];
+               const session_id = keyinfo[0]
+               const course_id = keyinfo[1]
+               const indexno = keyinfo[2]
+               const type = keyinfo[3]
+               const value = data[key]
+               // Update Database with Record
+               const dt = type == 'c' ? { class_score:value } : { exam_score:value }
+               const ups = await db.query("update ais.assessment set ? where session_id = "+session_id+" and course_id = "+course_id+" and indexno = '"+indexno+"'",dt)
+               if(ups && ups.affectedRows > 0) count += 1
+            }
+         }
+      }
+      if(count > 0) await this.SSO.retireAssessmentTotal(sid) // Return Assessment for Session
+      return count;
+   },
+   
+   retireAssessmentTotal : async (session_id) => {
+      const res = await db.query("update ais.assessment set total_score = (class_score+exam_score) where session_id = "+session_id);
+      return res
+   },
+
+   publishSheet : async (id) => {
+      const res = await db.query("update ais.sheet set flag_assessed = 1 where id = "+id);
+      if(res && res.affectedRows > 0) return true
+      return false;
+   },
+
+   certifySheet : async (id) => {
+      const res = await db.query("update ais.sheet set flag_certified = 1 where id = "+id);
+      var count = 0;
+      if(res && res.affectedRows > 0){
+         const resx = await db.query("select * from ais.sheet where id = "+id);
+         if(resx && resx.length > 0 ){
+            const vs = resx[0];
+            let sql = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`
+            const rs = await db.query(sql)
+            if(rs && rs.length > 0){
+               for(var r of rs){
+                  const ups = await db.query("update ais.assessment set flag_visible = 1 where session_id = "+r.session_id+" and course_id = "+r.course_id+" and indexno = '"+r.indexno+"'")
+                  if(ups && ups.affectedRows > 0) count += 1
+               }
+            }
+         }
+      }
+      return count;
+   },
+
+   uncertifySheet : async (id) => {
+      const res = await db.query("update ais.sheet set flag_certified = 0 where id = "+id);
+      var count = 0;
+      if(res && res.affectedRows > 0){
+         const resx = await db.query("select * from ais.sheet where id = "+id);
+         if(resx && resx.length > 0 ){
+            const vs = resx[0];
+            let sql = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`
+            const rs = await db.query(sql)
+            if(rs && rs.length > 0){
+               for(var r of rs){
+                  const ups = await db.query("update ais.assessment set flag_visible = 0 where session_id = "+r.session_id+" and course_id = "+r.course_id+" and indexno = '"+r.indexno+"'")
+                  if(ups && ups.affectedRows > 0) count += 1
+               }
+            }
+         }
+      }
+      return count;
+   },
+
+
+   assignSheet : async (id,sno) => {
+      var count = 0;
+      const res = await db.query("select * from ais.sheet where id = "+id);
+      const sm = await db.query("select s.* from hrs.staff s left join utility.unit u on s.unit_id where s.staff_no = "+sno)
+      if(res && sm && res.length > 0 && sm.length > 0/* && sm[0].unit_id == res[0].unit_id*/){
+         const vs = res[0];
+         var tags = vs['tag'] ? vs['tag'].split(','): []
+         const isExist = tags.find(r => r == sno)
+         if(!isExist){
+            tags.push(sno)
+            // Add Staff and Update  
+            const ups = await db.query("update ais.sheet set tag = '"+tags.join(',')+"' where id = "+id)
+            if(ups && ups.affectedRows > 0) count += 1
+         }
+      }  return { count, phone:sm && sm[0].phone };
+   },
+
+   unassignSheet : async (id,sno) => {
+      var count = 0;
+      const res = await db.query("select * from ais.sheet where id = "+id);
+      const sm = await db.query("select s.* from hrs.staff s left join utility.unit u on s.unit_id where s.staff_no = "+sno)
+      if(res && sm && res.length > 0 && sm.length > 0/* && sm[0].unit_id == res[0].unit_id*/){
+         const vs = res[0];
+         var tags = vs['tag'] ? vs['tag'].split(','): []
+         const isExist = tags.find(r => r == sno)
+         if(isExist){
+            tags = tags.filter(r => r != sno)
+            // Add Staff and Update  
+            const ups = await db.query("update ais.sheet set tag = '"+tags.join(',')+"' where id = "+id)
+            if(ups && ups.affectedRows > 0) count += 1
+         }
+      }  return { count, phone:sm && sm[0].phone };
+   },
+
+
+   loadCourseList : async (id) => {
+      var data = []
+      const res = await db.query("select * from ais.sheet where id = "+id);
+      if(res && res.length > 0 ){
+         const vs = res[0];
+         let sql = `select x.indexno,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name, if(x.course_id is null, 'Not Registered','Registered') as regstatus,if(x.created_at is null, 'No Date',date_format(x.created_at,'%M %d, %Y')) as regdate from ais.student s left join ais.assessment x on s.indexno = x.indexno where x.session_id = ${vs.session_id} and x.course_id = ${vs.course_id} and s.prog_id = ${vs.prog_id} and s.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname asc`
+         const rs = await db.query(sql)
+         if(rs && rs.length > 0){
+            data = rs
+         }
+      }
+      console.log(data)
+      return data;
+   },
 
 
    // CALENDAR -AIS
@@ -822,9 +971,6 @@ module.exports.SSO = {
          }
       }
 
-      
-      
-      
       return data;
    },
 
@@ -982,7 +1128,6 @@ module.exports.SSO = {
    },
 
    
-
    fetchPayment : async (id) => {
       const res = await db.query("select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.id = "+id);
       return res;

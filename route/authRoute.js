@@ -76,8 +76,15 @@ Router.get('/ais/regmount/', SSOController.fetchMountList);
 Router.get('/ais/scoresheets/', SSOController.fetchScoresheets);
 Router.post('/ais/scoresheets', SSOController.postScoresheets);
 Router.delete('/ais/scoresheets/:id', SSOController.deleteScoresheet);
-Router.get('/ais/assignsheet/:sno', SSOController.assignSheet);
-Router.get('/ais/unassignsheet/:sno', SSOController.unassignSheet);
+Router.post('/ais/assignsheet', SSOController.assignSheet);
+Router.post('/ais/unassignsheet', SSOController.unassignSheet);
+Router.get('/ais/loadsheet/:id', SSOController.loadSheet);
+Router.post('/ais/savesheet', SSOController.saveSheet);
+Router.post('/ais/importsheet/:id', SSOController.importSheet);
+Router.get('/ais/publishsheet/:id', SSOController.publishSheet);
+Router.get('/ais/certifysheet/:id', SSOController.certifySheet);
+Router.get('/ais/uncertifysheet/:id', SSOController.uncertifySheet);
+Router.get('/ais/loadcourselist/:id', SSOController.loadCourseList);
 
 
 
@@ -119,6 +126,7 @@ Router.get('/hrs/hrstaff/', SSOController.fetchHRStaffDataHRS);
 Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
 Router.get('/hrs/stactive', SSOController.fetchActiveStListHRS);
 Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
+Router.get('/hrs/hrstaff/:sno', SSOController.fetchHRStaffHRS);
 Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
 Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
 Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);

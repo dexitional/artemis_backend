@@ -13,7 +13,7 @@ cron.schedule('*/1 * * * *', () => {
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
-          runSetupScoresheet()
+          
         }
     });
 });
@@ -33,8 +33,11 @@ cron.schedule('*/20 * * * *', async function() {
           setTimeout(()=> runRetireFeesTransact(), 200)
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
           setTimeout(()=> runRetireStudentAccount(), 200)
-          // RUN VOUCHER SENDER
-          setTimeout(()=> runVoucherSender(), 200)
+          // RUN VOUCHERS RETIREMENT & RESEND
+          setTimeout(()=> runVoucherSender(), 200),
+          // RUN SCORESHEET SETUP FOR NEW CALENDAR
+          setTimeout(()=> runSetupScoresheet(), 200)
+          
           // RUN RESIT CHECKER
           // RUN 
 
