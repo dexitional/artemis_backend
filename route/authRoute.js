@@ -74,6 +74,7 @@ Router.get('/ais/reglist/', SSOController.fetchRegsList);
 Router.get('/ais/regmount/', SSOController.fetchMountList);
 // SCORESHEETS routes
 Router.get('/ais/scoresheets/', SSOController.fetchScoresheets);
+Router.get('/ais/myscoresheets/', SSOController.fetchMyScoresheets);
 Router.post('/ais/scoresheets', SSOController.postScoresheets);
 Router.delete('/ais/scoresheets/:id', SSOController.deleteScoresheet);
 Router.post('/ais/assignsheet', SSOController.assignSheet);
@@ -85,7 +86,15 @@ Router.get('/ais/publishsheet/:id', SSOController.publishSheet);
 Router.get('/ais/certifysheet/:id', SSOController.certifySheet);
 Router.get('/ais/uncertifysheet/:id', SSOController.uncertifySheet);
 Router.get('/ais/loadcourselist/:id', SSOController.loadCourseList);
-
+// CURRICULUM routes
+Router.get('/ais/curriculum/', SSOController.fetchStruct);
+Router.post('/ais/curriculum', SSOController.postStruct);
+Router.delete('/ais/curriculum/:id', SSOController.deleteStruct);
+// CALENDAR routes
+Router.get('/ais/calendar/', SSOController.fetchCalendar);
+Router.post('/ais/calendar', SSOController.postCalendar);
+Router.delete('/ais/calendar/:id', SSOController.deleteCalendar);
+Router.delete('/ais/setcalendar/:id', SSOController.activateCalendar);
 
 
 /* FMS MODULE ROUTES */

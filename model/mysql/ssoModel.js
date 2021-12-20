@@ -546,6 +546,33 @@ module.exports.SSO = {
       }
    },
 
+   fetchMyScoresheets : async (sno,session_id,page,keyword) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0"
+      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+          cql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+      }
+
+      sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
    insertAISSheet : async (data) => {
       const res = await db.query("insert into ais.sheet set ?", data);
       return res;
@@ -712,7 +739,105 @@ module.exports.SSO = {
    },
 
 
+   // CURRICULUM -AIS
+
+   fetchStruct : async (page,keyword) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,t.title as unit_name from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id"
+      var cql = "select count(*) as total from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+          cql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
+      }
+
+      sql += ` order by s.prog_id,s.semester,s.type`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+
+   insertAISMeta : async (data) => {
+      const res = await db.query("insert into utility.structure set ?", data);
+      return res;
+   },
+
+   updateAISMeta : async (id,data) => {
+      const res = await db.query("update utility.structure set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISMeta : async (id) => {
+      const res = await db.query("delete from utility.structure where id = "+id);
+      return res;
+   },
+
+
    // CALENDAR -AIS
+
+
+   fetchCalendar : async (page,keyword) => {
+      var sql = "select s.* from utility.session s"
+      var cql = "select count(*) as total from utility.session s";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where s.title like '%${keyword.toLowerCase()}%' or s.tag like '%${keyword}%' or s.academic_sem = '%${keyword == 'first' ? 1 : null}%' or s.academic_sem = '%${keyword == 'second' ? 1 : null}%' `
+          cql += ` where s.title like '%${keyword.toLowerCase()}%' or s.tag like '%${keyword}%' or s.academic_sem = '%${keyword == 'first' ? 1 : null}%' or s.academic_sem = '%${keyword == 'second' ? 1 : null}%' `
+      }
+
+      sql += ` order by s.id desc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+
+   insertAISCalendar : async (data) => {
+      const res = await db.query("insert into utility.session set ?", data);
+      return res;
+   },
+
+   updateAISCalendar : async (id,data) => {
+      const res = await db.query("update utility.session set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISCalendar : async (id) => {
+      const res = await db.query("delete from utility.session where id = "+id);
+      return res;
+   },
+
+   activateAISCalendar : async (id) => {
+      const cs = await db.query("select * from utility.session where id = "+id);
+      const vs = await db.query("update utility.session set `default` = 0 where tag = '"+cs[0].tag+"'");
+      const res = await db.query("update utility.session set `default` = 1 where id = "+id);
+      return res;
+   },
+
    
    getActiveSessionByMode : async (mode_id) => {
       const res = await db.query("select * from utility.session where tag = 'MAIN' and `default` = 1 and mode_id = "+mode_id);
@@ -1452,9 +1577,11 @@ module.exports.SSO = {
 
    fetchAIShelpers : async () => {
       const progs = await db.query("select * from utility.program where status = 1");
-      const majs = await db.query("select * from ais.major where status = 1");
+      const majs = await db.query("select m.*,p.short as program_name,p.code from ais.major m left join utility.program p on m.prog_id = p.id where m.status = 1");
+      const depts = await db.query("select * from utility.unit where type = 'ACADEMIC' and level = '3' and active = '1'");
+      const courses = await db.query("select * from utility.course where status = 1 order by title");
       //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
-      if(progs && majs) return { programs:progs,majors:majs }
+      if(progs && majs) return { programs:progs,majors:majs, departments:depts, courses }
       return null;
    },
 

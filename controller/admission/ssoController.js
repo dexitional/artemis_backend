@@ -952,6 +952,25 @@ fetchScoresheets : async (req,res) => {
 },
 
 
+fetchMyScoresheets : async (req,res) => {
+  try{
+      const sno = req.query.sno;
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var session = await SSO.getActiveSessionByMode(1);
+      var sheets = await SSO.fetchMyScoresheets(sno,session.id,page,keyword);
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
 postScoresheets : async (req,res) => {
     const { id } = req.body;
     //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
@@ -1135,7 +1154,137 @@ loadCourseList : async (req,res) => {
 },
 
 
+// CURRICULUM CONTROLS - AIS
 
+
+fetchStruct : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchStruct(page,keyword);
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+postStruct : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.major_id == '') req.body.major_id = null
+    if(req.body.prog_id == '') req.body.prog_id  = null
+    if(req.body.course_id == '') req.body.course_id = null
+    if(req.body.unit_id == '') req.body.unit_id = null
+
+    try{
+      var resp = id <= 0 ? await SSO.insertAISMeta(req.body) : await SSO.updateAISMeta(id,req.body) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteStruct : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteVoucher(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+
+// CALENDAR CONTROLS - AIS
+
+
+fetchCalendar : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchCalendar(page,keyword);
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+postCalendar : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.cal_register_start == 'Invalid date' || req.body.cal_register_start == '') req.body.cal_register_start = null
+    if(req.body.cal_register_end == 'Invalid date' || req.body.cal_register_end == '') req.body.cal_register_end = null
+    if(req.body.cal_lecture_start == 'Invalid date' || req.body.cal_lecture_start == '') req.body.cal_lecture_start = null
+    if(req.body.cal_lecture_end == 'Invalid date' || req.body.cal_lecture_end == '') req.body.cal_lecture_end = null
+    if(req.body.cal_exam_start == 'Invalid date' || req.body.cal_exam_start == '') req.body.cal_exam_start = null
+    if(req.body.cal_exam_end == 'Invalid date' || req.body.cal_exam_end == '') req.body.cal_exam_end = null
+    if(req.body.cal_entry_start == 'Invalid date' || req.body.cal_entry_start == '') req.body.cal_entry_start = null
+    if(req.body.cal_entry_end == 'Invalid date' || req.body.cal_entry_end == '') req.body.cal_entry_end = null
+    
+    try{
+      var resp = id <= 0 ? await SSO.insertAISCalendar(req.body) : await SSO.updateAISCalendar(id,req.body) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteCalendar : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteAISCalendar(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+activateCalendar : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.activateAISCalendar(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
 
 
 
