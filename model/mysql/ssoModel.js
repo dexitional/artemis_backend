@@ -917,7 +917,7 @@ module.exports.SSO = {
    },
 
    msgApplicantData : async () => {
-      const res = await db.query("select s.serial as tag, s.applicant_phone as phone, s.applicant_name as lname,s.applicant_name as fname from P06.voucher s left join P06.session x on x.id = s.session_id where x.status = 1 and s.applicant_phone is not null");
+      const res = await db.query("select s.serial as tag, s.applicant_phone as phone, s.applicant_name as lname,s.applicant_name as fname from P06.voucher s left join P06.session x on x.session_id = s.session_id where x.status = 1 and s.applicant_phone is not null");
       return res;
    },
 
