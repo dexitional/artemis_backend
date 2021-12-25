@@ -8,7 +8,7 @@ var cron = require('node-cron');
 /* CRON SCHEDULES   */
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
-cron.schedule('*/1 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
