@@ -1,3 +1,4 @@
+const sms = require("../config/sms");
 const { SSO } = require("../model/mysql/ssoModel");
 
 const getTargetGroup = (group_code) => {
@@ -160,8 +161,43 @@ const runSetupScoresheet = async () => {
 }
 
 
+const runMsgDispatcher = async () => {
+  var count = 0;
+  var res = await SSO.fetchInformerData();
+  if(res && res.length > 0){
+    for(let vs of res){
+      var users;
+      const group = vs.receiver;
+      switch(group){
+        case 'STUDENT': users = await SSO.msgStudentData(); break;
+        case 'STAFF': users = await SSO.msgStaffData(); break;
+        case 'ALL': users = await SSO.msgAllData(); break;
+        case 'APPLICANT': users = await SSO.msgApplicantData(); break;
+        case 'FRESHER': users = await SSO.msgFresherData(); break;
+        case 'DEAN': users = await SSO.msgDeanData(); break;
+        case 'HEAD': users = await SSO.msgHeadData(); break;
+        case 'ASSESSOR': users = await SSO.msgAssessorData(); break;
+      }
+      
+      if(users && users.length > 0){
+         for(user of users){
+            const send = await sms(user.phone,vs.message)
+            if(send.code == 1000) {
+              await SSO.insertInformerLog({informer_id:vs.id,tag:user.tag,phone:user.phone,message:vs.message,sms_code:send.code})
+              //await SSO.updateInformerLog({user.tag,user.phone,vs.message,{ sms_code:send.code })
+              count++
+            }
+         }
+         await SSO.updateAISInformer(vs.id, { send_status:1, sent_at:new Date() })
+      }
+    }
+  }
+  return count;
+}
 
 
 
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet }
+
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher }

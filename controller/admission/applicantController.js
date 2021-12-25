@@ -102,6 +102,8 @@ module.exports = {
       const aplData = { serial,stage_id,apply_type,photo,meta: JSON.stringify(meta),flag_submit,grade_value,class_value }
       const profileData = { serial,citizen_country:profile.citizen_country,disabilities:profile.disabilities,disabled:profile.disabled,dob:profile.dob,email:profile.email,fname:profile.fname,home_region:profile.home_region,home_town:profile.home_town,lname:profile.lname,mstatus:profile.mstatus,phone:profile.phone,pobox_address:profile.pobox_address,religion:profile.religion,resident_address:profile.resident_address,resident_country:profile.resident_country,title:profile.title,present_occupation:profile.present_occupation,work_place:profile.work_place,gender:profile.gender,bond_status:profile.bond_status,bond_institute:profile.bond_institute,session_mode:profile.session_mode,profile_id:profile.profile_id }
       const guardianData = { serial,address:guardian.address,email:guardian.email,fname:guardian.fname,lname:guardian.lname,occupation:guardian.occupation,phone:guardian.phone,relation:guardian.relation,title:guardian.title,guardian_id:guardian.guardian_id }
+      console.log(referee)
+      console.log(meta)
       try{
         // Save Applicant Tbl Data
         var apl = await Admission.updateApplicantTbl(aplData); 
@@ -118,6 +120,12 @@ module.exports = {
               output['education'] = await Admission.insReplaceEducationTbl(serial,education); break; // Education 
             case 'result':
               output['result'] = await Admission.insReplaceResultTbl(serial,result,grade); break; // Result
+            case 'employment':
+              output['employment'] = await Admission.insReplaceEmploymentTbl(serial,employment); break; // Employment 
+            case 'qualification':
+              output['qualification'] = await Admission.insReplaceQualificationTbl(serial,qualification); break; // Qualification 
+            case 'referee':
+              output['referee'] = await Admission.insReplaceRefereeTbl(serial,referee); break; // Referee 
             case 'choice':
               output['choice'] = await Admission.insReplaceChoiceTbl(serial,choice); break; // Result
             case 'document':
@@ -145,7 +153,6 @@ module.exports = {
               }
               if(mt.tag == 'result'){
                  const grades = await Admission.fetchResultGrades(serial);
-                 console.log(grades)
                  if(grades && grades.length > 0) newMeta = { ...newMeta, grade:grades }
               }
            }  
@@ -166,7 +173,6 @@ module.exports = {
   },
 
   formStatus : async (req,res) => {
-    console.log(req.body);
     const { serial,status } = req.body;
     try{
       var ok = await Admission.updateApplicationStatus(serial,status);

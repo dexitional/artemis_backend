@@ -95,6 +95,18 @@ Router.get('/ais/calendar/', SSOController.fetchCalendar);
 Router.post('/ais/calendar', SSOController.postCalendar);
 Router.delete('/ais/calendar/:id', SSOController.deleteCalendar);
 Router.delete('/ais/setcalendar/:id', SSOController.activateCalendar);
+// INFORMER routes
+Router.get('/ais/informer/', SSOController.fetchInformer);
+Router.post('/ais/informer', SSOController.postInformer);
+Router.delete('/ais/informer/:id', SSOController.deleteInformer);
+// PROGRAM CHANGE routes
+Router.get('/ais/progchange/', SSOController.fetchProgchange);
+Router.post('/ais/progchange', SSOController.postProgchange);
+Router.delete('/ais/progchange/:id', SSOController.deleteProgchange);
+Router.get('/ais/progchange/approve/:id/:sno', SSOController.approveProgchange);
+
+
+
 
 
 /* FMS MODULE ROUTES */

@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet } = require('../middleware/util')
+const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
@@ -13,7 +13,9 @@ cron.schedule('*/1 * * * *', () => {
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
-          
+          // INFORMANT MESSAGES - AIS
+          runMsgDispatcher()
+            
         }
     });
 });
@@ -39,10 +41,7 @@ cron.schedule('*/20 * * * *', async function() {
           setTimeout(()=> runSetupScoresheet(), 200)
           
           // RUN RESIT CHECKER
-          // RUN 
-
-
-        /* AIS CRON JOBS  */
+        
 
       }
     });

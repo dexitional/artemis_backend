@@ -167,6 +167,47 @@ module.exports.Admission = {
       }  return res;
    },
 
+   insReplaceEmploymentTbl : async (serial,data) => {
+      var res;
+      
+      if(data && data.length > 0){
+         const rs = await db.query("delete from step_employment where serial = "+serial);
+         if(rs){
+            for(var ch of data){
+              var dt = { ...ch,serial }; delete dt.employment_id;
+              if(dt) res = await db.query("insert into step_employment set ?",dt);
+            }
+         }
+      }  return res;
+   },
+
+   insReplaceQualificationTbl : async (serial,data) => {
+      var res;
+      if(data && data.length > 0){
+         const rs = await db.query("delete from step_qualification where serial = "+serial);
+         if(rs){
+            for(var ch of data){
+              var dt = { ...ch,serial }; delete dt.qualification_id;
+              if(dt) res = await db.query("insert into step_qualification set ?",dt);
+            }
+         }
+      }  return res;
+   },
+
+   insReplaceRefereeTbl : async (serial,data) => {
+      var res;
+      if(data && data.length > 0){
+         const rs = await db.query("delete from step_referee where serial = "+serial);
+         if(rs){
+            for(var ch of data){
+              var dt = { ...ch,serial }; delete dt.referee_id;
+              console.log(dt)
+              if(dt) res = await db.query("insert into step_referee set ?",dt);
+            }
+         }
+      }  return res;
+   },
+
    insReplaceChoiceTbl : async (serial,data) => {
       var res;
       if(data.length > 0 && data[0].program_id){

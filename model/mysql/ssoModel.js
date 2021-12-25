@@ -850,6 +850,187 @@ module.exports.SSO = {
    },
 
 
+   // INFORMER -AIS
+
+   fetchInformer : async (page,keyword) => {
+      var sql = "select s.* from ais.informer s"
+      var cql = "select count(*) as total from ais.informer s";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where s.tag like '%${keyword.toLowerCase()}%' or s.title like '%${keyword}%' or s.message = '%${keyword}%' `
+          cql += ` where s.tag like '%${keyword.toLowerCase()}%' or s.title like '%${keyword}%' or s.message = '%${keyword}%' `
+      }
+
+      sql += ` order by s.id desc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+
+   insertAISInformer : async (data) => {
+      const res = await db.query("insert into ais.informer set ?", data);
+      return res;
+   },
+
+   updateAISInformer : async (id,data) => {
+      const res = await db.query("update ais.informer set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISInformer : async (id) => {
+      const res = await db.query("delete from ais.informer where id = "+id);
+      return res;
+   },
+
+   fetchInformerData : async () => {
+      const res = await db.query("select * from ais.informer where status = 1 and send_status = 0");
+      return res;
+   },
+
+   msgStudentData : async () => {
+      const res = await db.query("select s.refno as tag, s.phone, s.lname,s.fname from ais.student s where s.complete_status = 0 and s.phone is not null");
+      return res;
+   },
+
+   msgStaffData : async () => {
+      //const res = await db.query("select s.staff_no as tag, s.phone, s.lname,s.fname from hrs.staff s where s.phone is not null");
+      const res = await db.query("select s.staff_no as tag, s.phone, s.lname,s.fname from hrs.staff s where s.phone is not null and s.staff_no = 15666");
+      return res;
+   },
+
+   msgFresherData : async () => {
+      const res = await db.query("select s.refno as tag, s.phone, s.lname,s.fname from ais.student s where s.complete_status = 0 and (s.semester = 1 or s.semester = 2) and s.phone is not null");
+      return res;
+   },
+
+   msgApplicantData : async () => {
+      const res = await db.query("select s.serial as tag, s.applicant_phone as phone, s.applicant_name as lname,s.applicant_name as fname from P06.voucher s left join P06.session x on x.id = s.session_id where x.status = 1 and s.applicant_phone is not null");
+      return res;
+   },
+
+   msgDeanData : async () => {
+      const res = await db.query("select s.staff_no as tag, s.phone, s.lname,s.fname from hrs.staff s left join hrs.job j on s.job_id = j.id where (s.position like '%dean%' or j.title like '%dean%') and s.phone is not null");
+      return res;
+   },
+
+   msgHeadData : async () => {
+      const res = await db.query("select s.staff_no as tag, s.phone, s.lname,s.fname from hrs.staff s left join hrs.job j on s.job_id = j.id where (s.position like '%head%' or j.title like '%head%') and s.phone is not null");
+      return res;
+   },
+
+   msgAssessorData : async () => {
+      const res = await db.query("select s.staff_no as tag, s.phone, s.lname,s.fname from hrs.staff s left join hrs.job j on s.job_id = j.id where (s.position like '%lecturer%' or j.title like '%lecturer%') and s.phone is not null");
+      return res;
+   },
+
+   insertInformerLog : async (data) => {
+      const res = await db.query("insert into ais.informer_log set ?",data);
+      return res;
+   },
+
+   updateInformerLog : async (id,data) => {
+      const res = await db.query("update ais.informer_log set ? where id = "+id,data);
+      return res;
+   },
+
+
+   // PROGRAM CHANGE -AIS
+
+   fetchProgchange : async (page,keyword) => {
+      var sql = "select c.*,concat(s.lname,' ',ifnull(concat(s.mname,' '),''),s.fname) as name,cp.short as program_cname,cm.title as major_cname,np.short as program_nname from ais.change_prog c left join ais.student s on c.refno = s.refno left join utility.program cp on cp.id = c.current_prog_id left join ais.major cm on c.current_major_id = cm.id left join utility.program np on np.id = c.new_prog_id"
+      var cql = "select count(*) as total from ais.change_prog c left join ais.student s on c.refno = s.refno left join utility.program cp on cp.id = c.current_prog_id left join ais.major cm on c.current_major_id = cm.id left join utility.program np on np.id = c.new_prog_id";
+      
+      const size = 10;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` where c.refno like '%${keyword.toLowerCase()}%' or c.current_indexno like '%${keyword}%' or c.new_indexno like '%${keyword}%' or cp.title like '%${keyword}%' `
+          cql += ` where c.refno like '%${keyword.toLowerCase()}%' or c.current_indexno like '%${keyword}%' or c.new_indexno like '%${keyword}%' or cp.title like '%${keyword}%' `
+      }
+
+      sql += ` order by c.id desc`
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+   },
+
+
+   insertAISProgchange : async (data) => {
+      const res = await db.query("insert into ais.change_prog set ?", data);
+      return res;
+   },
+
+   updateAISProgchange : async (id,data) => {
+      const res = await db.query("update ais.change_prog set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteAISProgchange : async (id) => {
+      const res = await db.query("delete from ais.change_prog where id = "+id);
+      return res;
+   },
+
+   approveAISProgchange : async (id,staff_no) => {
+      const chg = await db.query("select c.*,p.prefix,p.stype,date_format(s.doa,'%m%y') as code from ais.change_prog c left join ais.student s on s.refno = c.refno left join utility.program p on c.new_prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where (x.`default` = 1 and x.admission_code = date_format(s.doa,'%m%y')) and c.id = "+id);
+      if(chg && chg.length > 0){
+         const refno = chg[0].refno
+         const prog_id = chg[0].new_prog_id
+         const prefix = `${chg[0].prefix.trim()}${chg[0].code.trim()}${chg[0].stype}`
+         var newIndex, no;
+         const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
+         if(sm && sm.length > 0){
+            no = parseInt(sm[0].prog_count)+1;
+            var newNo;
+            switch(no.toString().length){
+              case 1: newNo = `00${no}`; break;
+              case 2: newNo = `0${no}`; break;
+              case 3: newNo = `${no}`; break;
+              default: newNo = `${no}`; break;
+            }
+            newIndex = `${prefix}${newNo}`
+         }else{
+            no = 1
+            newIndex = `${prefix}00${no}`
+         }
+
+         while(true){
+            const sf = await db.query("select indexno from ais.student where indexno = '"+newIndex+"'");
+            if(sf && sf.length <= 0) break;
+            no++
+         }
+         var resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no, prog_id , major_id: null });
+         var ups = await db.query("update ais.change_prog set ? where id = "+id, { new_indexno: newIndex, new_semester: 1, approved_at: new Date(), approved_by:staff_no, approved_status:1 });
+         if(resp && ups) return newIndex
+
+      }
+      return null;
+   },
+
+  
+  
+
    // TRANSACTION - FMS
   
    sendTransaction : async (data) => {
@@ -1312,7 +1493,7 @@ module.exports.SSO = {
    },
 
    generateIndexNo : async (refno) => {
-      const st = await db.query("select x.id,p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.`default` = 1 and s.refno = '"+refno+"'");
+      const st = await db.query("select x.id,p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where (x.`default` = 1 and x.admission_code = date_format(s.doa,'%m%y')) and s.refno = '"+refno+"'");
       if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
          const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
          var newIndex, resp, no;
@@ -1389,9 +1570,9 @@ module.exports.SSO = {
    },
 
 
-    // HRSTAFF - HRS MODELS
+   // HRSTAFF - HRS MODELS
 
-    fetchHRStaff : async (page,keyword) => {
+   fetchHRStaff : async (page,keyword) => {
       var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,ifnull(j.title,s.position) as designation,m.title as unit_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id"
       var cql = "select count(*) as total from hrs.staff s left join identity.user u on s.staff_no = u.tag left join hrs.job j on s.job_id = j.id left join utility.unit m on s.unit_id = m.id";
       

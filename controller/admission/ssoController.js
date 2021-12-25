@@ -1287,6 +1287,121 @@ activateCalendar : async (req,res) => {
 },
 
 
+// INFORMER CONTROLS - AIS
+
+fetchInformer : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchInformer(page,keyword);
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+postInformer : async (req,res) => {
+    const { id } = req.body;
+    try{
+      var resp = id <= 0 ? await SSO.insertAISInformer(req.body) : await SSO.updateAISInformer(id,req.body) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteInformer : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteAISInformer(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+// PROGRAM CHANGE CONTROLS - AIS
+
+fetchProgchange : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchProgchange(page,keyword);
+      if(sheets && sheets.data.length > 0){
+        res.status(200).json({success:true, data:sheets});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+postProgchange : async (req,res) => {
+    const { id } = req.body;
+    try{
+      var resp = id <= 0 ? await SSO.insertAISProgchange(req.body) : await SSO.updateAISProgchange(id,req.body) ;
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteProgchange : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteAISProgchange(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+approveProgchange : async (req,res) => {
+  try{
+      const { id,sno } = req.params;
+      var resp = await SSO.approveAISProgchange(id,sno);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
 
 // BILLS CONTROLS - FMS
 
