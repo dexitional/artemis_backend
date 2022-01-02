@@ -573,12 +573,14 @@ fetchApplicants : async (req,res) => {
       }else{
         var applicants = await SSO.fetchApplicants(id,page,keyword);
       }
-     
+      
       if(applicants && applicants.data.length > 0){
+          console.log(applicants)
           res.status(200).json({success:true, data:applicants});
       }else{
           res.status(200).json({success:false, data: null, msg:"No records!"});
       }
+    
   }catch(e){
       console.log(e)
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});

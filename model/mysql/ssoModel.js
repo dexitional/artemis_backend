@@ -341,6 +341,39 @@ module.exports.SSO = {
          totalData: ces[0].total,
          data: res,
       }
+
+
+      //var sql = "select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,r1.`short` as choice_name1,r2.`short` as choice_name2,p.started_at,p.photo,v.sell_type,g.title as group_name,v.group_id,t.title as applytype from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where h.session_id = "+session_id
+      //var cql = "select count(*) as total from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where h.session_id = "+session_id
+      
+      var sql = "select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,(select concat(r.`short`,ifnull(concat(' ( ',m.title,' )'),r.`short`)) as choice_name1 from step_choice c left join utility.program r on r.id = c.program_id left join ais.major m on c.major_id = m.id where serial = h.serial order by choice_id limit 1) as choice_name2,(select concat(r.`short`,ifnull(concat(' ( ',m.title,' )'),r.`short`)) as choice_name from step_choice c left join utility.program r on r.id = c.program_id left join ais.major m on c.major_id = m.id where serial = h.serial order by choice_id desc limit 1) as choice_name2,h.started_at,h.photo,v.sell_type,g.title as group_name,v.group_id,t.title as applytype from P06.applicant h left join step_profile i on h.serial = i.serial left join voucher v on v.serial = h.serial left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where v.session_id = "+session_id
+      var cql = "select count(*) as total  from P06.applicant h left join step_profile i on h.serial = i.serial left join voucher v on v.serial = h.serial left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where v.session_id = "+session_id
+      
+
+
+      const size = 50;
+      const pg  = parseInt(page);
+      const offset = (pg * size) || 0;
+      
+      if(keyword){
+          sql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or t.title like '%${keyword}%'`
+          cql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or t.title like '%${keyword}%'`
+      }
+
+      sql += ' order by h.started_at asc'
+      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      
+      const ces = await db.query(cql);
+      const res = await db.query(sql);
+      const count = Math.ceil(ces[0].total/size)
+
+      return {
+         totalPages: count,
+         totalData: ces[0].total,
+         data: res,
+      }
+
+
    },
 
    fetchApplicantsByType : async (session_id,sell_type) => {
