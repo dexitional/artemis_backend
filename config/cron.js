@@ -16,7 +16,7 @@ cron.schedule('*/5 * * * *', () => {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
           // UPDATE STUDENT ACTIVE STATUS
-          runData()
+          //runData()
         }
     });
 });
