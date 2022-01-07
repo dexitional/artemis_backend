@@ -1736,6 +1736,7 @@ postPayment : async (req,res) => {
       if(verifyRef && verifyRef.length > 0){
         var tid;
         var resp;
+        dt = { ...dt,refno:verifyRef[0].refno }
         if(id <= 0){
           resp = await SSO.insertPayment(dt)
           tid = resp && resp.insertId;

@@ -850,6 +850,25 @@ module.exports.SSO = {
       return res && res[0]
    },
 
+   getActiveSessionByRefNo : async (refno) => {
+      var sid;
+      const st = await db.query("select s.*,date_format(doa,'%m') as admission_code,semester,entry_semester from ais.student s where s.refno = '"+refno+"'");
+      const sx = await db.query("select id,substr(admission_code,1,2) as admission_code,tag from utility.session where `default` = 1 and status = 1");
+      if(sx && sx.length == 1) sid = sx[0].id
+      if(sx && sx.length > 1){
+        if(st && st.length > 0){
+            if(st[0].semester <= 2 && st[0].admission_code == '09'){
+               sid = (sx.find(r => r.tag == 'SUB')).id
+            }else if(st[0].semester <= 4 && st[0].admission_code == '09' && [3,4].includes(st[0].entry_semester)){
+               sid = (sx.find(r => r.tag == 'SUB')).id
+            }else{
+               sid = (sx.find(r => r.tag == 'MAIN')).id
+            }
+        }
+      } 
+      return sid;
+   },
+
 
    // INFORMER -AIS
 
@@ -937,6 +956,16 @@ module.exports.SSO = {
       return res;
    },
 
+   msgUndergradData : async () => {
+      const res = await db.query("select s.refno as tag, s.phone, s.lname,s.fname from ais.student s left join utility.program p on s.prog_id = p.id where (p.group_id = 'UG' or p.group_id = 'DP') and s.complete_status = 0 and s.phone is not null");
+      return res;
+   },
+
+   msgPostgradData : async () => {
+      const res = await db.query("select s.refno as tag, s.phone, s.lname,s.fname from ais.student s left join utility.program p on s.prog_id = p.id where p.group_id = 'PG' and s.complete_status = 0 and s.phone is not null");
+      return res;
+   },
+
    insertInformerLog : async (data) => {
       const res = await db.query("insert into ais.informer_log set ?",data);
       return res;
@@ -948,7 +977,7 @@ module.exports.SSO = {
    },
 
 
-   // PROGRAM CHANGE -AIS
+   // PROGRAM CHANGE - AIS
 
    fetchProgchange : async (page,keyword) => {
       var sql = "select c.*,concat(s.lname,' ',ifnull(concat(s.mname,' '),''),s.fname) as name,cp.short as program_cname,cm.title as major_cname,np.short as program_nname from ais.change_prog c left join ais.student s on c.refno = s.refno left join utility.program cp on cp.id = c.current_prog_id left join ais.major cm on c.current_major_id = cm.id left join utility.program np on np.id = c.new_prog_id"
@@ -1282,6 +1311,100 @@ module.exports.SSO = {
    },
 
 
+   // CORRECT STUDENT NAMES
+   runUpgradeNames : async () => {
+      var count = 0;
+      const st = await db.query("select * from ais.student where complete_status = 0")
+      if(st && st.length > 0){
+         for(var s of st){
+            var { fname,mname,lname,refno } = s;
+            const fnames = fname && fname.trim().split(' ');
+            const lnames = lname && lname.trim().split(' ');
+
+            if(fnames && fnames.length == 2 && !lname && !mname){
+               fname = fnames[0]
+               lname =  fnames[1]
+
+            }else if(fnames && fnames.length == 3 && !lname && !mname){
+               fname = fnames[0]
+               mname =  fnames[1]
+               lname =  fnames[2]
+
+            }else if(fnames && fnames.length == 4 && !lname && !mname){
+               fname = fnames[0]
+               mname = `${fnames[1]} ${fnames[2]}`
+               lname = fnames[3]
+
+            }else if(lnames && lnames.length == 2 && !fname && !mname){
+               fname = lnames[0]
+               lname = lnames[1]
+
+            }else if(lnames && lnames.length == 3 && !fname && !mname){
+               fname = lnames[0]
+               mname = lnames[1]
+               lname = lnames[2]
+
+            }else if(lnames && lnames.length == 4 && !fname && !mname){
+               fname = lnames[0]
+               mname = `${lnames[1]} ${lnames[2]}`
+               lname = lnames[3]
+            }
+
+            if(!lname && mname){
+               const mnames = mname.split(' ')
+               if(mnames.length > 1){
+                   lname = mnames[mnames.length-1]
+                   mname = mnames[0]
+               }else{
+                   lname = mname
+                   mname = null
+               }
+            }
+
+            if(!fname && mname){
+               const mnames = mname.split(' ')
+               if(mnames.length > 1){
+                   fname = mnames[mnames.length-1]
+                   mname = mnames[0]
+               }else{
+                   fname = mname
+                   mname = null
+               }
+            }
+            
+            const data = { fname,mname,lname }
+            await db.query("update ais.student set ? where refno = '"+refno+"'",data) 
+         }
+      }
+   },
+
+
+   // PAYMENTS DUPLICATES 
+   runRemovePaymentDuplicates : async () => {
+      var count = 0;
+      const st = await db.query("select *,id,refno,amount,transtag,date_format(transdate,'%Y-%m-%d') as transdate from fms.transaction where transtype_id = 2 order by id")
+      const dup = []
+      const obj = {}
+      if(st && st.length > 0){
+         for(var s of st){
+           const key = `${s.refno}_${s.amount}_${s.transdate}`
+           if(obj[key]){ 
+              //dup.push(key)
+              count +=1
+              const m = s.id
+              await db.query("delete from fms.transaction where id = "+m)
+              await db.query("delete from fms.studtrans where tid = "+m)
+              await db.query("insert into fms.fmsdelete_log set ?", {tid:m,meta:JSON.stringify(s)})
+
+           }else{
+              obj[key] = s.id
+           }
+         }
+      }  return count
+   },
+
+
+
 
 
 
@@ -1353,7 +1476,7 @@ module.exports.SSO = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on trim(s.refno) = trim(t.refno) left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
       var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno  where t.transtype_id = 2";
       
       const size = 10;
@@ -1462,19 +1585,19 @@ module.exports.SSO = {
    },
 
    updateStudFinance : async (tid,refno,amount,transid) => {
-      const st = await db.query("select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = '"+refno+"'");
-      const fin = await db.query("select * from fms.studtrans where tid = "+tid);
-      const dt = { tid,amount,refno,session_id:(st && st[0].id),narrative:`${refno} FEES PAYMENT, TRANSID: ${transid}`}
-      var resp;
-      var fid;
-      if(fin && fin.length > 0){
-         resp = await db.query("update fms.studtrans set ? where tid = "+tid,dt);
-         fid = resp && fin[0].id
-      }else{
-         resp = await db.query("insert into fms.studtrans set ?",dt);
-         fid = resp && resp.insertId
-      }
-      return fid;
+         const session_id = await this.SSO.getActiveSessionByRefNo(refno)
+         const fin = await db.query("select * from fms.studtrans where tid = "+tid);
+         const dt = { tid,amount,refno,session_id,narrative:`${refno} FEES PAYMENT, TRANSID: ${transid}`}
+         var resp;
+         var fid;
+         if(fin && fin.length > 0){
+            resp = await db.query("update fms.studtrans set ? where tid = "+tid,dt);
+            fid = resp && fin[0].id
+         }else{
+            resp = await db.query("insert into fms.studtrans set ?",dt);
+            fid = resp && resp.insertId
+         }
+         return fid;
    },
 
    verifyFeesQuota : async (refno) => {
@@ -1539,7 +1662,6 @@ module.exports.SSO = {
       return null
    },
    
-
 
    // DEBTORS - FMS MODELS
 
@@ -1800,6 +1922,11 @@ module.exports.SSO = {
       if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries,letters }
       return null;
    },
+
+
+
+   // UTILITY
+
 
    
 };

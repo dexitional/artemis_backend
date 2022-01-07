@@ -177,6 +177,8 @@ const runMsgDispatcher = async () => {
         case 'DEAN': users = await SSO.msgDeanData(); break;
         case 'HEAD': users = await SSO.msgHeadData(); break;
         case 'ASSESSOR': users = await SSO.msgAssessorData(); break;
+        case 'UNDERGRAD': users = await SSO.msgUndergradData(); break;
+        case 'POSTGRAD': users = await SSO.msgPostgradData(); break;
       }
       
       if(users && users.length > 0){
@@ -196,8 +198,18 @@ const runMsgDispatcher = async () => {
 }
 
 
+const runUpgradeNames = async () => {
+  var resp = await SSO.runUpgradeNames();
+  return resp;
+}
+
+const runRemovePaymentDuplicates = async () => {
+  var resp = await SSO.runRemovePaymentDuplicates();
+  return resp;
+}
 
 
 
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher }
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates }
