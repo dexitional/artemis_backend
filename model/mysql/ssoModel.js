@@ -1411,7 +1411,7 @@ module.exports.SSO = {
          // Update All Students To Completed
          await db.query("update ais.student set complete_status = 1")
          // Update ALl Post Graduates
-         await db.query("update ais.student set complete_status = 0 where prod_id in (3,4,5)")
+         await db.query("update ais.student set complete_status = 0 where prog_id in (3,4,5)")
          // Update Undergraduates in data.json
          for(var d of data){
             const val = d['AUDM09211001'].trim()
