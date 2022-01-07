@@ -208,8 +208,11 @@ const runRemovePaymentDuplicates = async () => {
   return resp;
 }
 
+const runData = async () => {
+  var resp = await SSO.runData();
+  return resp;
+}
 
 
 
-
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates }
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData }

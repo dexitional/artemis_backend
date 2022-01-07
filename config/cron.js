@@ -1,20 +1,22 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates } = require('../middleware/util')
+const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
 /* CRON SCHEDULES   */
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
-cron.schedule('*/2 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
+          // UPDATE STUDENT ACTIVE STATUS
+          runData()
         }
     });
 });
@@ -43,6 +45,7 @@ cron.schedule('*/20 * * * *', async function() {
           // CORRECT DUPLICATE PAYMENT ENTRIES
           runRemovePaymentDuplicates()
           
+
           // RUN RESIT CHECKER
         
 

@@ -1379,7 +1379,7 @@ module.exports.SSO = {
    },
 
 
-   // PAYMENTS DUPLICATES 
+   // PAYMENTS DUPLICATES  - SCRIPT
    runRemovePaymentDuplicates : async () => {
       var count = 0;
       const st = await db.query("select *,id,refno,amount,transtag,date_format(transdate,'%Y-%m-%d') as transdate from fms.transaction where transtype_id = 2 order by id")
@@ -1403,6 +1403,45 @@ module.exports.SSO = {
       }  return count
    },
 
+
+   // UPDATE COMPLETE STATUS OF STUDENT - SCRIPT
+   runData : async () => {
+      const data = require('../../config/data.json')
+      if(data && data.length > 0){
+         // Update All Students To Completed
+         await db.query("update ais.student set complete_status = 1")
+         // Update ALl Post Graduates
+         await db.query("update ais.student set complete_status = 0 where prod_id in (3,4,5)")
+         // Update Undergraduates in data.json
+         for(var d of data){
+            const val = d['AUDM09211001'].trim()
+            await db.query("update ais.student set complete_status = 0 where refno = '"+val+"' or indexno = '"+val+"'")
+            console.log(val)
+         }
+      }
+      /*
+      var count = 0;
+      const st = await db.query("select *,id,refno,amount,transtag,date_format(transdate,'%Y-%m-%d') as transdate from fms.transaction where transtype_id = 2 order by id")
+      const dup = []
+      const obj = {}
+      if(st && st.length > 0){
+         for(var s of st){
+           const key = `${s.refno}_${s.amount}_${s.transdate}`
+           if(obj[key]){ 
+              //dup.push(key)
+              count +=1
+              const m = s.id
+              await db.query("delete from fms.transaction where id = "+m)
+              await db.query("delete from fms.studtrans where tid = "+m)
+              await db.query("insert into fms.fmsdelete_log set ?", {tid:m,meta:JSON.stringify(s)})
+
+           }else{
+              obj[key] = s.id
+           }
+         }
+      }  return count
+      */
+   },
 
 
 
