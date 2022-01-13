@@ -316,7 +316,7 @@ module.exports.SSO = {
 
    // APPLICANTS - AMS MODELS
 
-   fetchApplicants : async (session_id,page,keyword) => {
+   fetchApplicants : async (page,keyword) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
          //var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
@@ -356,7 +356,7 @@ module.exports.SSO = {
 
    },
 
-   fetchApplicantsByType : async (session_id,sell_type) => {
+   fetchApplicantsByType : async (sell_type) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
         const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");

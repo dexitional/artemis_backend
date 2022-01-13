@@ -51,7 +51,7 @@ Router.delete('/ams/vouchers/:id', SSOController.deleteVoucher);
 Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
 Router.post('/ams/resendvoucher', SSOController.resendVoucher);
 // APPLICANTS routes
-Router.get('/ams/applicants/:id', SSOController.fetchApplicants);
+Router.get('/ams/applicants', SSOController.fetchApplicants);
 Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
 // SORTED routes
 Router.get('/ams/sorted/:id', SSOController.fetchSortedApplicants);

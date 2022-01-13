@@ -564,14 +564,13 @@ resendVoucher : async (req,res) => {
 
 fetchApplicants : async (req,res) => {
   try{
-      const id = req.params.id;
       const sell_type = req.query.sell_type;
       const page = req.query.page;
       const keyword = req.query.keyword;
       if(sell_type){
-        var applicants = await SSO.fetchApplicantsByType(id,sell_type);
+        var applicants = await SSO.fetchApplicantsByType(sell_type);
       }else{
-        var applicants = await SSO.fetchApplicants(id,page,keyword);
+        var applicants = await SSO.fetchApplicants(page,keyword);
       }
       
       if(applicants && applicants.data.length > 0){
