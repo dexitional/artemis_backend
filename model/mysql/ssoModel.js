@@ -317,36 +317,53 @@ module.exports.SSO = {
    // APPLICANTS - AMS MODELS
 
    fetchApplicants : async (session_id,page,keyword) => {
-      var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
-      var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id
-      
-      const size = 20;
-      const pg  = parseInt(page);
-      const offset = (pg * size) || 0;
-      
-      if(keyword){
-          sql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
-          cql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
-      }
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         //var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
+         //var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
+         
+         var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type where v.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
+         
+         const size = 20;
+         const pg  = parseInt(page);
+         const offset = (pg * size) || 0;
+         
+         if(keyword){
+            sql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
+            cql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
+         }
 
-      sql += ` order by p.serial asc, c.choice_id asc`
-      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      
-      const ces = await db.query(cql);
-      const res = await db.query(sql);
-      const count = Math.ceil(ces[0].total/size)
+         sql += ` order by p.started_at, p.serial`
+         sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+         
+         const ces = await db.query(cql);
+         const res = await db.query(sql);
+         const count = Math.ceil(ces[0].total/size)
 
-      return {
-         totalPages: count,
-         totalData: ces[0].total,
-         data: res,
+         return {
+            totalPages: count,
+            totalData: ces[0].total,
+            data: res,
+         }
+      }else{
+         return {
+            totalPages: 1,
+            totalData: 0,
+            data: [],
+         }
       }
 
    },
 
    fetchApplicantsByType : async (session_id,sell_type) => {
-      const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
-      return { data:res };
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+        const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
+        return { data:res };
+      }else{
+        return { data:[] };
+      }
    },
 
 
@@ -1516,24 +1533,24 @@ module.exports.SSO = {
    
    fetchPayments : async (page,keyword) => {
       var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on trim(s.refno) = trim(t.refno) left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno  where t.transtype_id = 2";
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno where t.transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
-          cql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}'`
+          sql += ` and (t.transtag like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or t.amount = '${keyword.trim()}')`
+          cql += ` and (t.transtag like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or t.amount = '${keyword.trim()}')`
       }
 
-      sql += ` order by t.id desc`
+      sql += ` order by t.transdate desc,t.id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-
+      console.log(res)
       return {
          totalPages: count,
          totalData: ces[0].total,
