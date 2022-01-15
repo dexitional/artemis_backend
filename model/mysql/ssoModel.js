@@ -465,7 +465,7 @@ module.exports.SSO = {
          const password = nanoid()
 
          // Insert into P06.admitted tbl
-         const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id:bl && bl[0].bid || null, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
+         const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bl ? bl[0].bid : null, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
          await db.query("insert into P06.admitted set ?", da)
          // Insert data into ais.student
          const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:data.program_id, major_id:data.major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:data.start_semester, entry_semester:data.start_semester, entry_group:sp[0].resident_country == 84 ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].mname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
@@ -483,7 +483,7 @@ module.exports.SSO = {
             const df = { session_id:vs[0].academic_session_id, bill_id:bl[0].bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
             await db.query("insert into fms.studtrans set ?", df)
          }
-         
+
          return { ...da,...dp,...dm,...du, program:pg[0].short }
 
       }else{
@@ -532,6 +532,34 @@ module.exports.SSO = {
       }
    },
 
+
+   // LETTERS MODELS
+
+   fetchLetters : async () => {
+      const res = await db.query("select * from P06.letter order by id desc");
+      return res;
+   },
+
+   insertLetter : async (data) => {
+      const res = await db.query("insert into P06.letter set ?", data);
+      return res;
+   },
+
+   updateLetter : async (id,data) => {
+      const res = await db.query("update P06.letter set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteLetter : async (id) => {
+      const res = await db.query("delete from P06.letter where id = "+id);
+      return res;
+   },
+
+   setDefaultLetter : async (id) => {
+      await db.query("update P06.letter set status = 0");
+      const res = await db.query("update P06.letter set status = 1 where id ="+id);
+      return res;
+   },
 
 
     // STUDENTS - AIS MODELS

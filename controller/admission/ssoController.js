@@ -716,6 +716,76 @@ fetchFreshers : async (req,res) => {
 },
 
 
+
+// SESSION CONTROLS
+
+fetchLetters : async (req,res) => {
+  try{
+      var letters = await SSO.fetchLetters();
+      if(letters && letters.length > 0){
+        res.status(200).json({success:true, data:letters});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
+  }
+},
+
+
+postLetter : async (req,res) => {
+    try{
+      const { id } = req.body;
+      var resp
+      if(id > 0){ // Updates
+        resp = await SSO.updateLetter(id,req.body);
+      }else{ // Insert
+        resp = await SSO.insertLetter(req.body);
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteLetter : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteLetter(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+setDefaultLetter : async (req,res) => {
+   try{
+      const { id } = req.params;
+      var resp = await SSO.setDefaultLetter(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+   }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+   }
+},
+
+
 // STUDENT CONTROLS
 
 fetchStudents : async (req,res) => {
