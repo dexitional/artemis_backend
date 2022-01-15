@@ -567,6 +567,8 @@ fetchApplicants : async (req,res) => {
       const sell_type = req.query.sell_type;
       const page = req.query.page;
       const keyword = req.query.keyword;
+      console.log(req.query)
+      console.log(page)
       if(sell_type){
         var applicants = await SSO.fetchApplicantsByType(sell_type);
       }else{
@@ -574,14 +576,12 @@ fetchApplicants : async (req,res) => {
       }
       
       if(applicants && applicants.data.length > 0){
-          console.log(applicants)
-          res.status(200).json({success:true, data:applicants});
+        res.status(200).json({success:true, data:applicants});
       }else{
-          res.status(200).json({success:false, data: null, msg:"No records!"});
+        res.status(200).json({success:false, data: null, msg:"No records!"});
       }
     
   }catch(e){
-      console.log(e)
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
@@ -635,18 +635,74 @@ fetchApplicant : async (req,res) => {
 },
 
 
+addToSort: async (req,res) => {
+    try{
+      const { serial } = req.params;
+      var resp = await SSO.addToSort(serial);
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+    }
+},
+
+
 // SORTED APPLICANTS CONTROLS
 fetchSortedApplicants : async (req,res) => {
   try{
-      const id = req.params.id;
       const sell_type = req.query.sell_type;
       const page = req.query.page;
       const keyword = req.query.keyword;
       if(sell_type){
-        var applicants = await SSO.fetchApplicantsByType(id,sell_type);
+        var applicants = await SSO.fetchApplicantsByType(sell_type);
       }else{
-        var applicants = await SSO.fetchSortedApplicants(id,page,keyword);
+        var applicants = await SSO.fetchSortedApplicants(page,keyword);
       }
+     
+      if(applicants && applicants.data.length > 0){
+          res.status(200).json({success:true, data:applicants});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+// ADMIT APPLICANT AS STUDENT
+admitApplicant : async (req,res) => {
+    try{
+      const vs = await SSO.admitApplicant(req.body);
+      if(vs){
+        console.log(vs)
+        const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`
+        console.log(msg)
+        //const send = sms('0277675089',msg)
+        // await SSO.updateVoucherLogBySerial(serial,{ sms_log:send.code })
+        res.status(200).json({success:true, data:vs});
+      
+      }else{
+           res.status(200).json({success:false, data: null, msg:"PROCESS FAILED !"});
+      }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "SOMETHING WRONG HAPPENED !"});
+    }
+},
+
+
+// MATRICULANTS CONTROLS
+
+fetchFreshers : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var applicants = await SSO.fetchFreshers(page,keyword);
      
       if(applicants && applicants.data.length > 0){
           res.status(200).json({success:true, data:applicants});

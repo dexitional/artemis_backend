@@ -53,8 +53,16 @@ Router.post('/ams/resendvoucher', SSOController.resendVoucher);
 // APPLICANTS routes
 Router.get('/ams/applicants', SSOController.fetchApplicants);
 Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);
+Router.get('/ams/addtosort/:serial', SSOController.addToSort);
+
 // SORTED routes
-Router.get('/ams/sorted/:id', SSOController.fetchSortedApplicants);
+Router.get('/ams/sorted', SSOController.fetchSortedApplicants);
+Router.post('/ams/admitnow', SSOController.admitApplicant);
+
+// MATRICULANT routes
+Router.get('/ams/freshers', SSOController.fetchFreshers);
+Router.post('/ams/admitnow', SSOController.admitApplicant);
+
 
 
 

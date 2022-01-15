@@ -1,5 +1,11 @@
 const moment =  require('moment');
+const email = require('../../config/email');
 var db = require('../../config/mysql');
+const sha1 = require('sha1')
+const { customAlphabet } = require('nanoid')
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
+const { Student } = require('../../model/mysql/studentModel');
+const { getUsername } = require('../../middleware/util');
 
 module.exports.SSO = {
    
@@ -319,19 +325,16 @@ module.exports.SSO = {
    fetchApplicants : async (page,keyword) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
-         //var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
-         //var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
-         
-         var sql = "select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type where v.session_id = "+sid[0].session_id
-         var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id
+         var sql = "select p.serial,p.started_at,p.photo,p.flag_submit,p.grade_value,p.class_value,concat(i.fname,' ',i.lname) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type left join P06.sorted s on s.serial = p.serial where s.serial is null and v.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type where v.session_id = "+sid[0].session_id
          
          const size = 20;
          const pg  = parseInt(page);
          const offset = (pg * size) || 0;
          
          if(keyword){
-            sql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
-            cql += ` and p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%'`
+            sql += ` and (p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%')`
+            cql += ` and (p.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%')`
          }
 
          sql += ` order by p.started_at, p.serial`
@@ -340,7 +343,6 @@ module.exports.SSO = {
          const ces = await db.query(cql);
          const res = await db.query(sql);
          const count = Math.ceil(ces[0].total/size)
-
          return {
             totalPages: count,
             totalData: ces[0].total,
@@ -362,37 +364,59 @@ module.exports.SSO = {
         const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+sid[0].session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
         return { data:res };
       }else{
-        return { data:[] };
+        return null;
       }
+   },
+
+   addToSort : async (serial) => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var vs = await db.query("select p.serial,p.stage_id,p.apply_type,v.sell_type,v.group_id,p.grade_value,p.class_value,p.flag_admit,(select choice_id from step_choice c1 where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice1_id,(select choice_id from step_choice c2 where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice2_id from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial where v.session_id = "+sid[0].session_id+" and p.serial = "+serial)
+         if(vs && vs.length > 0){
+           const data = { serial:serial, session_id:sid[0].session_id, group_id:vs[0].group_id, stage_id:vs[0].stage_id, apply_type:vs[0].apply_type, sell_type:vs[0].sell_type, choice1_id:vs[0].choice1_id, choice2_id:vs[0].choice2_id, grade_value:vs[0].grade_value, class_value:vs[0].class_value, flag_admit:vs[0].flag_admit, created_at: new Date() }
+           const res = await db.query("insert into P06.sorted set ?", data);
+           return { data:res };
+         }
+      }  return null;
    },
 
 
     // SORTED APPLICANTS - AMS
     
-    fetchSortedApplicants : async (session_id,page,keyword) => {
-      var sql = "select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,r1.`short` as choice_name1,r2.`short` as choice_name2,p.started_at,p.photo,v.sell_type,g.title as group_name,v.group_id,t.title as applytype from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where h.session_id = "+session_id
-      var cql = "select count(*) as total from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id where h.session_id = "+session_id
-      
-      const size = 50;
-      const pg  = parseInt(page);
-      const offset = (pg * size) || 0;
-      
-      if(keyword){
-          sql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`
-          cql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`
-      }
+    fetchSortedApplicants : async (page,keyword) => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,r1.`short` as choice_name1,r2.`short` as choice_name2,p.started_at,p.photo,v.sell_type,g.title as group_name,v.group_id,t.title as applytype from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id left join admitted a on h.serial = a.serial where a.serial is null and h.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id left join admitted a on h.serial = a.serial where a.serial is null and h.session_id = "+sid[0].session_id
+         
+         const size = 50;
+         const pg  = parseInt(page);
+         const offset = (pg * size) || 0;
+         
+         if(keyword){
+            sql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`
+            cql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`
+         }
 
-      sql += ' order by r1.`short` asc'
-      sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      
-      const ces = await db.query(cql);
-      const res = await db.query(sql);
-      const count = Math.ceil(ces[0].total/size)
+         sql += ' order by r1.`short` asc'
+         sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+         
+         const ces = await db.query(cql);
+         const res = await db.query(sql);
+         const count = Math.ceil(ces[0].total/size)
 
-      return {
-         totalPages: count,
-         totalData: ces[0].total,
-         data: res,
+         return {
+            totalPages: count,
+            totalData: ces[0].total,
+            data: res,
+         }
+
+      }else{
+         return {
+            totalPages: 0,
+            totalData: 0,
+            data: [],
+         }
       }
    },
 
@@ -400,6 +424,115 @@ module.exports.SSO = {
       const res = await db.query("select p.serial,p.started_at,p.photo,concat(i.fname,' ',i.lname) as name,v.sell_type,i.gender,p.flag_submit,r.`short` as choice_name,g.title as group_name,v.group_id,if(v.sell_type = 0, g.title, if(v.sell_type = 1,'MATURED','INTERNATIONAL')) as group_title from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join step_choice c on p.serial = c.serial left join utility.program r on r.id = c.program_id left join `group` g on v.group_id = g.group_id where v.session_id = "+session_id+" and v.sell_type = "+sell_type+" order by p.serial asc");
       return { data:res };
    },
+
+   admitApplicant : async (data) => {
+      console.log(data)
+      // Fetch active session for acdemic session (vs )
+      const vs = await db.query("select * from P06.session where status = 1")
+      // Fetch step_profile [ biodata, study_mode ] (sp)
+      const sp = await db.query("select * from P06.step_profile where serial = "+data.serial)
+      // Fetch step_guardian [ biodata] (sg)
+      const sg = await db.query("select * from P06.step_guardian where serial = "+data.serial)
+      // Fetch Program Info
+      const pg = await db.query("select * from utility.program where id = "+data.program_id)
+      
+      if(sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0){
+         
+         // Fetch fms.billinfo for bill_id for freshers bill (bl)
+         var bl; 
+         if(sp[0].resident_country == 84){
+            const group_code = data.start_semester > 1 ? '0100,0101,0110,0111,1100,1101,1110,1111':'1000,1001,1010,1011,1100,1101,1110,1111'
+            bl = await db.query("select * from fms.billinfo where prog_id = "+data.program_id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1")
+         }else{
+            bl = await db.query("select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1")
+         }
+
+         // Generate Email Address
+         var email,count = 1;
+         const username = getUsername(sp[0].fname,sp[0].lname)
+         email = `${username}@st.aucc.edu.gh`
+         while(true){
+            var isExist = await Student.findEmail(email)
+            if(isExist && isExist.length > 0){
+               count = count+1
+               email = `${username}${count}@st.aucc.edu.gh`
+            }else{
+               break;
+            }
+         }
+         
+         // Generate Password
+         const password = nanoid()
+
+         // Insert into P06.admitted tbl
+         const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id:bl && bl[0].bid || null, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
+         await db.query("insert into P06.admitted set ?", da)
+         // Insert data into ais.student
+         const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:data.program_id, major_id:data.major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:data.start_semester, entry_semester:data.start_semester, entry_group:sp[0].resident_country == 84 ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].mname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
+         await db.query("insert into ais.student set ?", dp)
+         // Insert into ais.mail 
+         const dm = { refno:data.serial, mail:email }
+         await db.query("insert into ais.mail set ?", dm)
+         // Insert data into identity.user
+         const du = { group_id:1, tag:data.serial, username:email, password:sha1(password) }
+         await db.query("insert into identity.user set ?", du)
+         // Insert Photo into Database
+
+         if(bl){
+            // Insert Academic Fees or Bill charged
+            const df = { session_id:vs[0].academic_session_id, bill_id:bl[0].bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
+            await db.query("insert into fms.studtrans set ?", df)
+         }
+         
+         return { ...da,...dp,...dm,...du, program:pg[0].short }
+
+      }else{
+         return null
+      }
+   
+   },
+
+
+    // MATRICULANTS - AMS MODELS
+    
+    fetchFreshers : async (page,keyword) => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         var cql = "select count(*) as total from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         
+         const size = 50;
+         const pg  = parseInt(page);
+         const offset = (pg * size) || 0;
+         
+         if(keyword){
+            sql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or p.\`short\` like '%${keyword}%'`
+            cql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or p.\`short\` like '%${keyword}%'`
+         }
+
+         sql += ' order by p.`short`, h.created_at'
+         sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+         
+         const ces = await db.query(cql);
+         const res = await db.query(sql);
+         const count = Math.ceil(ces[0].total/size)
+
+         return {
+            totalPages: count,
+            totalData: ces[0].total,
+            data: res,
+         }
+
+      }else{
+         return {
+            totalPages: 0,
+            totalData: 0,
+            data: [],
+         }
+      }
+   },
+
+
 
     // STUDENTS - AIS MODELS
 
@@ -888,7 +1021,6 @@ module.exports.SSO = {
 
 
    // INFORMER -AIS
-
    fetchInformer : async (page,keyword) => {
       var sql = "select s.* from ais.informer s"
       var cql = "select count(*) as total from ais.informer s";
@@ -1962,6 +2094,7 @@ module.exports.SSO = {
    fetchAMShelpers : async () => {
       const vendors = await db.query("select * from P06.vendor where status = 1");
       const session = await db.query("select * from P06.session where status = 1");
+      const calendars = await db.query("select * from utility.session where `default` = 1");
       const programs = await db.query("select * from utility.program where status = 1");
       const majors = await db.query("select m.*,p.`short` as program_name from ais.major m left join utility.program p on p.id = m.prog_id where m.status = 1");
       const stages = await db.query("select * from P06.stage where status = 1");
@@ -1975,7 +2108,7 @@ module.exports.SSO = {
          })
       }
       const countries = await db.query("select code_name,title from utility.country where status = 1 order by title asc");
-      if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries,letters }
+      if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries,letters,calendars }
       return null;
    },
 
