@@ -465,10 +465,11 @@ module.exports.SSO = {
                break;
             }
          }
+         console.log(bl)
          
          // Generate Password
          const password = nanoid()
-
+           
          // Insert into P06.admitted tbl
          const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bl ? bl[0].bid : null, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
          await db.query("insert into P06.admitted set ?", da)
