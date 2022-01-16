@@ -444,12 +444,14 @@ module.exports.SSO = {
       if(sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0){
          
          // Fetch fms.billinfo for bill_id for freshers bill (bl)
-         var bl; 
+         var bl,bql; 
          if(sp[0].resident_country == 84){
             const group_code = data.start_semester > 1 ? '0100,0101,0110,0111,1100,1101,1110,1111':'1000,1001,1010,1011,1100,1101,1110,1111'
-            bl = await db.query("select * from fms.billinfo where prog_id = "+data.program_id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1")
+            bql = "select * from fms.billinfo where prog_id = "+data.program_id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1"
+            bl = await db.query(bql)
          }else{
-            bl = await db.query("select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1")
+            bql = "select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1"
+            bl = await db.query(bql)
          }
 
          // Generate Email Address
@@ -465,7 +467,7 @@ module.exports.SSO = {
                break;
             }
          }
-         console.log(bl)
+         console.log(bl,bql)
          
          // Generate Password
          const password = nanoid()
