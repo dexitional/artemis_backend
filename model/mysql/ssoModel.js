@@ -445,7 +445,7 @@ module.exports.SSO = {
          
          // Fetch fms.billinfo for bill_id for freshers bill (bl)
          var bl,bql; 
-         if(sp[0].resident_country == 84){
+         if(sp[0].resident_country == 84 || sp[0].resident_country == 'GH'){
             const group_code = data.start_semester > 1 ? '0100,0101,0110,0111,1100,1101,1110,1111':'1000,1001,1010,1011,1100,1101,1110,1111'
             bql = "select * from fms.billinfo where prog_id = "+data.program_id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1"
             bl = await db.query(bql)
@@ -453,6 +453,8 @@ module.exports.SSO = {
             bql = "select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1"
             bl = await db.query(bql)
          }
+
+         const bid = bl && bl.length > 0 ? bl[0].bid : null
 
          // Generate Email Address
          var email,count = 1;
@@ -473,10 +475,10 @@ module.exports.SSO = {
          const password = nanoid()
            
          // Insert into P06.admitted tbl
-         const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bl ? bl[0].bid : null, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
+         const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bid, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
          await db.query("insert into P06.admitted set ?", da)
          // Insert data into ais.student
-         const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:data.program_id, major_id:data.major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:data.start_semester, entry_semester:data.start_semester, entry_group:sp[0].resident_country == 84 ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].mname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
+         const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:data.program_id, major_id:data.major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:data.start_semester, entry_semester:data.start_semester, entry_group:(sp[0].resident_country == 84 || sp[0].resident_country == 'GH') ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
          await db.query("insert into ais.student set ?", dp)
          // Insert into ais.mail 
          const dm = { refno:data.serial, mail:email }
@@ -485,19 +487,17 @@ module.exports.SSO = {
          const du = { group_id:1, tag:data.serial, username:email, password:sha1(password) }
          await db.query("insert into identity.user set ?", du)
          // Insert Photo into Database
-
-         if(bl){
+         
+         if(bid){
             // Insert Academic Fees or Bill charged
-            const df = { session_id:vs[0].academic_session_id, bill_id:bl[0].bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
+            const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
             await db.query("insert into fms.studtrans set ?", df)
          }
-
          return { ...da,...dp,...dm,...du, program:pg[0].short }
 
       }else{
          return null
       }
-   
    },
 
 
