@@ -634,6 +634,21 @@ fetchApplicant : async (req,res) => {
   }
 },
 
+fetchDocuments: async (req,res) => {
+  try{
+      const { serial } = req.params;
+      const docs = await SSO.fetchDocuments(serial);
+      if(docs && docs.length > 0){
+         res.json({success:true, docs});
+      }else{
+          res.json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 
 addToSort: async (req,res) => {
     try{
@@ -716,8 +731,39 @@ fetchFreshers : async (req,res) => {
 },
 
 
+fetchFreshersData : async (req,res) => {
+  try{
+      var freshers = await SSO.fetchFreshersData();
+      if(freshers && freshers.length > 0){
+          res.status(200).json({success:true, data:freshers});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
 
-// SESSION CONTROLS
+
+removeFresherData : async (req,res) => {
+  try{
+      const { serial } = req.params;
+      var freshers = await SSO.removeFresherData(serial);
+      if(freshers){
+        res.status(200).json({success:true, data:freshers});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+
+// LETTERS CONTROLS
 
 fetchLetters : async (req,res) => {
   try{
@@ -737,6 +783,7 @@ fetchLetters : async (req,res) => {
 postLetter : async (req,res) => {
     try{
       const { id } = req.body;
+      console.log(req.body)
       var resp
       if(id > 0){ // Updates
         resp = await SSO.updateLetter(id,req.body);
@@ -1569,7 +1616,7 @@ fetchBill : async (req,res) => {
 
 postBill : async (req,res) => {
     const { bid } = req.body;
-    let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code,post_status:req.body.post_status, session_id:req.body.session_id, discount: req.body.discount }
+    let dt = { narrative:req.body.narrative, tag:req.body.tag, amount: req.body.amount, currency:req.body.currency, post_type:req.body.post_type, group_code:req.body.group_code,post_status:req.body.post_status, session_id:req.body.session_id, discount:req.body.discount, bankacc_id:req.body.bankacc_id }
     if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
     if(req.body.discount == '' || req.body.discount == 0) delete dt.discount
     try{
@@ -1686,7 +1733,7 @@ fetchBillItem : async (req,res) => {
 
 postBillItem : async (req,res) => {
     const { id } = req.body;
-    let dt = {narrative:req.body.narrative, tag:req.body.tag, amount: req.body.amount, currency:req.body.currency, status:req.body.status, type:req.body.type, session_id:req.body.session_id}
+    let dt = { narrative:req.body.narrative, tag:req.body.tag, amount:req.body.amount, currency:req.body.currency, status:req.body.status, type:req.body.type, session_id:req.body.session_id }
     try{
       var resp = id <=0 ? await SSO.insertBillItem(dt) : await SSO.updateBillItem(id,dt) ;
       if(resp){

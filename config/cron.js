@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runRetireAccount, runVoucherSender, retireFeesTransact, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData } = require('../middleware/util')
+const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
@@ -10,11 +10,11 @@ var cron = require('node-cron');
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
 cron.schedule('*/5 * * * *', () => {
     const cmd = "ls -la"; // Command Bash terminal
-    exec(cmd, function(error, stdout, stderr) {
+    exec(cmd, async function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          runMsgDispatcher()
+          await runMsgDispatcher()
           // UPDATE STUDENT ACTIVE STATUS
           //runData()
         }
@@ -25,30 +25,28 @@ cron.schedule('*/5 * * * *', () => {
 // Schedule @ EVERY 30 MINUTES
 cron.schedule('*/20 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
-    exec(cmd, function(error, stdout, stderr) {
+    exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
       else {
         /* FMS CRON JOBS  */
 
           // RUN BILLS CHARGED
-          runBills()
+          await runBills()
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          setTimeout(()=> runRetireFeesTransact(), 200)
+          await runRetireFeesTransact()
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
-          setTimeout(()=> runRetireStudentAccount(), 200)
+          await runRetireStudentAccount()
           // RUN VOUCHERS RETIREMENT & RESEND
-          setTimeout(()=> runVoucherSender(), 200),
+          await runVoucherSender()
           // RUN SCORESHEET SETUP FOR NEW CALENDAR
-          setTimeout(()=> runSetupScoresheet(), 200)
+          await runSetupScoresheet()
           // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME)
-          runUpgradeNames()
+          await runUpgradeNames()
           // CORRECT DUPLICATE PAYMENT ENTRIES
-          runRemovePaymentDuplicates()
+          await runRemovePaymentDuplicates()
           
 
           // RUN RESIT CHECKER
-        
-
       }
     });
 });

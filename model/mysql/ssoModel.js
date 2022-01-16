@@ -368,6 +368,11 @@ module.exports.SSO = {
       }
    },
 
+   fetchDocuments : async (serial) => {
+      const res = await db.query("select * from P06.step_document where serial = "+serial);
+      return res;
+   },
+
    addToSort : async (serial) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
@@ -498,7 +503,7 @@ module.exports.SSO = {
     fetchFreshers : async (page,keyword) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
-         var sql = "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         var sql = "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
          var cql = "select count(*) as total from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
          
          const size = 50;
@@ -530,6 +535,33 @@ module.exports.SSO = {
             data: [],
          }
       }
+   },
+
+
+   fetchFreshersData : async () => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         sql += ' order by p.`short`, h.created_at'
+         const res = await db.query(sql);
+         return res
+      }
+   },
+
+
+   removeFresherData : async (serial) => {
+        // Delete from P06.admitted tbl
+        var ins = await db.query("delete from P06.admitted where serial = "+serial)
+        // Delete from ais.student
+        var ins = await db.query("delete from ais.student where refno = '"+serial+"'")
+        // Delete from ais.mail 
+        var ins = await db.query("delete from ais.mail where refno = '"+serial+"'")
+        // Delete from identity.user
+        var ins = await db.query("delete from identity.user where tag = '"+serial+"'")
+        // Delete from Academic Fees or Bill charged
+        var ins = await db.query("delete from fms.studtrans where refno = '"+serial+"'")
+        if(ins) return ins
+        return null
    },
 
 
