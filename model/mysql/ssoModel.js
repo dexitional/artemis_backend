@@ -1288,7 +1288,7 @@ module.exports.SSO = {
    // BILLS - FMS
    
    fetchBills : async (page,keyword) => {
-      var sql = "select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id"
+      var sql = "select b.*,p.`short` as program_name,s.tag as session_tag from fms.billinfo b left join utility.program p on p.id = b.prog_id left join utility.session s on b.session_id = s.id"
       var cql = "select count(*) as total from fms.billinfo b";
       
       const size = 10;
@@ -1296,8 +1296,8 @@ module.exports.SSO = {
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
-          cql += ` where b.narrative like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+          sql += ` where b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
+          cql += ` where b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`
       }
 
       sql += ` order by b.bid desc,b.narrative asc`
