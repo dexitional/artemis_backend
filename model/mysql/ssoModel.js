@@ -474,6 +474,9 @@ module.exports.SSO = {
          // Insert into P06.admitted tbl
          const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bid, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
          await db.query("insert into P06.admitted set ?", da)
+         // Update into P06.step_profile tbl
+         const dz = { flag_admit:1 }
+         await db.query("update P06.applicant set ? where serial = "+data.serial, dz)
          // Insert data into ais.student
          const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:data.program_id, major_id:data.major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:data.start_semester, entry_semester:data.start_semester, entry_group:(sp[0].resident_country == 84 || sp[0].resident_country == 'GH') ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
          await db.query("insert into ais.student set ?", dp)
@@ -552,6 +555,8 @@ module.exports.SSO = {
    removeFresherData : async (serial) => {
         // Delete from P06.admitted tbl
         var ins = await db.query("delete from P06.admitted where serial = "+serial)
+        // Reset Flag_admit from P06.applicant tbl
+        var ins = await db.query("update P06.applicant set flag_admit = null where serial = "+serial)
         // Delete from ais.student
         var ins = await db.query("delete from ais.student where refno = '"+serial+"'")
         // Delete from ais.mail 
