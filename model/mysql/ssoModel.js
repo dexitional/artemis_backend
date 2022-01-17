@@ -469,11 +469,8 @@ module.exports.SSO = {
                break;
             }
          }
-         console.log(bl,bql)
-         
          // Generate Password
          const password = nanoid()
-           
          // Insert into P06.admitted tbl
          const da = { serial:data.serial, admit_session:data.session_id, academ_session:vs[0].academic_session_id, group_id:data.group_id, stage_id:data.stage_id, apply_type:data.apply_type, sell_type:data.sell_type, bill_id: bid, prog_id:data.program_id, major_id:data.major_id, start_semester:data.start_semester, session_mode:sp[0].session_mode, username:email, password }
          await db.query("insert into P06.admitted set ?", da)
@@ -493,7 +490,7 @@ module.exports.SSO = {
             const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
             await db.query("insert into fms.studtrans set ?", df)
          }
-         return { ...da,...dp,...dm,...du, program:pg[0].short }
+         return { ...da,...dp,...dm,...du, program:pg[0].short, phone:sp[0].phone }
 
       }else{
          return null

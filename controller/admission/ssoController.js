@@ -694,11 +694,10 @@ admitApplicant : async (req,res) => {
     try{
       const vs = await SSO.admitApplicant(req.body);
       if(vs){
-        console.log(vs)
         const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`
-        console.log(msg)
-        //const send = sms('0277675089',msg)
-        // await SSO.updateVoucherLogBySerial(serial,{ sms_log:send.code })
+        //console.log(msg)
+        const send = sms(vs.phone,msg)
+        console.log(send)
         res.status(200).json({success:true, data:vs});
       
       }else{
