@@ -560,7 +560,7 @@ module.exports.SSO = {
         // Delete from P06.admitted tbl
         var ins = await db.query("delete from P06.admitted where serial = "+serial)
         // Reset Flag_admit from P06.applicant tbl
-        var ins = await db.query("update P06.applicant set flag_admit = null where serial = "+serial)
+        var ins = await db.query("update P06.applicant set flag_admit = 0 where serial = "+serial)
         // Delete from ais.student
         var ins = await db.query("delete from ais.student where refno = '"+serial+"'")
         // Delete from ais.mail 
