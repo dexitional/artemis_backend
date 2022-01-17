@@ -487,7 +487,7 @@ module.exports.SSO = {
          
          if(bid){
             // Insert Academic Fees or Bill charged
-            const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency }
+            const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency,currency:bl[0].amount }
             await db.query("insert into fms.studtrans set ?", df)
          }
          return { ...da,...dp,...dm,...du, program:pg[0].short, phone:sp[0].phone }

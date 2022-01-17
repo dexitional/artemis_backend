@@ -27,6 +27,7 @@ module.exports = {
                    data.isNew = false
                    data.user = { photo : instance[0].photo, serial, pin, name: instance[0].applicant_name, group_name: instance[0].group_name, group_id:applicant[0].group_id, sell_type:applicant[0].sell_type }
                    data.flag_submit = instance[0].flag_submit
+                   data.flag_admit = instance[0].flag_admit
                    data.group_id = applicant[0].group_id
                    data.sell_type = applicant[0].sell_type
                    data.stage_id = instance[0].stage_id
@@ -47,7 +48,6 @@ module.exports = {
                       }
                       if(mt.tag == 'result'){
                         const grades = await Admission.fetchResultGrades(serial);
-                        console.log(grades)
                         if(grades && grades.length > 0) newMeta = { ...newMeta, grade:grades }
                      }
                    } 
@@ -204,7 +204,6 @@ module.exports = {
   
   sendAgreement : async (req,res) => {
     const { serial,action } = req.body;
-    console.log(req.body);
     var ok;
     try{
       if(action == 1){
@@ -236,7 +235,8 @@ module.exports = {
                  res.status(200).json({success:false, data: null, msg:"Student creation failed!"});
                }
             }else{
-              res.status(200).json({success:false, data: null, msg:"Student already exist!"});
+              const ups = await Admission.updateAdmittedTbl(serial,{ accepted:action });
+              res.status(200).json({success:true, data: null, msg:"Student already exist!"});
             }
         }
 
