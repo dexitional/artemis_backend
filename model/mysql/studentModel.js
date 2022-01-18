@@ -1,7 +1,7 @@
 const moment =  require('moment');
 var db = require('../../config/mysql');
 
-module.exports.Student = {
+module.exports = {
   
    fetchUser : async (uid,gid) => {
       var sql;

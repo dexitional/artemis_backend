@@ -4,10 +4,10 @@ var db = require('../../config/mysql');
 const sha1 = require('sha1')
 const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
-const { Student } = require('../../model/mysql/studentModel');
+const Student = require('../../model/mysql/studentModel');
 const { getUsername } = require('../../middleware/util');
 
-module.exports.SSO = {
+module.exports = {
    
    verifyUser : async ({ username,password }) => {
       const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";

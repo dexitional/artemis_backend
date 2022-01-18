@@ -8,9 +8,9 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const mailer = require('../../config/email')
 const sms = require('../../config/sms')
 
-const { SSO } = require('../../model/mysql/ssoModel');
-const { Admission } = require('../../model/mysql/admissionModel');
-const { Student } = require('../../model/mysql/studentModel');
+const SSO = require('../../model/mysql/ssoModel');
+const Admission = require('../../model/mysql/admissionModel');
+const Student = require('../../model/mysql/studentModel');
 
 module.exports = {
  

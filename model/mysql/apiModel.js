@@ -1,6 +1,6 @@
 var db = require('../../config/mysql');
 
-module.exports.API = {
+module.exports = {
    
    fetchServices : async () => {
       const sql = "select id as serviceId,title as serviceName from fms.transtype where status = 1 and visibility = 'PUBLIC'";

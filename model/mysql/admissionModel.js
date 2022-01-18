@@ -1,6 +1,6 @@
 var db = require('../../config/mysql');
 
-module.exports.Admission = {
+module.exports = {
    
    fetchApplicants : async () => {
       const sql = "select * from applicant";

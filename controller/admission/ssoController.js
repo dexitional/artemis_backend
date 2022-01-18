@@ -11,9 +11,9 @@ const mailer = require('../../config/email')
 const sms = require('../../config/sms')
 const db = require('../../config/mysql')
 
-const { SSO } = require('../../model/mysql/ssoModel');
-const { Admission } = require('../../model/mysql/admissionModel');
-const { Student } = require('../../model/mysql/studentModel');
+const SSO = require('../../model/mysql/ssoModel');
+const Admission = require('../../model/mysql/admissionModel');
+const Student = require('../../model/mysql/studentModel');
 
 const decodeBase64Image = (dataString) => {
   var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),

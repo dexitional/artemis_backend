@@ -1,5 +1,6 @@
 const sms = require("../config/sms");
-const { SSO } = require("../model/mysql/ssoModel");
+//const SSO = require("../model/mysql/ssoModel");
+const SSO = require("../model/mysql/newModel");
 
 const getTargetGroup = (group_code) => {
     var yr

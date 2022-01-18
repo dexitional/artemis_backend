@@ -1,20 +1,20 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates } = require('../middleware/util')
+const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
 /* CRON SCHEDULES   */
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/1 * * * *', () => {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          await runMsgDispatcher()
+          runMsgDispatcher()
           // UPDATE STUDENT ACTIVE STATUS
           //runData()
         }
@@ -22,8 +22,8 @@ cron.schedule('*/5 * * * *', () => {
 });
 
 
-// Schedule @ EVERY 30 MINUTES
-cron.schedule('*/20 * * * *', async function() {
+// Schedule @ EVERY 15 MINUTES
+cron.schedule('*/15 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
@@ -45,7 +45,6 @@ cron.schedule('*/20 * * * *', async function() {
           // CORRECT DUPLICATE PAYMENT ENTRIES
           await runRemovePaymentDuplicates()
           
-
           // RUN RESIT CHECKER
       }
     });
