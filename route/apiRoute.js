@@ -3,7 +3,7 @@ var Router = express.Router();
 var jwt = require('jsonwebtoken');
 /* Controllers */
 var ApiController = require('../controller/admission/apiController');
-const { SSO } = require('../model/mysql/ssoModel');
+const SSO = require('../model/mysql/ssoModel');
 const parseIp = (req) => req.headers['x-forwarded-for']?.split(',').shift() || req.socket?.remoteAddress
 const apiLogger = (action) => {
     return async (req, res, next) => {
