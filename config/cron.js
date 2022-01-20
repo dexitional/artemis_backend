@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData } = require('../middleware/util')
+const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData, populate } = require('../middleware/util')
 var cron = require('node-cron'); 
 
 
@@ -15,6 +15,7 @@ cron.schedule('*/1 * * * *', () => {
         else {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
+          //populate()
           // UPDATE STUDENT ACTIVE STATUS
           //runData()
         }

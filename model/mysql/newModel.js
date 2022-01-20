@@ -6,9 +6,11 @@ const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const Student = require('../../model/mysql/studentModel');
 const { getUsername } = require('../../middleware/util');
+const SSO = require('../../model/mysql/newModel')
 
 module.exports = {
    
+    
    verifyUser : async ({ username,password }) => {
       const sql = "select u.* from identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
       const res = await db.query(sql);
@@ -256,34 +258,49 @@ module.exports = {
       if(pr && vd){
         const vc = await db.query("select serial,pin from P06.voucher where vendor_id = "+vd[0].vendor_id+" and session_id ="+sessionId+" and group_id = '"+pr[0].group_id+"' and sell_type = "+pr[0].sell_type+" and sold_at is null");
         if(vc && vc.length > 0){
-            console.log(vc);
             // Update Voucher Status & Buyer Details
             const dm = { applicant_name: buyerName, applicant_phone: buyerPhone, sold_at: new Date()}
             const ups = await db.query("update P06.voucher set ? where serial = "+vc[0].serial,dm);
-            if(ups.affectedRows > 0) { 
-               // Insert Voucher Sales Log - Success
-               const vlog = { tid,session_id:sessionId,serial:vc[0].serial,pin:vc[0].pin,buyer_name:buyerName,buyer_phone:buyerPhone,generated:1 }
-               const vins = await db.query("insert into fms.voucher_log set ?",vlog);
-               return { ...vc[0],logId:vins.insertId }
-
-            } else{ 
+            if(ups.affectedRows > 0) {    
+               const isIn = await db.query("select * from fms.voucher_log where tid = "+tid+" and session_id = "+sessionId)
+               if(isIn && isIn.length > 0){
+                  // Update Voucher Sales Log - Success
+                  const vlog = { serial:vc[0].serial,pin:vc[0].pin,generated:1 }
+                  const vins = await db.query("update fms.voucher_log set ? where tid = "+tid+" and session_id = "+sessionId,vlog);
+                  return { ...vc[0],logId:vins.insertId }
+               }else{
+                  // Insert Voucher Sales Log - Success
+                  const vlog = { tid,session_id:sessionId,serial:vc[0].serial,pin:vc[0].pin,buyer_name:buyerName,buyer_phone:buyerPhone,generated:1 }
+                  const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
+                  return { ...vc[0],logId:vins.insertId }
+               }
+            }
+            /*
+            else{ 
                // Insert Voucher Sales Log - Error
                const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
                const vins = await db.query("insert into fms.voucher_log set ?",vlog);
                return null
             }
+            */
         }else{
           
-          // Insert Voucher Sales Log - Error
-          const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
-          const vins = await db.query("insert into fms.voucher_log set ?",vlog);
-          return null
+           // Insert Voucher Sales Log - Error
+           const isIn = await db.query("select * from fms.voucher_log where tid = "+tid+" and session_id = "+sessionId)
+           if(isIn && isIn.length == 0){
+               // Insert Voucher Sales Log - Success
+               const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
+               const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
+           }   return null
         }
       }else{
          // Insert Voucher Sales Log - Error
-         const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
-         const vins = await db.query("insert into fms.voucher_log set ?",vlog);
-         return null
+         const isIn = await db.query("select * from fms.voucher_log where tid = "+tid+" and session_id = "+sessionId)
+         if(isIn && isIn.length == 0){
+             // Insert Voucher Sales Log - Success
+             const vlog = { tid,session_id:sessionId,serial:null,pin:null,buyer_name:buyerName,buyer_phone:buyerPhone,generated:0 }
+             const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
+         }   return null
       }
    },
 
@@ -325,7 +342,7 @@ module.exports = {
    fetchApplicants : async (page,keyword) => {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
-         var sql = "select p.serial,p.started_at,p.photo,p.flag_submit,p.grade_value,p.class_value,concat(i.fname,' ',i.lname) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type left join P06.sorted s on s.serial = p.serial where s.serial is null and v.session_id = "+sid[0].session_id
+         var sql = "select p.serial,p.started_at,p.photo,p.flag_submit,p.grade_value,p.class_value,ifnull(convert(i.phone,CHAR),convert(v.applicant_phone,CHAR)) as phone,ifnull(concat(i.fname,' ',i.lname),concat('Buyer: ',v.applicant_name)) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type left join P06.sorted s on s.serial = p.serial where s.serial is null and v.session_id = "+sid[0].session_id
          var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type where v.session_id = "+sid[0].session_id
          
          const size = 20;
@@ -852,7 +869,7 @@ module.exports = {
             }
          }
       }
-      if(count > 0) await this.SSO.retireAssessmentTotal(sid) // Return Assessment for Session
+      if(count > 0) await SSO.retireAssessmentTotal(sid) // Return Assessment for Session
       return count;
    },
    
@@ -1661,6 +1678,9 @@ module.exports = {
       */
    },
 
+   
+
+
 
 
 
@@ -1842,7 +1862,7 @@ module.exports = {
    },
 
    updateStudFinance : async (tid,refno,amount,transid) => {
-         const session_id = await this.SSO.getActiveSessionByRefNo(refno)
+         const session_id = await SSO.getActiveSessionByRefNo(refno)
          const fin = await db.query("select * from fms.studtrans where tid = "+tid);
          const dt = { tid,amount,refno,session_id,narrative:`${refno} FEES PAYMENT, TRANSID: ${transid}`}
          var resp;
@@ -1913,7 +1933,7 @@ module.exports = {
    moveToFees : async (id,amount,refno,transid) => {
       const rs = await db.query("update fms.transaction set transtype_id = 2 where id = "+id);
       console.log(rs)
-      const ms = await this.SSO.updateStudFinance(id,refno,amount,transid)
+      const ms = await SSO.updateStudFinance(id,refno,amount,transid)
       console.log(ms)
       if(rs && ms) return rs;
       return null

@@ -1597,27 +1597,28 @@ fetchBills : async (req,res) => {
 
 fetchBill : async (req,res) => {
   try{
-      const bid = req.params.bid;
-      var bill = await SSO.fetchBill(bid);
-      var items = await SSO.fetchItemsByBid(bid)
-     
-      if(bill && bill.length > 0){
-        res.status(200).json({success:true, data:{ data:bill[0],items }});
-      }else{
-        res.status(200).json({success:false, data: null, msg:"No records!"});
-      }
+    const bid = req.params.bid;
+    var bill = await SSO.fetchBill(bid);
+    var items = await SSO.fetchItemsByBid(bid)
+    
+    if(bill && bill.length > 0){
+      res.status(200).json({success:true, data:{ data:bill[0],items }});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
   }catch(e){
-      console.log(e)
-      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
   }
 },
 
 
 postBill : async (req,res) => {
     const { bid } = req.body;
-    let dt = { narrative:req.body.narrative, tag:req.body.tag, amount: req.body.amount, currency:req.body.currency, post_type:req.body.post_type, group_code:req.body.group_code,post_status:req.body.post_status, session_id:req.body.session_id, discount:req.body.discount, bankacc_id:req.body.bankacc_id }
+    let dt = { narrative:req.body.narrative, tag:req.body.tag, amount: req.body.amount, currency:req.body.currency, post_type:req.body.post_type, group_code:req.body.group_code,discount_code:req.body.discount_code,post_status:req.body.post_status, session_id:req.body.session_id, discount:req.body.discount, bankacc_id:req.body.bankacc_id }
     if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
     if(req.body.discount == '' || req.body.discount == 0) delete dt.discount
+    if(req.body.discount_code == '') delete dt.discount_code
     try{
       var resp = bid <=0 ? await SSO.insertBill(dt) : await SSO.updateBill(bid,dt) ;
       if(resp){

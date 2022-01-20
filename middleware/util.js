@@ -102,20 +102,25 @@ const getActiveSessionByDoa = async (doa) => {
 
 const runBills = async () => {
     var bl = await SSO.fetchCurrentBills();
-    const sess = await SSO.getActiveSessionByMode(1)
+    //const sess = await SSO.getActiveSessionByMode(1)
     var resp = {};
     if(bl && bl.length > 0){
       for(var b of bl){
         const sem = getSemestersByCode(b.group_code)
-        var count;
+        const dsem = getSemestersByCode(b.discount_code)
+        var data;
         if(b.post_status == 1){
           if(b.post_type == 'GH'){
-            count = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,sess,b.discount,b.currency)
-            if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
+            data = await SSO.sendStudentBillGh(b.bid,b.narrative,b.amount,b.prog_id,sem,b.session_id,b.discount,dsem,b.currency)
+            const {count,dcount} = data;
+            if(data.count > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],count } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['count']+count } 
+            if(data.dcount > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],dcount } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['dcount']+dcount } 
+            
           }else if(b.post_type == 'INT'){
-            count = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,sess,b.discount,b.currency)
-            if(count > 0) resp[`${b.bid}`] = resp[`${b.bid}`] ? count:(resp[`${b.bid}`]+count)
-          }
+            data = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,b.session_id,b.discount,dsem,b.currency)
+            if(data.count > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],count } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['count']+count } 
+            if(data.dcount > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],dcount } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['dcount']+dcount } 
+          } 
         }
       }
     }
@@ -214,6 +219,11 @@ const runData = async () => {
   return resp;
 }
 
+const populate = async () => {
+  var resp = await SSO.populate();
+  return resp;
+}
 
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData }
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData,populate }

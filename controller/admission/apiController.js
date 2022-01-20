@@ -39,7 +39,7 @@ module.exports = {
             case 4: ft = await Student.fetchGraduationAccount(st[0].indexno);break; // Automate graduation insertion after second sem certified result
           } res.status(200).json({success:true, data: {...dt,serviceCharge:ft}}) 
         }else{
-          res.status(200).json({success:false, data: null, msg: "Invalid StudentID or Index number"});
+          res.status(200).json({success:false, data: null, msg: "Invalid Student ID or Index number"});
         }
 
       // VOUCHER services
@@ -82,7 +82,6 @@ module.exports = {
             }else{ 
               res.status(200).json({success:false, data: null, msg: `Voucher quota exhausted`}) 
             }
-          
           }else{ 
             res.status(200).json({success:false, data: null, msg: `Transaction failed`})
           }
