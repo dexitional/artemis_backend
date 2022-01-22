@@ -50,6 +50,7 @@ Router.post('/ams/vouchers', SSOController.postVoucher);
 Router.delete('/ams/vouchers/:id', SSOController.deleteVoucher);
 Router.post('/ams/recovervoucher', SSOController.recoverVoucher);
 Router.post('/ams/resendvoucher', SSOController.resendVoucher);
+Router.post('/ams/sellvoucher', SSOController.sellVoucher);
 // APPLICANTS routes
 Router.get('/ams/applicants', SSOController.fetchApplicants);
 Router.get('/ams/applicant/:serial', SSOController.fetchApplicant);

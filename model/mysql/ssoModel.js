@@ -202,7 +202,9 @@ module.exports = {
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-
+      console.log(res)
+      console.log(sql)
+      console.log(page)
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -301,6 +303,24 @@ module.exports = {
              const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
          }   return null
       }
+   },
+
+   sellVoucherBySerial : async (serial,name,phone) => {
+      // Update Voucher Status & Buyer Details
+      const dm = { applicant_name: name, applicant_phone: phone, sold_at: new Date()}
+      const vc = await db.query("select * from P06.voucher where serial = "+serial);
+      if(vc && vc.length > 0){
+        const ups = await db.query("update P06.voucher set ? where serial = "+serial,dm);
+        if(ups.affectedRows > 0) {    
+          const isIn = await db.query("select * from fms.voucher_log where serial = "+serial)
+          if(isIn && isIn.length == 0){ 
+            const vlog = { tid:null,session_id:vc[0].session_id,serial,pin:vc[0].pin,buyer_name:name,buyer_phone:phone,generated:1 }
+            const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
+            return { ...vc[0],logId:vins.insertId,name,phone }
+          }
+        }
+      } 
+      return null;
    },
 
 

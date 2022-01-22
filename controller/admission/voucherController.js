@@ -7,14 +7,14 @@ module.exports = {
     // Fetch vouchers 
     fetchVouchers : async (req,res) => {
         try{
-            var vouch = await Voucher.find().lean();
-            if(vouch){
-               res.status(200).json({success:true, data: vouch});
-            }else{
-                res.status(202).json({success:false, data: null, msg:"Something wrong happend!"});
-            }
+          var vouch = await Voucher.find().lean();
+          if(vouch){
+            res.status(200).json({success:true, data: vouch});
+          }else{
+            res.status(202).json({success:false, data: null, msg:"Something wrong happend!"});
+          }
         }catch(e){
-            res.status(403).json({success:false, data: null, msg: e});
+          res.status(403).json({success:false, data: null, msg: e});
         }
     },
 

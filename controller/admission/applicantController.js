@@ -177,11 +177,12 @@ module.exports = {
     try{
       var ok = await Admission.updateApplicationStatus(serial,status);
       if(ok){
-        res.status(200).json({success:true, data});
+        res.status(200).json({success:true, ok});
       }else{
         res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }
     }catch(e){
+      console.log(e)
       res.status(200).json({success:false, data: null, msg: "System error detected."});
     }
   },

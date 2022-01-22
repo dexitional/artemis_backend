@@ -444,7 +444,6 @@ module.exports = {
         const keyword = req.query.keyword;
         const helpers = await SSO.fetchAMShelpers()
         const { session : { session_id:id } } = helpers;
-        
         if(sell_type){
           var vouchers = await SSO.fetchVouchersByType(id,sell_type);
         }else{
@@ -552,6 +551,31 @@ resendVoucher : async (req,res) => {
       }
     }else{
       res.status(200).json({success:false, data: null, msg:"VOUCHER NOT REGISTERED IN LOGS!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
+
+sellVoucher : async (req,res) => {
+  try{
+    const { serial,name,phone } = req.body;
+    var resp
+    if(serial && phone && name){ 
+       const sr = await SSO.sellVoucherBySerial(serial,name,phone);
+       if(sr){
+         const message = `Hello! voucher for ${name} is : ( SERIAL: ${serial} PIN: ${sr.pin} )`;
+         sms(phone,message)
+         resp = sr;
+       }
+    }
+    if(resp){
+      res.status(200).json({success:true, data:resp});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"ACTION FAILED !"});
     }
   }catch(e){
     console.log(e)
@@ -1021,38 +1045,6 @@ loadFresher  : async (req,res) => {
 },
 
 
-recoverVoucher : async (req,res) => {
-  try{
-    const { serial,email,phone } = req.body;
-    console.log(req.body)
-    var resp
-    if(serial && email){ 
-       const sr = await SSO.fetchVoucherBySerial(serial);
-       if(sr && sr.length > 0){
-         const ms = { title: "AUCC VOUCHER", message : `Your recovered voucher details are: [ SERIAL: ${serial}, PIN: ${sr[0].pin} ]` }
-         mailer(email.trim(),ms.title,ms.message)
-         resp = sr;
-       }
-    }else if(phone){
-       const sr = await SSO.fetchVoucherByPhone(phone);
-       console.log(phone)
-       if(sr && sr.length > 0){
-         const message = `Hello! voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
-         sms(phone,message)
-         resp = sr;
-       }
-    }
-
-    if(resp){
-      res.status(200).json({success:true, data:resp});
-    }else{
-      res.status(200).json({success:false, data: null, msg:"INVALID VOUCHER INFO PROVIDED !"});
-    }
-  }catch(e){
-    console.log(e)
-    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
-  }
-},
 
 
 // REGISTRATIONS

@@ -81,7 +81,7 @@ module.exports = {
    },
 
    updateApplicationStatus : async (serial,status) => {
-      const sql = "update applicant set flag_submit = "+status+" where serial = '"+serial+"'";
+      const sql = "update P06.applicant set flag_submit = "+status+" where serial = "+serial;
       const res = await db.query(sql);
       return res;
    },
