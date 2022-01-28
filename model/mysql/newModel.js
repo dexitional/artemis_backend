@@ -6,7 +6,7 @@ const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const Student = require('../../model/mysql/studentModel');
 const { getUsername } = require('../../middleware/util');
-const SSO = require('../../model/mysql/newModel')
+//const SSO = require('../../model/mysql/newModel')
 
 module.exports = {
    
@@ -1384,32 +1384,66 @@ module.exports = {
       return resp;
    },
 
-   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess,discount,currency) => {
-      var count = 0;
+   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess,discount,dsem,currency) => {
+      var count = 0, dcount = 0;
       const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+sem+"') > 0");
+      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+dsem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
-            const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
-            if(isExist && isExist.length <= 0){
-               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id, currency})
-               if(discount && discount > 0) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
-               if(ins.insertId > 0) count++;
+            const session_id = await getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?", { narrative:bname, bill_id:bid, amount, refno:st.refno, session_id:sess, currency })
+                  if(ins.insertId > 0) count++;
+               }
             }
          }
       }
-      return count;
+      if(dts.length > 0 && (discount && discount > 0)){
+         for(var st of dts){
+            const session_id = await getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:`DISCOUNT - ${bname}`, bill_id:bid, amount:(-1*discount), refno:st.refno, session_id:sess, currency })
+                  if(ins.insertId > 0) dcount++;
+               }
+            }
+         }
+      }
+      return { count, dcount };
    },
 
-   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,currency) => {
+   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,dsem,currency) => {
       var count = 0;
       const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
+      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+dsem+"') > 0");
+      
       if(sts.length > 0){
          for(var st of sts){
-            const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
-            if(isExist && isExist.length <= 0){
-               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id})
-               if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
-               if(ins.insertId > 0) count++;
+            const session_id = await getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess})
+                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  if(ins.insertId > 0) count++;
+               }
+            }
+         }
+      }
+
+      if(dts.length > 0 && (discount && discount > 0)){
+         for(var st of sts){
+            const session_id = await getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess })
+                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  if(ins.insertId > 0) count++;
+               }
             }
          }
       }

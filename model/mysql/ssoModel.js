@@ -6,7 +6,7 @@ const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const Student = require('../../model/mysql/studentModel');
 const { getUsername } = require('../../middleware/util');
-const SSO = require('../../model/mysql/ssoModel')
+const SSO = require('../../model/mysql/newModel')
 
 module.exports = {
    
@@ -639,6 +639,67 @@ module.exports = {
    },
 
 
+
+   // ENTRANCE EXAMS MODELS
+
+   fetchEntrance : async (page,keyword) => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select ifnull(concat(i.fname,' ',i.lname),v.applicant_name) as name,i.dob,i.gender,i.phone,h.subject_id,h.score,h.created_at,h.serial,h.grade,h.id,h.session_id from P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial where h.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from  P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial where h.session_id = "+sid[0].session_id
+         
+         const size = 20;
+         const pg  = parseInt(page);
+         const offset = (pg * size) || 0;
+         
+         if(keyword){
+            sql += ` and h.serial = '${keyword}'`
+            cql += ` and h.serial = '${keyword}'`
+         }
+
+         sql += ' order by h.created_at,h.serial'
+         sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+         
+         const ces = await db.query(cql);
+         const res = await db.query(sql);
+         const count = Math.ceil(ces[0].total/size)
+
+         return {
+            totalPages: count,
+            totalData: ces[0].total,
+            data: res,
+         }
+
+      }else{
+         return {
+            totalPages: 0,
+            totalData: 0,
+            data: [],
+         }
+      }
+   },
+
+   insertEntrance : async (data) => {
+      const res = await db.query("insert into P06.entrance set ?", data);
+      return res;
+   },
+
+   updateEntrance : async (id,data) => {
+      const res = await db.query("update P06.entrance set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteEntrance : async (id) => {
+      const res = await db.query("delete from P06.entrance where id = "+id);
+      return res;
+   },
+
+   viewEntrance : async (serial) => {
+      const res = await db.query("select ifnull(concat(i.fname,' ',i.lname),v.applicant_name) as name,i.dob,i.gender,i.phone,h.subject_id,h.score,h.created_at,h.serial,h.grade,h.id,h.session_id,s.title,p.photo from P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial left join P06.session s on h.session_id = s.session_id left join P06.applicant p on p.serial = h.serial where h.serial ="+serial);
+      return res;
+   },
+
+
     // STUDENTS - AIS MODELS
 
     fetchStudents : async (page,keyword) => {
@@ -666,6 +727,23 @@ module.exports = {
          totalData: ces[0].total,
          data: res,
       }
+   },
+
+   fetchAISStudentReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type }) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where s.complete_status = 0"
+      var res;
+      if(prog_id) sql += ` and s.prog_id = ${prog_id}`
+      if(major_id) sql += ` and s.major_id = ${major_id}`
+      if(year_group) sql += ` and ceil(s.semester/2) = ${year_group}`
+      if(session) sql += ` and s.session = '${session}'`
+      if(gender) sql += ` and s.gender = '${major_id}'`
+      if(entry_group) sql += ` and s.entry_group = '${entry_group}'`
+      if(defer_status) sql += ` and s.defer_status = ${defer_status}`
+      
+      sql += ` order by s.prog_id,s.semester,s.major_id,s.session,s.lname asc`
+      res = await db.query(sql);
+      if(res && res.length > 0) return res;
+      return res;
    },
 
    insertAISStudent : async (data) => {
@@ -1403,32 +1481,66 @@ module.exports = {
       return resp;
    },
 
-   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess,discount,currency) => {
-      var count = 0;
+   sendStudentBillGh : async (bid,bname,amount,prog_id,sem,sess,discount,dsem,currency) => {
+      var count = 0, dcount = 0;
       const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+sem+"') > 0");
+      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+dsem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
-            const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
-            if(isExist && isExist.length <= 0){
-               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id, currency})
-               if(discount && discount > 0) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
-               if(ins.insertId > 0) count++;
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?", { narrative:bname, bill_id:bid, amount, refno:st.refno, session_id:sess, currency })
+                  if(ins.insertId > 0) count++;
+               }
             }
          }
       }
-      return count;
+      if(dts.length > 0 && (discount && discount > 0)){
+         for(var st of dts){
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:`DISCOUNT - ${bname}`, bill_id:bid, amount:(-1*discount), refno:st.refno, session_id:sess, currency })
+                  if(ins.insertId > 0) dcount++;
+               }
+            }
+         }
+      }
+      return { count, dcount };
    },
 
-   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,currency) => {
+   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,dsem,currency) => {
       var count = 0;
       const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
+      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+dsem+"') > 0");
+      
       if(sts.length > 0){
          for(var st of sts){
-            const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid)
-            if(isExist && isExist.length <= 0){
-               const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess.id})
-               if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess.id,currency})
-               if(ins.insertId > 0) count++;
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess})
+                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  if(ins.insertId > 0) count++;
+               }
+            }
+         }
+      }
+
+      if(dts.length > 0 && (discount && discount > 0)){
+         for(var st of sts){
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            if(session_id == sess){
+               const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
+               if(isExist && isExist.length <= 0){
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess })
+                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  if(ins.insertId > 0) count++;
+               }
             }
          }
       }
@@ -1917,6 +2029,7 @@ module.exports = {
       if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
          const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
          var newIndex, resp, no;
+         
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
          if(sm && sm.length > 0){
             no = parseInt(sm[0].prog_count)+1;
@@ -1940,8 +2053,7 @@ module.exports = {
          }
          resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no });
          if(resp) return newIndex
-      }
-      return null;
+      }  return null;
    },
 
    savePaymentToAccount : async (data) => {

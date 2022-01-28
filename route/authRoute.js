@@ -64,11 +64,19 @@ Router.get('/ams/freshers', SSOController.fetchFreshers);
 Router.get('/ams/fresherlist', SSOController.fetchFreshersData);
 Router.get('/ams/deletefresher/:serial', SSOController.removeFresherData);
 Router.post('/ams/admitnow', SSOController.admitApplicant);
-// SESSION routes
+// LETTERS routes
 Router.get('/ams/letters', SSOController.fetchLetters);
 Router.post('/ams/letters', SSOController.postLetter);
 Router.delete('/ams/letters/:id', SSOController.deleteLetter);
 Router.put('/ams/setletter/:id', SSOController.setDefaultLetter);
+// ENTRANCE EXAMS routes
+Router.get('/ams/entrance', SSOController.fetchEntrance);
+Router.post('/ams/entrance', SSOController.postEntrance);
+Router.delete('/ams/entrance/:id', SSOController.deleteEntrance);
+Router.get('/ams/viewresult/:serial', SSOController.viewEntrance);
+
+
+
 
 
 
@@ -79,6 +87,7 @@ Router.put('/ams/setletter/:id', SSOController.setDefaultLetter);
 // STUDENT routes
 Router.get('/ais/students/', SSOController.fetchStudents);
 Router.post('/ais/students', SSOController.postStudentAIS);
+Router.post('/ais/students/report', SSOController.postStudentReportAIS);
 Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
 Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
 Router.get('/ais/genmail/:refno', SSOController.generateMail);

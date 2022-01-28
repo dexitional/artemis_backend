@@ -856,6 +856,85 @@ setDefaultLetter : async (req,res) => {
 },
 
 
+
+
+// ENTRANCE CONTROLS
+
+fetchEntrance : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      
+      var entrance = await SSO.fetchEntrance(page,keyword);
+      if(entrance && entrance.data.length > 0){
+        res.status(200).json({success:true, data:entrance});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
+  }
+},
+
+
+postEntrance : async (req,res) => {
+    try{
+      const { id } = req.body;
+      var resp
+      if(id > 0){ // Updates
+        resp = await SSO.updateEntrance(id,req.body);
+      }else{ // Insert
+        const { session } = await SSO.fetchAMShelpers()
+        console.log(session)
+        if(session) req.body.session_id = session.session_id
+        resp = await SSO.insertEntrance(req.body);
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteEntrance : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteEntrance(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+viewEntrance : async (req,res) => {
+   try{
+      const { serial } = req.params;
+      var resp = await SSO.viewEntrance(serial);
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+   }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+   }
+},
+
+
+
+
 // STUDENT CONTROLS
 
 fetchStudents : async (req,res) => {
@@ -902,6 +981,22 @@ postStudentAIS : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
     }
 },
+
+postStudentReportAIS : async (req,res) => {
+  try{
+    var resp = await SSO.fetchAISStudentReport(req.body);
+    console.log(resp)
+    if(resp){
+      res.status(200).json({success:true, data:resp});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No Data found!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
 
 deleteStudentAIS : async (req,res) => {
   try{
@@ -1969,14 +2064,17 @@ sendPayment : async (req,res) => {
 },
 
 generateIndexNo : async (req,res) => {
-     console.log(req.body.refno)
+  console.log(req.body.refno)
   try{
       const refno = req.body.refno;
       var resp = await Student.fetchStProfile(refno);
+      
       if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
+        
           var indexNo = await SSO.generateIndexNo(refno);
           var ups;
           var email;
+          console.log(indexNo)
           if(!resp[0].institute_email){
             const username = getUsername(resp[0].fname,resp[0].lname)
             email = `${username}@st.aucc.edu.gh`
@@ -1989,14 +2087,18 @@ generateIndexNo : async (req,res) => {
                 ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
               }
             }
+          }else{
+            email = resp[0].institute_email
           }
           
           if(indexNo && email){
             res.status(200).json({success:true, data: { indexno: indexNo, email }});
           }else if(indexNo && !email){
             res.status(200).json({success:true, data: { indexno: indexNo }});
+          }else if(!indexNo && email){
+            res.status(200).json({success:false, data: null, msg:"Index number generation failed!"});
           }else{
-            res.status(200).json({success:false, data: null, msg:"No records!"});
+            res.status(200).json({success:false, data: null, msg:"No email record and index number generated!"});
           }
             
        }else if(resp && resp.length > 0 && (resp[0].indexno != null && resp[0].indexno != 'UNIQUE')){
