@@ -103,11 +103,13 @@ module.exports = {
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
                 var photo = await SSO.fetchPhoto(user[0].uid); // Photo
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
+                console.log(userdata)
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
                 var data = { roles, photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
+               
                 
                 const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{username}) // Log Activity
                 res.status(200).json({success:true, data});
@@ -1147,8 +1149,9 @@ fetchRegsData : async (req,res) => {
   try{
       const page = req.query.page;
       const keyword = req.query.keyword;
-      
-      var regs = await SSO.fetchRegsData(01,page,keyword);
+      var streams = (await SSO.fetchStreams()).reduce((acc,val) => acc == '' ? val.id : acc+','+val.id,'')
+      console.log(streams)
+      var regs = await SSO.fetchRegsData(streams,page,keyword);
       if(regs && regs.data.length > 0){
         res.status(200).json({success:true, data:regs});
       }else{
@@ -1197,8 +1200,12 @@ fetchScoresheets : async (req,res) => {
   try{
       const page = req.query.page;
       const keyword = req.query.keyword;
+      const stream = req.query.stream;
       var session = await SSO.getActiveSessionByMode(1);
-      var sheets = await SSO.fetchScoresheets(session.id,page,keyword);
+      const sid = stream != 'null' || !stream ? stream : session.id
+      console.log(typeof stream,sid,session.id)
+      
+      var sheets = await SSO.fetchScoresheets(sid,page,keyword);
      
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
@@ -1218,7 +1225,9 @@ fetchMyScoresheets : async (req,res) => {
       const page = req.query.page;
       const keyword = req.query.keyword;
       var session = await SSO.getActiveSessionByMode(1);
-      var sheets = await SSO.fetchMyScoresheets(sno,session.id,page,keyword);
+      var streams = (await SSO.fetchStreams()).reduce((acc,val) => acc == '' ? val.id : acc+','+val.id,'')
+      console.log(streams)
+      var sheets = await SSO.fetchMyScoresheets(sno,streams,page,keyword);
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
       }else{
@@ -1535,6 +1544,23 @@ activateCalendar : async (req,res) => {
   try{
       const { id } = req.params;
       var resp = await SSO.activateAISCalendar(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+// STREAMS CONTROLS - AIS
+
+fetchStreams : async (req,res) => {
+  try{
+      var resp = await SSO.fetchStreams();
       if(resp){
           res.status(200).json({success:true, data:resp});
       }else{

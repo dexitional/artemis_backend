@@ -128,6 +128,8 @@ Router.get('/ais/progchange/', SSOController.fetchProgchange);
 Router.post('/ais/progchange', SSOController.postProgchange);
 Router.delete('/ais/progchange/:id', SSOController.deleteProgchange);
 Router.get('/ais/progchange/approve/:id/:sno', SSOController.approveProgchange);
+// STREAMS
+Router.get('/ais/streams', SSOController.fetchStreams);
 
 
 

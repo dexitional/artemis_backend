@@ -57,27 +57,34 @@ module.exports = {
    },
 
    fetchUser : async (uid,gid) => {
-      var sql;
+      var sql,res;
       switch(gid){
         case '01': // Student
-           sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
+           //sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
+           res = await SSO.getActiveStudentByUid(uid); break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; 
+           res = await db.query(sql); break;
         case '03': // NSS
-           sql = "select from identity.photo p where p.uid = "+uid; break;
+           sql = "select from identity.photo p where p.uid = "+uid; 
+           res = await db.query(sql); break;
         case '04': // Applicant (Job)
-           sql = "select from identity.photo p where p.uid = "+uid; break;
+           sql = "select from identity.photo p where p.uid = "+uid; 
+           res = await db.query(sql); break;
         case '05': // Alumni
-           sql = "select from identity.photo p where p.uid = "+uid; break;
+           sql = "select from identity.photo p where p.uid = "+uid;
+           res = await db.query(sql);  break;
         default :  // Staff
            sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
-      } const res = await db.query(sql);
-        return res;
+           res = await db.query(sql); break;
+      } 
+      return res;
    },
 
    fetchUserByPhone : async (phone) => {
         // Student
-        const res1 = await db.query("select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.phone = "+phone);
+        //const res1 = await db.query("select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.phone = "+phone);
+        const res1 = await SSO.getActiveStudentByPhone(phone);
         // Staff
         const res2 = await db.query("select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id where s.phone = "+phone);
         // NSS
@@ -203,7 +210,9 @@ module.exports = {
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-
+      console.log(res)
+      console.log(sql)
+      console.log(page)
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -304,6 +313,24 @@ module.exports = {
       }
    },
 
+   sellVoucherBySerial : async (serial,name,phone) => {
+      // Update Voucher Status & Buyer Details
+      const dm = { applicant_name: name, applicant_phone: phone, sold_at: new Date()}
+      const vc = await db.query("select * from P06.voucher where serial = "+serial);
+      if(vc && vc.length > 0){
+        const ups = await db.query("update P06.voucher set ? where serial = "+serial,dm);
+        if(ups.affectedRows > 0) {    
+          const isIn = await db.query("select * from fms.voucher_log where serial = "+serial)
+          if(isIn && isIn.length == 0){ 
+            const vlog = { tid:null,session_id:vc[0].session_id,serial,pin:vc[0].pin,buyer_name:name,buyer_phone:phone,generated:1 }
+            const vins = await db.query("insert into fms.voucher_log set ? ",vlog);
+            return { ...vc[0],logId:vins.insertId,name,phone }
+          }
+        }
+      } 
+      return null;
+   },
+
 
    insertVoucher : async (data) => {
       const res = await db.query("insert into voucher set ?", data);
@@ -343,9 +370,9 @@ module.exports = {
       var sid = await db.query("select session_id from P06.session where status = 1")
       if(sid && sid.length > 0){
          var sql = "select p.serial,p.started_at,p.photo,p.flag_submit,p.grade_value,p.class_value,ifnull(convert(i.phone,CHAR),convert(v.applicant_phone,CHAR)) as phone,ifnull(concat(i.fname,' ',i.lname),concat('Buyer: ',v.applicant_name)) as name,i.dob,v.sell_type,i.gender,p.flag_submit,g.title as group_name,v.group_id,a.title as applytype,(select concat(r1.`short`,ifnull(concat(' ( ',m1.title,' ) '),'')) as choice_name1 from step_choice c1 left join utility.program r1 on r1.id = c1.program_id left join ais.major m1 on c1.major_id = m1.id where c1.serial = p.serial order by c1.choice_id asc limit 1) as choice_name1,(select concat(r2.`short`,ifnull(concat(' ( ',m2.title,' ) '),'')) as choice_name2 from step_choice c2 left join utility.program r2 on r2.id = c2.program_id left join ais.major m2 on c2.major_id = m2.id where c2.serial = p.serial order by c2.choice_id desc limit 1) as choice_name2 from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type left join P06.sorted s on s.serial = p.serial where s.serial is null and v.session_id = "+sid[0].session_id
-         var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type where v.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from applicant p left join step_profile i on p.serial = i.serial left join voucher v on v.serial = p.serial left join `group` g on v.group_id = g.group_id left join apply_type a on a.type_id = p.apply_type left join P06.sorted s on s.serial = p.serial where s.serial is null and v.session_id = "+sid[0].session_id
          
-         const size = 20;
+         const size = 10;
          const pg  = parseInt(page);
          const offset = (pg * size) || 0;
          
@@ -357,6 +384,7 @@ module.exports = {
          sql += ` order by p.started_at, p.serial`
          sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
          
+         console.log(sql,cql)
          const ces = await db.query(cql);
          const res = await db.query(sql);
          const count = Math.ceil(ces[0].total/size)
@@ -620,6 +648,67 @@ module.exports = {
    },
 
 
+
+   // ENTRANCE EXAMS MODELS
+
+   fetchEntrance : async (page,keyword) => {
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select ifnull(concat(i.fname,' ',i.lname),v.applicant_name) as name,i.dob,i.gender,i.phone,h.subject_id,h.score,h.created_at,h.serial,h.grade,h.id,h.session_id from P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial where h.session_id = "+sid[0].session_id
+         var cql = "select count(*) as total from  P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial where h.session_id = "+sid[0].session_id
+         
+         const size = 20;
+         const pg  = parseInt(page);
+         const offset = (pg * size) || 0;
+         
+         if(keyword){
+            sql += ` and h.serial = '${keyword}'`
+            cql += ` and h.serial = '${keyword}'`
+         }
+
+         sql += ' order by h.created_at,h.serial'
+         sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+         
+         const ces = await db.query(cql);
+         const res = await db.query(sql);
+         const count = Math.ceil(ces[0].total/size)
+
+         return {
+            totalPages: count,
+            totalData: ces[0].total,
+            data: res,
+         }
+
+      }else{
+         return {
+            totalPages: 0,
+            totalData: 0,
+            data: [],
+         }
+      }
+   },
+
+   insertEntrance : async (data) => {
+      const res = await db.query("insert into P06.entrance set ?", data);
+      return res;
+   },
+
+   updateEntrance : async (id,data) => {
+      const res = await db.query("update P06.entrance set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteEntrance : async (id) => {
+      const res = await db.query("delete from P06.entrance where id = "+id);
+      return res;
+   },
+
+   viewEntrance : async (serial) => {
+      const res = await db.query("select ifnull(concat(i.fname,' ',i.lname),v.applicant_name) as name,i.dob,i.gender,i.phone,h.subject_id,h.score,h.created_at,h.serial,h.grade,h.id,h.session_id,s.title,p.photo from P06.entrance h left join P06.step_profile i on h.serial = i.serial left join P06.voucher v on v.serial = h.serial left join P06.session s on h.session_id = s.session_id left join P06.applicant p on p.serial = h.serial where h.serial ="+serial);
+      return res;
+   },
+
+
     // STUDENTS - AIS MODELS
 
     fetchStudents : async (page,keyword) => {
@@ -649,6 +738,23 @@ module.exports = {
       }
    },
 
+   fetchAISStudentReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type }) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where s.complete_status = 0"
+      var res;
+      if(prog_id) sql += ` and s.prog_id = ${prog_id}`
+      if(major_id) sql += ` and s.major_id = ${major_id}`
+      if(year_group) sql += ` and ceil(s.semester/2) = ${year_group}`
+      if(session) sql += ` and s.session = '${session}'`
+      if(gender) sql += ` and s.gender = '${major_id}'`
+      if(entry_group) sql += ` and s.entry_group = '${entry_group}'`
+      if(defer_status) sql += ` and s.defer_status = ${defer_status}`
+      
+      sql += ` order by s.prog_id,s.semester,s.major_id,s.session,s.lname asc`
+      res = await db.query(sql);
+      if(res && res.length > 0) return res;
+      return res;
+   },
+
    insertAISStudent : async (data) => {
       const res = await db.query("insert into ais.student set ?", data);
       return res;
@@ -667,9 +773,9 @@ module.exports = {
 
    // REGISTRATIONS - AIS
 
-   fetchRegsData : async (mode_id,page,keyword) => {
-      var sql = "select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where x.mode_id = "+mode_id
-      var cql = "select count(*) as total from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where x.mode_id = "+mode_id
+   fetchRegsData : async (streams,page,keyword) => {
+      var sql = "select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name,x.tag as stream from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where find_in_set(r.session_id,'"+streams+"') > 0"
+      var cql = "select count(*) as total from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where find_in_set(r.session_id,'"+streams+"') > 0"
       
       const size = 10;
       const pg  = parseInt(page);
@@ -680,7 +786,7 @@ module.exports = {
           cql += ` and (s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}')`
       }
 
-      sql += ` order by r.created_at`
+      sql += ` order by r.created_at desc`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
@@ -757,16 +863,17 @@ module.exports = {
    // SCORESHEETS - AIS MODELS
 
    fetchScoresheets : async (session_id,page,keyword) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
-      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id";
+      console.log(session_id,page,keyword)
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where s.session_id = "+session_id
+      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where s.session_id = "+session_id;
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
-          cql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
+          sql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+          cql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
       }
 
       sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
@@ -775,7 +882,6 @@ module.exports = {
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -783,9 +889,9 @@ module.exports = {
       }
    },
 
-   fetchMyScoresheets : async (sno,session_id,page,keyword) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0"
-      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0";
+   fetchMyScoresheets : async (sno,streams,page,keyword) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(s.session_id,'"+streams+"') > 0"
+      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(s.session_id,'"+streams+"') > 0";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -798,7 +904,7 @@ module.exports = {
 
       sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      
+      console.log(sql)
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -1093,9 +1199,9 @@ module.exports = {
       if(sx && sx.length == 1) sid = sx[0].id
       if(sx && sx.length > 1){
         if(st && st.length > 0){
-            if(st[0].semester <= 2 && st[0].admission_code == '09'){
+            if(st[0].semester <= 2 && st[0].admission_code == '01'){
                sid = (sx.find(r => r.tag == 'SUB')).id
-            }else if(st[0].semester <= 4 && st[0].admission_code == '09' && [3,4].includes(st[0].entry_semester)){
+            }else if(st[0].semester <= 4 && st[0].admission_code == '01' && [3,4].includes(st[0].entry_semester)){
                sid = (sx.find(r => r.tag == 'SUB')).id
             }else{
                sid = (sx.find(r => r.tag == 'MAIN')).id
@@ -1104,6 +1210,54 @@ module.exports = {
       } 
       return sid;
    },
+
+   getActiveStudentByUid : async (uid) => {
+      var session;
+      const st = await db.query("select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where u.uid = "+uid);
+      const sx = await db.query("select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1");
+      if(sx && sx.length == 1) session = sx[0]
+      if(sx && sx.length > 1){
+        if(st && st.length > 0){
+            if(st[0].semester <= 2 && st[0].admission_code == '01'){
+               session = sx.find(r => r.tag == 'SUB')
+            }else if(st[0].semester <= 4 && st[0].admission_code == '01' && [3,4].includes(st[0].entry_semester)){
+               session = sx.find(r => r.tag == 'SUB')
+            }else{
+               session = sx.find(r => r.tag == 'MAIN')
+            }
+        }
+      } 
+      console.log({...st[0],...session })
+      return [{...st[0],...session }];
+   },
+
+   getActiveStudentByPhone : async (phone) => {
+      var session;
+      const st = await db.query("select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.uid,u.group_id,u.group_id as gid from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where s.phone = '"+phone+"'");
+      const sx = await db.query("select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1");
+      if(sx && sx.length == 1) session = sx[0]
+      if(sx && sx.length > 1){
+        if(st && st.length > 0){
+            if(st[0].semester <= 2 && st[0].admission_code == '01'){
+               session = sx.find(r => r.tag == 'SUB')
+            }else if(st[0].semester <= 4 && st[0].admission_code == '01' && [3,4].includes(st[0].entry_semester)){
+               session = sx.find(r => r.tag == 'SUB')
+            }else{
+               session = sx.find(r => r.tag == 'MAIN')
+            }
+        }
+      } 
+      console.log({...st[0],...session })
+      return [{...st[0],...session }];
+   },
+
+
+   // STREAMS - AIS
+   fetchStreams : async (data) => {
+      const res = await db.query("select * from utility.session where `default` = 1");
+      return res;
+   },
+
 
 
    // INFORMER -AIS
@@ -1390,7 +1544,7 @@ module.exports = {
       const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+dsem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
-            const session_id = await getActiveSessionByRefNo(st.refno)
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
                if(isExist && isExist.length <= 0){
@@ -1402,7 +1556,7 @@ module.exports = {
       }
       if(dts.length > 0 && (discount && discount > 0)){
          for(var st of dts){
-            const session_id = await getActiveSessionByRefNo(st.refno)
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
                if(isExist && isExist.length <= 0){
@@ -1422,7 +1576,7 @@ module.exports = {
       
       if(sts.length > 0){
          for(var st of sts){
-            const session_id = await getActiveSessionByRefNo(st.refno)
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
                if(isExist && isExist.length <= 0){
@@ -1436,7 +1590,7 @@ module.exports = {
 
       if(dts.length > 0 && (discount && discount > 0)){
          for(var st of sts){
-            const session_id = await getActiveSessionByRefNo(st.refno)
+            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
                if(isExist && isExist.length <= 0){
@@ -1932,6 +2086,7 @@ module.exports = {
       if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
          const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
          var newIndex, resp, no;
+         
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
          if(sm && sm.length > 0){
             no = parseInt(sm[0].prog_count)+1;
@@ -1955,8 +2110,7 @@ module.exports = {
          }
          resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no });
          if(resp) return newIndex
-      }
-      return null;
+      }  return null;
    },
 
    savePaymentToAccount : async (data) => {
@@ -2234,7 +2388,6 @@ module.exports = {
       if(vendors && programs && stages && session && majors && applytypes) return { vendors,programs,majors,stages,applytypes,session: session && session[0],adm_programs,countries,letters,calendars }
       return null;
    },
-
 
 
    // UTILITY

@@ -125,7 +125,7 @@ module.exports = {
           var student = await Student.fetchStudentProfile(refno);
           if(student && student.length > 0){
            
-            const {prog_id,semester,major_id,indexno,session_semester} = student[0];
+            const { prog_id,semester,major_id,indexno,session_semester } = student[0];
             var courses = {core: [], elective: [], trail: [], meta:null}
             
             const ce = await Student.fetchStudentCE(prog_id,semester); // Get Core & General Electives
