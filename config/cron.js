@@ -24,7 +24,7 @@ cron.schedule('*/1 * * * *', () => {
 
 
 // Schedule @ EVERY 15 MINUTES
-cron.schedule('*/15 * * * *', async function() {
+cron.schedule('*/1 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }

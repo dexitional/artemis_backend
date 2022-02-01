@@ -14,83 +14,8 @@ const db = require('../../config/mysql')
 const SSO = require('../../model/mysql/ssoModel');
 const Admission = require('../../model/mysql/admissionModel');
 const Student = require('../../model/mysql/studentModel');
+const { getSemestersByCode, getUsername, decodeBase64Image } = require('../../middleware/util');
 
-const decodeBase64Image = (dataString) => {
-  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
-  response = {};
-  if (matches.length !== 3) return new Error('Invalid input string');
-  response.type = matches[1];
-  response.data = new Buffer(matches[2], 'base64');
-  return response;
-}
-
-
-const getTargetGroup = (group_code) => {
-  var yr
-  switch(group_code){
-    case '1000':  yr = `Year 1 Only`; break;
-    case '0100':  yr = `Year 2 Only`; break;
-    case '0010':  yr = `Year 3 Only`; break;
-    case '0001':  yr = `Year 4 Only`; break;
-    case '1100':  yr = `Year 1 & Year 2`; break;
-    case '1010':  yr = `Year 1 & Year 3`; break;
-    case '1001':  yr = `Year 1 & Year 4`; break;
-    case '1110':  yr = `Year 1,Year 2 & Year 3`; break;
-    case '1101':  yr = `Year 1,Year 2 & Year 4`; break;
-    case '1111':  yr = `Year 1,Year 2,Year 3 & Year 4`; break;
-    case '0000':  yr = `International students`; break;
-    default: yr = `International students`; break;
-  }
-  return yr
-}
-
-const getSemestersByCode = (group_code) => {
- console.log(group_code)
- var yr
- switch(group_code){
-   case '1000':  yr = `1,2`; break;
-   case '0100':  yr = `3,4`; break;
-   case '0010':  yr = `5,6`; break;
-   case '0001':  yr = `7,8`; break;
-   case '0011':  yr = `5,6,7,8`; break;
-   case '0101':  yr = `3,4,7,8`; break;
-   case '0110':  yr = `3,4,5,6`; break;
-   case '0111':  yr = `3,4,5,6,7,8`; break;
-   case '1011':  yr = `1,2,5,6,7,8`; break;
-   case '1100':  yr = `1,2,3,4`; break;
-   case '1010':  yr = `1,2,5,6`; break;
-   case '1001':  yr = `1,2,7,8`; break;
-   case '1110':  yr = `1,2,3,4,5,6`; break;
-   case '1101':  yr = `1,2,3,4,7,8`; break;
-   case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
-   case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
- }
- console.log(yr)
- return yr
-}
-
-const getUsername = (fname,lname) => {
-  var username,fr,lr;
-  let fs = fname ? fname.trim().split(' '):null
-  let ls = lname ? lname.trim().split(' '):null
-  if(fs && fs.length > 0){
-    for(var i = 0; i < fs.length; i++){
-       if(i == 0) fr = fs[i].trim()
-    }
-  }
-  if(ls && ls.length > 0){
-     for(var i = 0; i < ls.length; i++){
-       if(i == ls.length-1) lr = (ls[i].split('-')[0].trim()).split('.').join("")
-     }
-   }
-   if(!lr && fs.length > 1) lr = (fs[fs.length-1].split('-')[0].trim()).split('.').join("") 
-   if(!fr && ls.length > 1){
-      fr = (fs[1].trim()).split('.').join("")
-      lr = (ls[ls.length-1].split('-')[0].trim()).split('.').join("")
-   } 
-
-   return `${fr}.${lr}`.toLowerCase();
-}
 
 
 module.exports = {
@@ -1202,9 +1127,7 @@ fetchScoresheets : async (req,res) => {
       const keyword = req.query.keyword;
       const stream = req.query.stream;
       var session = await SSO.getActiveSessionByMode(1);
-      const sid = stream != 'null' || !stream ? stream : session.id
-      console.log(typeof stream,sid,session.id)
-      
+      const sid = stream != 'null' || !stream ? stream : session && session.id
       var sheets = await SSO.fetchScoresheets(sid,page,keyword);
      
       if(sheets && sheets.data.length > 0){
@@ -1511,7 +1434,8 @@ postCalendar : async (req,res) => {
     if(req.body.cal_exam_end == 'Invalid date' || req.body.cal_exam_end == '') req.body.cal_exam_end = null
     if(req.body.cal_entry_start == 'Invalid date' || req.body.cal_entry_start == '') req.body.cal_entry_start = null
     if(req.body.cal_entry_end == 'Invalid date' || req.body.cal_entry_end == '') req.body.cal_entry_end = null
-    
+    req.body.mode_id = 1;
+
     try{
       var resp = id <= 0 ? await SSO.insertAISCalendar(req.body) : await SSO.updateAISCalendar(id,req.body) ;
       if(resp){
@@ -2090,54 +2014,54 @@ sendPayment : async (req,res) => {
 },
 
 generateIndexNo : async (req,res) => {
-  console.log(req.body.refno)
-  try{
-      const refno = req.body.refno;
-      var resp = await Student.fetchStProfile(refno);
-      
-      if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
+    console.log(req.body.refno)
+    try{
+        const refno = req.body.refno;
+        var resp = await Student.fetchStProfile(refno);
         
-          var indexNo = await SSO.generateIndexNo(refno);
-          var ups;
-          var email;
-          console.log(indexNo)
-          if(!resp[0].institute_email){
-            const username = getUsername(resp[0].fname,resp[0].lname)
-            email = `${username}@st.aucc.edu.gh`
-            if(resp && resp.length <= 0){
-              const isExist = await Student.findEmail(email)
-              if(isExist && isExist.length > 0){
-                email = `${username}${isExist.length+1}@st.aucc.edu.gh`
-                ups = await Student.updateStudentProfile(refno,{ institute_email:email })
-              }else{
-                ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
-              }
-            }
-          }else{
-            email = resp[0].institute_email
-          }
+        if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
           
-          if(indexNo && email){
-            res.status(200).json({success:true, data: { indexno: indexNo, email }});
-          }else if(indexNo && !email){
-            res.status(200).json({success:true, data: { indexno: indexNo }});
-          }else if(!indexNo && email){
-            res.status(200).json({success:false, data: null, msg:"Index number generation failed!"});
-          }else{
-            res.status(200).json({success:false, data: null, msg:"No email record and index number generated!"});
-          }
+            var indexNo = await SSO.generateIndexNo(refno);
+            var ups;
+            var email;
+            console.log(indexNo)
+            if(!resp[0].institute_email){
+              const username = getUsername(resp[0].fname,resp[0].lname)
+              email = `${username}@st.aucc.edu.gh`
+              if(resp && resp.length <= 0){
+                const isExist = await Student.findEmail(email)
+                if(isExist && isExist.length > 0){
+                  email = `${username}${isExist.length+1}@st.aucc.edu.gh`
+                  ups = await Student.updateStudentProfile(refno,{ institute_email:email })
+                }else{
+                  ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
+                }
+              }
+            }else{
+              email = resp[0].institute_email
+            }
             
-       }else if(resp && resp.length > 0 && (resp[0].indexno != null && resp[0].indexno != 'UNIQUE')){
-         res.status(200).json({success:false, data: null, msg:"Index number already exists!"});
-       }
-       else{
-         res.status(200).json({success:false, data: null, msg:"Student does not exist!"});
-       }
+            if(indexNo && email){
+              res.status(200).json({success:true, data: { indexno: indexNo, email }});
+            }else if(indexNo && !email){
+              res.status(200).json({success:true, data: { indexno: indexNo }});
+            }else if(!indexNo && email){
+              res.status(200).json({success:false, data: null, msg:"Index number generation failed!"});
+            }else{
+              res.status(200).json({success:false, data: null, msg:"No email record and index number generated!"});
+            }
+              
+        }else if(resp && resp.length > 0 && (resp[0].indexno != null && resp[0].indexno != 'UNIQUE')){
+          res.status(200).json({success:false, data: null, msg:"Index number already exists!"});
+        }
+        else{
+          res.status(200).json({success:false, data: null, msg:"Student does not exist!"});
+        }
 
-  }catch(e){
-      console.log(e)
-      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
-  }
+    }catch(e){
+        console.log(e)
+        res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+    }
 },
 
 
@@ -2157,6 +2081,22 @@ fetchDebtors : async (req,res) => {
   }catch(e){
       console.log(e)
       res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postDebtorsReportFMS : async (req,res) => {
+  try{
+    var resp = await SSO.fetchFMSDebtorsReport(req.body);
+    console.log(resp)
+    if(resp){
+      res.status(200).json({success:true, data:resp});
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No Data found!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
   }
 },
 

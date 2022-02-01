@@ -165,6 +165,7 @@ Router.get('/fms/movetofees/:id', SSOController.movePaymentToFees);
 
 // DEBTORS
 Router.get('/fms/debtors/', SSOController.fetchDebtors);
+Router.post('/fms/debtors/report', SSOController.postDebtorsReportFMS);
 
 /* HRS MODULE ROUTES */
 

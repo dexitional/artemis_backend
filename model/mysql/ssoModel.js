@@ -6,7 +6,7 @@ const { customAlphabet } = require('nanoid')
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwzyx', 8)
 const Student = require('../../model/mysql/studentModel');
 const { getUsername } = require('../../middleware/util');
-const SSO = require('../../model/mysql/newModel')
+const SR = require('../../model/mysql/sharedModel')
 
 module.exports = {
    
@@ -60,7 +60,7 @@ module.exports = {
       switch(gid){
         case '01': // Student
            //sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
-           res = await SSO.getActiveStudentByUid(uid); break;
+           res = await SR.getActiveStudentByUid(uid); break;
         case '02': // Staff
            sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; 
            res = await db.query(sql); break;
@@ -83,7 +83,7 @@ module.exports = {
    fetchUserByPhone : async (phone) => {
         // Student
         //const res1 = await db.query("select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.phone = "+phone);
-        const res1 = await SSO.getActiveStudentByPhone(phone);
+        const res1 = await SR.getActiveStudentByPhone(phone);
         // Staff
         const res2 = await db.query("select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.username,u.uid,u.group_id,u.group_id as gid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id where s.phone = "+phone);
         // NSS
@@ -974,7 +974,7 @@ module.exports = {
             }
          }
       }
-      if(count > 0) await SSO.retireAssessmentTotal(sid) // Return Assessment for Session
+      if(count > 0) await SR.retireAssessmentTotal(sid) // Return Assessment for Session
       return count;
    },
    
@@ -1543,7 +1543,7 @@ module.exports = {
       const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+" and s.entry_group = 'GH' and find_in_set(s.semester,'"+dsem+"') > 0");
       if(sts.length > 0){
          for(var st of sts){
-            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            const session_id = await SR.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
                if(isExist && isExist.length <= 0){
@@ -1555,7 +1555,7 @@ module.exports = {
       }
       if(dts.length > 0 && (discount && discount > 0)){
          for(var st of dts){
-            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            const session_id = await SR.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
                if(isExist && isExist.length <= 0){
@@ -1575,7 +1575,7 @@ module.exports = {
       
       if(sts.length > 0){
          for(var st of sts){
-            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            const session_id = await SR.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
                if(isExist && isExist.length <= 0){
@@ -1589,7 +1589,7 @@ module.exports = {
 
       if(dts.length > 0 && (discount && discount > 0)){
          for(var st of sts){
-            const session_id = await SSO.getActiveSessionByRefNo(st.refno)
+            const session_id = await SR.getActiveSessionByRefNo(st.refno)
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
                if(isExist && isExist.length <= 0){
@@ -2049,7 +2049,7 @@ module.exports = {
    },
 
    updateStudFinance : async (tid,refno,amount,transid) => {
-         const session_id = await SSO.getActiveSessionByRefNo(refno)
+         const session_id = await SR.getActiveSessionByRefNo(refno)
          const fin = await db.query("select * from fms.studtrans where tid = "+tid);
          const dt = { tid,amount,refno,session_id,narrative:`${refno} FEES PAYMENT, TRANSID: ${transid}`}
          var resp;
@@ -2081,7 +2081,7 @@ module.exports = {
    },
 
    generateIndexNo : async (refno) => {
-      const st = await db.query("select x.id,p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where (x.`default` = 1 and x.admission_code = date_format(s.doa,'%m%y')) and s.refno = '"+refno+"'");
+      const st = await db.query("select p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id where s.refno = '"+refno+"'");
       if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
          const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
          var newIndex, resp, no;
@@ -2120,7 +2120,7 @@ module.exports = {
    moveToFees : async (id,amount,refno,transid) => {
       const rs = await db.query("update fms.transaction set transtype_id = 2 where id = "+id);
       console.log(rs)
-      const ms = await SSO.updateStudFinance(id,refno,amount,transid)
+      const ms = await SR.updateStudFinance(id,refno,amount,transid)
       console.log(ms)
       if(rs && ms) return rs;
       return null
@@ -2155,6 +2155,24 @@ module.exports = {
          data: res,
       }
    },
+
+   fetchFMSDebtorsReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type }) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where s.complete_status = 0 and transact_account > 0"
+      var res;
+      if(prog_id) sql += ` and s.prog_id = ${prog_id}`
+      if(major_id) sql += ` and s.major_id = ${major_id}`
+      if(year_group) sql += ` and ceil(s.semester/2) = ${year_group}`
+      if(session) sql += ` and s.session = '${session}'`
+      if(gender) sql += ` and s.gender = '${major_id}'`
+      if(entry_group) sql += ` and s.entry_group = '${entry_group}'`
+      if(defer_status) sql += ` and s.defer_status = ${defer_status}`
+      
+      sql += ` order by s.prog_id,s.semester,s.major_id,s.session,s.lname asc`
+      res = await db.query(sql);
+      if(res && res.length > 0) return res;
+      return res;
+   },
+
 
 
    // HRSTAFF - HRS MODELS

@@ -1,7 +1,5 @@
 const sms = require("../config/sms");
-//const SSO = require("../model/mysql/ssoModel");
-const SSO = require("../model/mysql/newModel");
-const { sendStudentBillGh } = require("../model/mysql/newModel");
+const SR = require("../model/mysql/sharedModel");
 
 const getTargetGroup = (group_code) => {
     var yr
@@ -71,7 +69,7 @@ const getSemestersByCode = (group_code) => {
 
 
 const getActiveSessionByDoa = async (doa) => {
-  const sess = await SSO.getActiveSessionByMode(1)
+  const sess = await SR.getActiveSessionByMode(1)
   console.log(group_code)
   var yr
   switch(group_code){
@@ -96,6 +94,16 @@ const getActiveSessionByDoa = async (doa) => {
 }
 
 
+const decodeBase64Image = (dataString) => {
+  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+  response = {};
+  if (matches.length !== 3) return new Error('Invalid input string');
+  response.type = matches[1];
+  response.data = new Buffer(matches[2], 'base64');
+  return response;
+}
 
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername }
+
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,decodeBase64Image }

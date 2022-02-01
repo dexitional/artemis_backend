@@ -1,6 +1,5 @@
 const sms = require("../config/sms");
 const SSO = require("../model/mysql/ssoModel");
-//const SSO = require("../model/mysql/newModel");
 const { getUsername,getSemestersByCode } = require("../middleware/util")
 
 // CRON BOTS
