@@ -52,7 +52,7 @@ module.exports = {
       //return res;
 
       var session;
-      const st = await db.query("select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from identity.user u left join ais.student s on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '"+refno+"' or s.indexno = '"+refno+"')");
+      const st = await db.query("select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '"+refno+"' or s.indexno = '"+refno+"')");
       const sx = await db.query("select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1");
       if(sx && sx.length == 1) session = sx[0]
       if(sx && sx.length > 1){
