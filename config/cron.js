@@ -24,7 +24,7 @@ cron.schedule('*/1 * * * *', () => {
 
 
 // Schedule @ EVERY 15 MINUTES
-cron.schedule('*/1 * * * *', async function() {
+cron.schedule('*/15 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
@@ -32,19 +32,19 @@ cron.schedule('*/1 * * * *', async function() {
         /* FMS CRON JOBS  */
 
           // RUN BILLS CHARGED
-          await runBills()
+          runBills()
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          await runRetireFeesTransact()
+          setTimeout(() =>  runRetireFeesTransact(), 200) 
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
-          await runRetireStudentAccount()
+          setTimeout(() =>  runRetireStudentAccount(), 200) 
           // RUN VOUCHERS RETIREMENT & RESEND
-          await runVoucherSender()
+          setTimeout(() =>  runVoucherSender(), 200) 
           // RUN SCORESHEET SETUP FOR NEW CALENDAR
-          await runSetupScoresheet()
-          // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME)
-          await runUpgradeNames()
+          setTimeout(() =>  runSetupScoresheet(), 200) 
+          // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME), 200) 
+          setTimeout(() => runUpgradeNames(), 200) 
           // CORRECT DUPLICATE PAYMENT ENTRIES
-          await runRemovePaymentDuplicates()
+          setTimeout(() =>  runRemovePaymentDuplicates(), 200) 
           
           // RUN RESIT CHECKER
       }

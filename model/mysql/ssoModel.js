@@ -1940,8 +1940,8 @@ module.exports = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on trim(s.refno) = trim(t.refno) left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno where t.transtype_id = 2";
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) where t.transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -1967,8 +1967,8 @@ module.exports = {
    },
 
    fetchOtherPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id not in (1,2)"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id where t.transtype_id not in (1,2)";
+      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id not in (1,2)"
+      var cql = "select count(*) as total from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.transtype m on m.id = t.transtype_id where t.transtype_id not in (1,2)";
       
       const size = 10;
       const pg  = parseInt(page);
