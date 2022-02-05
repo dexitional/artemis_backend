@@ -21,7 +21,7 @@ module.exports = {
 
    getActiveSessionByRefNo : async (refno) => {
       var sid;
-      const st = await db.query("select s.*,date_format(doa,'%m') as admission_code,semester,entry_semester from ais.student s where s.refno = '"+refno+"'");
+      const st = await db.query("select s.*,date_format(doa,'%m') as admission_code,semester,entry_semester from ais.student s where s.refno = '"+refno+"' or s.indexno = '"+refno+"'");
       const sx = await db.query("select id,substr(admission_code,1,2) as admission_code,tag from utility.session where `default` = 1 and status = 1");
       if(sx && sx.length == 1) sid = sx[0].id
       if(sx && sx.length > 1){

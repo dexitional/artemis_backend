@@ -34,17 +34,17 @@ cron.schedule('*/15 * * * *', async function() {
           // RUN BILLS CHARGED
           runBills()
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          setTimeout(() =>  runRetireFeesTransact(), 200) 
+          setTimeout(async() =>  await runRetireFeesTransact(), 30000) 
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
-          setTimeout(() =>  runRetireStudentAccount(), 200) 
+          setTimeout(async() =>  await runRetireStudentAccount(), 60000) 
           // RUN VOUCHERS RETIREMENT & RESEND
-          setTimeout(() =>  runVoucherSender(), 200) 
+          setTimeout(async() =>  await runVoucherSender(), 90000) 
           // RUN SCORESHEET SETUP FOR NEW CALENDAR
-          setTimeout(() =>  runSetupScoresheet(), 200) 
+          setTimeout(async() =>  await runSetupScoresheet(),120000) 
           // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME), 200) 
-          setTimeout(() => runUpgradeNames(), 200) 
+          setTimeout(async() => await runUpgradeNames(), 150000) 
           // CORRECT DUPLICATE PAYMENT ENTRIES
-          setTimeout(() =>  runRemovePaymentDuplicates(), 200) 
+          setTimeout(async() =>  await runRemovePaymentDuplicates(), 180000) 
           
           // RUN RESIT CHECKER
       }

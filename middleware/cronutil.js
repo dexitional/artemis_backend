@@ -21,7 +21,7 @@ const runBills = async () => {
             if(data.dcount > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],dcount } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['dcount']+dcount } 
             
           }else if(b.post_type == 'INT'){
-            data = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,sem,b.session_id,b.discount,dsem,b.currency)
+            data = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,b.prog_id,sem,b.session_id,b.discount,dsem,b.currency)
             if(data.count > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],count } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['count']+count } 
             if(data.dcount > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],dcount } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['dcount']+dcount } 
           } 

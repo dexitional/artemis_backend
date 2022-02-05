@@ -1411,11 +1411,13 @@ module.exports = {
    },
 
    approveAISProgchange : async (id,staff_no) => {
-      const chg = await db.query("select c.*,p.prefix,p.stype,date_format(s.doa,'%m%y') as code from ais.change_prog c left join ais.student s on s.refno = c.refno left join utility.program p on c.new_prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where (x.`default` = 1 and x.admission_code = date_format(s.doa,'%m%y')) and c.id = "+id);
+      
+      const chg = await db.query("select c.*,p.prefix,p.stype,date_format(s.doa,'%m%y') as code from ais.change_prog c left join ais.student s on s.refno = c.refno left join utility.program p on c.new_prog_id = p.id where c.id = "+id);
       if(chg && chg.length > 0){
+         if(!chg[0].code) return null;
          const refno = chg[0].refno
          const prog_id = chg[0].new_prog_id
-         const prefix = `${chg[0].prefix.trim()}${chg[0].code.trim()}${chg[0].stype}`
+         const prefix = `${chg[0].prefix.trim()}${chg[0].code}${chg[0].stype}`
          var newIndex, no;
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
          if(sm && sm.length > 0){
@@ -1568,10 +1570,10 @@ module.exports = {
       return { count, dcount };
    },
 
-   sendStudentBillInt : async (bid,bname,amount,sem,sess,discount,dsem,currency) => {
+   sendStudentBillInt : async (bid,bname,amount,prog_id,sem,sess,discount,dsem,currency) => {
       var count = 0;
-      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
-      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.entry_group = 'INT' and find_in_set(s.semester,'"+dsem+"') > 0");
+      const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+"  and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
+      const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+"  and s.entry_group = 'INT' and find_in_set(s.semester,'"+dsem+"') > 0");
       
       if(sts.length > 0){
          for(var st of sts){
@@ -1609,9 +1611,9 @@ module.exports = {
       const st = await db.query("select distinct(refno) as refno from fms.studtrans")
       if(st && st.length > 0){
          for(let s of st){
-            const bal = await db.query("select sum(amount) as amount from fms.studtrans where refno = '"+s.refno+"'")
+            const bal = await db.query("select ifnull(sum(amount),0) as amount from fms.studtrans where refno = '"+s.refno+"'")
             if(bal && bal.length > 0){
-               const ups = await db.query("update ais.student s set ? where refno = '"+s.refno+"'",{transact_account:bal[0].amount})
+               const ups = await db.query("update ais.student s set ? where (refno = '"+s.refno+"' or indexno = '"+s.refno+"')",{ transact_account:bal[0].amount })
                if(ups.affectedRows > 0) count++;
             }
          }
@@ -1622,16 +1624,35 @@ module.exports = {
  
    retireFeesTransact : async () => {
       var count = 0;
-      const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
-      if(st) count = st.affectedRows
+      //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
+      //if(st) count = st.affectedRows
+      const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid")
+      if(st && st.length > 0){
+         for(const s of st){
+            const session_id = await SR.getActiveSessionByRefNo(s.refno)
+            const dt = { ...s,session_id }
+            const ins = await db.query("insert into fms.studtrans set ?", dt)
+            if(ins && ins.insertId > 0) count += 1
+         }
+      }
+      //insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) 
       return count;
    },
 
 
    retireResitTransact : async () => {
       var count = 0;
-      const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (3 ) and m.tid is null and i.`default` = 1 order by tid")
-      if(st) count = st.affectedRows
+      //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (3 ) and m.tid is null and i.`default` = 1 order by tid")
+      //if(st) count = st.affectedRows
+      const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (3) and m.tid is null order by tid")
+      if(st && st.length > 0){
+         for(const s of st){
+            const session_id = await SR.getActiveSessionByRefNo(s.refno)
+            const dt = { ...s,session_id }
+            const ins = await db.query("insert into fms.studtrans set ?", dt)
+            if(ins && ins.insertId > 0) count += 1
+         }
+      }
       return count;
    },
 
@@ -1692,7 +1713,12 @@ module.exports = {
       }
 
       // Stage for Sub Stream
-      const sub_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1")
+      const code = `01${moment().format('YY')}`
+      var semester = 3
+      const ql = "select prog_id from ais.student where date_format(doa,'%m%y') = '"+code+"' and semester between 3 and 4";
+      const st = await db.query(ql);
+      if(st && st.length > 0) semester = 5
+      const sub_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1 and x.semester < "+semester)
       if(sub_meta && sub_meta.length > 0 && sub_stream && sub_stream.length > 0){
          var data = []
          for(var meta of sub_meta){
@@ -1719,10 +1745,10 @@ module.exports = {
                for(var i = 0; i < session_modes.length; i++){
                   var sql = "select * from ais.sheet where session_id = "+main_stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+session_modes[i]+"' and mode_id = 1"
                   sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
-                  const isExist = await db.query(sql)
+                  const isExist = await db.query(sql) 
                   if(isExist && isExist.length <= 0){
-                     const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
-                     const ins = await db.query("insert into ais.sheet set ?",dt)
+                    const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
+                    const ins = await db.query("insert into ais.sheet set ?",dt)
                   }
                }
             }
@@ -2083,7 +2109,8 @@ module.exports = {
    generateIndexNo : async (refno) => {
       const st = await db.query("select p.prefix,p.stype,date_format(s.doa,'%m%y') as code,s.indexno from ais.student s left join utility.program p on s.prog_id = p.id where s.refno = '"+refno+"'");
       if(st && st.length > 0 && (st[0].indexno == 'UNIQUE' || st[0].indexno == null)){
-         const prefix = `${st[0].prefix.trim()}${st[0].code.trim()}${st[0].stype}`
+         if(!st[0].code) return null
+         const prefix = `${st[0].prefix.trim()}${st[0].code}${st[0].stype}`
          var newIndex, resp, no;
          
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
