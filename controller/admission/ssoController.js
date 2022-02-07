@@ -1656,6 +1656,8 @@ postBill : async (req,res) => {
     if(req.body.prog_id != '') dt.prog_id = req.body.prog_id
     if(req.body.discount == '' || req.body.discount == 0) delete dt.discount
     if(req.body.discount_code == '') delete dt.discount_code
+    console.log(dt)
+    
     try{
       var resp = bid <=0 ? await SSO.insertBill(dt) : await SSO.updateBill(bid,dt) ;
       if(resp){
