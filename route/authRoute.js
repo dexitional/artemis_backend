@@ -92,6 +92,7 @@ Router.delete('/ais/students/:id', SSOController.deleteStudentAIS);
 Router.get('/ais/resetpwd/:refno', SSOController.resetAccount);
 Router.get('/ais/genmail/:refno', SSOController.generateMail);
 Router.get('/ais/setupaccess/:refno', SSOController.stageAccount);
+Router.get('/ais/switchaccess/:tag', SSOController.switchAccount);
 // REGISTRATIONS routes
 Router.get('/ais/regdata/', SSOController.fetchRegsData);
 Router.get('/ais/reglist/', SSOController.fetchRegsList);

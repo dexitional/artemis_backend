@@ -986,6 +986,35 @@ stageAccount : async (req,res) => {
   }
 },
 
+
+switchAccount : async (req,res) => {
+  try{
+      const { tag } = req.params;
+      var user = await SSO.fetchSSOUser(tag);
+      if(user && user.length > 0){
+          var roles = await SSO.fetchRoles(user[0].uid); // Roles
+          var photo = await SSO.fetchPhoto(user[0].uid); // Photo
+          var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
+          console.log(userdata)
+          userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
+          var data = { roles, photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+          // Generate Session Token 
+          const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
+          data.token = token;
+         
+          const lgs = await SSO.logger(user[0].uid,'ACCESS_GRANTED',{tag}) // Log Activity
+          res.status(200).json({success:true, data});
+
+      }else{
+          const lgs = await SSO.logger(0,'ACCESS_DENIED',{tag}) // Log Activity
+          res.status(200).json({success:false, data: null, msg:"Invalid User ID !"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 generateMail : async (req,res) => {
   try{
       const { refno } = req.params;
