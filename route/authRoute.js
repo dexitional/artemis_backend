@@ -141,6 +141,7 @@ Router.get('/ais/streams', SSOController.fetchStreams);
 // BILLS routes
 Router.get('/fms/sbills/', SSOController.fetchBills);
 Router.get('/fms/sbills/:bid', SSOController.fetchBill);
+Router.get('/fms/sbills/receivers/:bid', SSOController.fetchBillReceivers);
 Router.post('/fms/sbills', SSOController.postBill);
 Router.post('/fms/revokebill', SSOController.revokeBill);
 Router.post('/fms/revokestbill', SSOController.revokeBill);

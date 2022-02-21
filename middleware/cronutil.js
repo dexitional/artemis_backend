@@ -22,6 +22,7 @@ const runBills = async () => {
             
           }else if(b.post_type == 'INT'){
             data = await SSO.sendStudentBillInt(b.bid,b.narrative,b.amount,b.prog_id,sem,b.session_id,b.discount,dsem,b.currency)
+            const {count,dcount} = data;
             if(data.count > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],count } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['count']+count } 
             if(data.dcount > 0) resp[`${b.bid}`] = !resp[`${b.bid}`] ? { ...resp[`${b.bid}`],dcount } : { ...resp[`${b.bid}`], count:resp[`${b.bid}`]['dcount']+dcount } 
           } 
@@ -29,6 +30,18 @@ const runBills = async () => {
       }
     }
     return resp;
+}
+
+
+const cleanBills = async () => {
+  var count = 0;
+  var bills = await SSO.fetchUnpublisedBills();
+  if(bills && bills.length > 0){
+    for(var b of bills){
+      const del = await SSO.revokeBill(b.bid,null)
+      if(del) count += 1;
+    }
+  } return count;
 }
 
 
@@ -129,4 +142,4 @@ const populate = async () => {
 
 
 
-module.exports = { runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData,populate }
+module.exports = { runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData,populate,cleanBills }

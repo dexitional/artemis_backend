@@ -1678,6 +1678,21 @@ fetchBill : async (req,res) => {
   }
 },
 
+fetchBillReceivers : async (req,res) => {
+  try{
+    const bid = req.params.bid;
+    var receivers = await SSO.fetchBillReceivers(bid);
+     
+    if(receivers && receivers.length > 0){
+      res.status(200).json({ success:true, data:receivers });
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No records!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
 
 postBill : async (req,res) => {
     const { bid } = req.body;
@@ -1703,9 +1718,10 @@ postBill : async (req,res) => {
 revokeBill: async (req,res) => {
   try{
     const { id,refno } = req.body;
+    console.log(refno)
     const resp = await SSO.revokeBill(id,refno)
     if(resp){
-      await SSO.updateBill(id,{post_status:0})
+      await SSO.updateBill(id,{ post_status:0 })
       res.status(200).json({success:true, data:resp});
     }else{
       res.status(200).json({success:false, data: null, msg:"Bill not revoked!"});

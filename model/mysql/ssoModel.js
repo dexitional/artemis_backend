@@ -1496,16 +1496,33 @@ module.exports = {
    },
 
    fetchCurrentBills : async () => {
-      var res;
+      var res,sessions;
       const sid = await db.query("select * from utility.session where `default` = 1")
       if(sid && sid.length > 0){
-         res = await db.query("select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id where b.post_status = 1 and b.session_id = "+sid[0].id);
+         for(var s of sid){
+            sessions =  sessions ?  sessions += ','+s.id : s.id;
+         }
+         const sql = "select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id where b.post_status = 1 and find_in_set(b.session_id,'"+sessions+"') > 0"
+         console.log(sql)
+         res = await db.query(sql);
       }
       return res;
    },
 
+   fetchUnpublisedBills : async (id) => {
+      const res = await db.query("select * from fms.billinfo where post_status = 0");
+      return res;
+   },
+
+
    fetchBill : async (id) => {
       const res = await db.query("select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id where bid = "+id);
+      return res;
+   },
+
+
+   fetchBillReceivers : async (id) => {
+      const res = await db.query("select b.*,p.`short` as program_name, ceil(s.semester/2) as year_group,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.indexno from fms.studtrans b left join ais.student s on s.refno = b.refno left join utility.program p on s.prog_id = p.id where b.amount > 0 and b.bill_id = "+id);
       return res;
    },
 
@@ -1571,7 +1588,7 @@ module.exports = {
    },
 
    sendStudentBillInt : async (bid,bname,amount,prog_id,sem,sess,discount,dsem,currency) => {
-      var count = 0;
+      var count = 0, dcount = 0;
       const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+"  and s.entry_group = 'INT' and find_in_set(s.semester,'"+sem+"') > 0");
       const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = "+prog_id+"  and s.entry_group = 'INT' and find_in_set(s.semester,'"+dsem+"') > 0");
       
@@ -1581,8 +1598,7 @@ module.exports = {
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount > 0")
                if(isExist && isExist.length <= 0){
-                  const ins = await db.query("insert into fms.studtrans set ?",{narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess})
-                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:bname, bill_id:bid, amount, refno:st.refno, session_id:sess })
                   if(ins.insertId > 0) count++;
                }
             }
@@ -1595,14 +1611,13 @@ module.exports = {
             if(session_id == sess){
                const isExist = await db.query("select * from fms.studtrans where refno = '"+st.refno+"' and bill_id = "+bid+" and amount < 0")
                if(isExist && isExist.length <= 0){
-                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:bname,bill_id:bid,amount,refno:st.refno,session_id:sess })
-                  if(discount && discount > 0 ) await db.query("insert into fms.studtrans set ?",{narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
-                  if(ins.insertId > 0) count++;
+                  const ins = await db.query("insert into fms.studtrans set ?",{ narrative:`DISCOUNT - ${bname}`,bill_id:bid,amount:(-1*discount),refno:st.refno,session_id:sess,currency})
+                  if(ins.insertId > 0) dcount++;
                }
             }
          }
       }
-      return count;
+      return { count, dcount };
    },
 
 

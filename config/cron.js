@@ -1,7 +1,7 @@
 const exec = require("child_process").exec;
 //const zipFolder = require("zip-folder");
 //const rimraf = require("rimraf");
-const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData, populate } = require('../middleware/cronutil')
+const { runBills, runVoucherSender, runRetireStudentAccount, runRetireFeesTransact, runSetupScoresheet, runMsgDispatcher, runUpgradeNames, runRemovePaymentDuplicates, runData, populate, cleanBills } = require('../middleware/cronutil')
 var cron = require('node-cron'); 
 
 
@@ -14,17 +14,15 @@ cron.schedule('*/1 * * * *', () => {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          runMsgDispatcher()
-          //populate()
-          // UPDATE STUDENT ACTIVE STATUS
-          //runData()
+          //runMsgDispatcher()
+         
         }
     });
 });
 
 
 // Schedule @ EVERY 15 MINUTES
-cron.schedule('*/15 * * * *', async function() {
+cron.schedule('*/30 * * * *', async function() {
     const cmd = "ls -la"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
@@ -33,6 +31,7 @@ cron.schedule('*/15 * * * *', async function() {
 
           // RUN BILLS CHARGED
           runBills()
+          cleanBills()
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
           setTimeout(async() =>  await runRetireFeesTransact(), 30000) 
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
