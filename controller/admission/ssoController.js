@@ -1177,8 +1177,19 @@ fetchMyScoresheets : async (req,res) => {
       const page = req.query.page;
       const keyword = req.query.keyword;
       var session = await SSO.getActiveSessionByMode(1);
-      var streams = (await SSO.fetchStreams()).reduce((acc,val) => acc == '' ? val.id : acc+','+val.id,'')
-      console.log(streams)
+      var stream = new Set();
+      var streams = '',i = 0;
+      
+      for(var s of (await SSO.fetchStreams())){
+          stream.add(s.id)
+      }
+      for(var s of (await SSO.fetchEntriesSessions())){
+         stream.add(s.id)
+      }
+      stream.forEach(m => {
+          streams += m+(i == stream.size-1 ? '':',')
+          i++;
+      })
       var sheets = await SSO.fetchMyScoresheets(sno,streams,page,keyword);
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});

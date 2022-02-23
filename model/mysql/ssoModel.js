@@ -1257,6 +1257,12 @@ module.exports = {
       return res;
    },
 
+    // ENABLED SCORESHEET SESSIONS - AIS
+    fetchEntriesSessions : async () => {
+      const res = await db.query("select * from utility.session where cal_allow_sheets = 1");
+      return res;
+   },
+
 
 
    // INFORMER -AIS
