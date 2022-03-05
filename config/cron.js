@@ -14,7 +14,8 @@ cron.schedule('*/1 * * * *', () => {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          //runMsgDispatcher()
+          runMsgDispatcher()
+          runSetupScoresheet()
          
         }
     });
@@ -39,9 +40,9 @@ cron.schedule('*/30 * * * *', async function() {
           // RUN VOUCHERS RETIREMENT & RESEND
           setTimeout(async() =>  await runVoucherSender(), 90000) 
           // RUN SCORESHEET SETUP FOR NEW CALENDAR
-          setTimeout(async() =>  await runSetupScoresheet(),120000) 
+          //setTimeout(async() =>  await runSetupScoresheet(),120000) 
           // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME), 200) 
-          setTimeout(async() => await runUpgradeNames(), 150000) 
+          //setTimeout(async() => await runUpgradeNames(), 150000) 
           // CORRECT DUPLICATE PAYMENT ENTRIES
           setTimeout(async() =>  await runRemovePaymentDuplicates(), 180000) 
           

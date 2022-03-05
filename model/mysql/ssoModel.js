@@ -350,9 +350,9 @@ module.exports = {
       const res = await db.query("select serial from P06.voucher where session_id = "+session+" order by serial desc limit 1");
       if(res && res.length > 0) return res[0].serial;
       const sess = await db.query("select voucher_index from P06.session where session_id = "+session);
-      const algo = `${moment().format('YY')}${ parseInt(moment().format('YY'))+parseInt(moment().format('MM'))}${1000}`
-      //return parseInt(algo)
       return sess && sess[0].voucher_index;
+      //const algo = `${moment().format('YY')}${ parseInt(moment().format('YY'))+parseInt(moment().format('MM'))}${1000}`
+      //return parseInt(algo)
    },
 
    updateVoucherLog : async (id,data) => {
@@ -1739,36 +1739,39 @@ module.exports = {
       const ql = "select prog_id from ais.student where date_format(doa,'%m%y') = '"+code+"' and semester between 3 and 4";
       const st = await db.query(ql);
       if(st && st.length > 0) semester = 5
-      const sub_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1 and x.semester < "+semester)
+      const dl = "select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1 and x.semester < "+semester;
+      console.log(dl,st,sub_stream)
+      
+      const sub_meta = await db.query(dl)
       if(sub_meta && sub_meta.length > 0 && sub_stream && sub_stream.length > 0){
          var data = []
          for(var meta of sub_meta){
-            if(meta.semester%2 ==  (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
-            var loop_count,session_modes;
+            if(meta.semester%2 ==  (sub_stream[0].academic_sem == 2 ? 1 : 0)) continue;
+            var loop_count,sub_session_modes;
             data.push(meta)
             switch(meta.group_id){
             case 'CP': 
                loop_count = 1; 
-               session_modes = ['M'];break;
+               sub_session_modes = ['M'];break;
             case 'DP': 
                loop_count = 2; 
-               session_modes = ['M','W'];break;
+               sub_session_modes = ['M','W'];break;
             case 'UG': 
                loop_count = 3; 
-               session_modes = ['M','E','W'];break;
+               sub_session_modes = ['M','E','W'];break;
             case 'PG': 
                loop_count = 1; 
-               session_modes = ['W'];break;
+               sub_session_modes = ['W'];break;
             }
             
             // Run Data For All Existing Session Modes
-            if(session_modes && session_modes.length > 0){
-               for(var i = 0; i < session_modes.length; i++){
-                  var sql = "select * from ais.sheet where session_id = "+main_stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+session_modes[i]+"' and mode_id = 1"
+            if(sub_session_modes && sub_session_modes.length > 0){
+               for(var i = 0; i < sub_session_modes.length; i++){
+                  var sql = "select * from ais.sheet where session_id = "+sub_stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+sub_session_modes[i]+"' and mode_id = 1"
                   sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
                   const isExist = await db.query(sql) 
                   if(isExist && isExist.length <= 0){
-                    const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
+                    const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:sub_session_modes[i], mode_id:1 }
                     const ins = await db.query("insert into ais.sheet set ?",dt)
                   }
                }
