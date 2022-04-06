@@ -1156,7 +1156,9 @@ fetchScoresheets : async (req,res) => {
       const keyword = req.query.keyword;
       const stream = req.query.stream;
       var session = await SSO.getActiveSessionByMode(1);
-      const sid = stream != 'null' || !stream ? stream : session && session.id
+      //const sid = stream != 'null' || !stream ? stream : session && session.id
+      const sid = stream && stream != 'null' ? stream : session && session.id
+      console.log(sid,page,keyword)
       var sheets = await SSO.fetchScoresheets(sid,page,keyword);
      
       if(sheets && sheets.data.length > 0){

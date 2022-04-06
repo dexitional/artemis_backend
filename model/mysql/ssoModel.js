@@ -711,25 +711,25 @@ module.exports = {
     // STUDENTS - AIS MODELS
 
     fetchStudents : async (page,keyword) => {
-      var sql = "select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id"
-      var cql = "select count(*) as total from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id";
+      var sql = "select * from ais.fetchstudents"
+      var cql = "select count(*) as total from ais.fetchstudents";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
-          cql += ` where s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}'`
+          sql += ` where fname like '%${keyword}%' or lname like '%${keyword}%' or refno = '${keyword}' or indexno = '${keyword}'`
+          cql += ` where fname like '%${keyword}%' or lname like '%${keyword}%' or refno = '${keyword}' or indexno = '${keyword}'`
       }
 
-      sql += ` order by s.complete_status asc,s.prog_id asc,s.lname asc, s.fname asc`
+      sql += ` order by complete_status asc,prog_id asc,lname asc, fname asc`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-
+      console.log(sql)
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -738,17 +738,17 @@ module.exports = {
    },
 
    fetchAISStudentReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type }) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where s.complete_status = 0"
+      var sql = "select * from ais.fetchstudents where complete_status = 0"
       var res;
-      if(prog_id) sql += ` and s.prog_id = ${prog_id}`
-      if(major_id) sql += ` and s.major_id = ${major_id}`
-      if(year_group) sql += ` and ceil(s.semester/2) = ${year_group}`
-      if(session) sql += ` and s.session = '${session}'`
-      if(gender) sql += ` and s.gender = '${major_id}'`
-      if(entry_group) sql += ` and s.entry_group = '${entry_group}'`
-      if(defer_status) sql += ` and s.defer_status = ${defer_status}`
+      if(prog_id) sql += ` and prog_id = ${prog_id}`
+      if(major_id) sql += ` and major_id = ${major_id}`
+      if(year_group) sql += ` and ceil(semester/2) = ${year_group}`
+      if(session) sql += ` and session = '${session}'`
+      if(gender) sql += ` and gender = '${major_id}'`
+      if(entry_group) sql += ` and entry_group = '${entry_group}'`
+      if(defer_status) sql += ` and defer_status = ${defer_status}`
       
-      sql += ` order by s.prog_id,s.semester,s.major_id,s.session,s.lname asc`
+      sql += ` order by prog_id,semester,major_id,session,lname asc`
       res = await db.query(sql);
       if(res && res.length > 0) return res;
       return res;
@@ -773,19 +773,19 @@ module.exports = {
    // REGISTRATIONS - AIS
 
    fetchRegsData : async (streams,page,keyword) => {
-      var sql = "select r.*,s.fname,s.mname,s.lname,s.refno,x.title as session_name,x.tag as stream from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where find_in_set(r.session_id,'"+streams+"') > 0"
-      var cql = "select count(*) as total from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id where find_in_set(r.session_id,'"+streams+"') > 0"
+      var sql = "select * from ais.fetchregs where find_in_set(session_id,'"+streams+"') > 0"
+      var cql = "select count(*) as total from ais.fetchregs where find_in_set(session_id,'"+streams+"') > 0"
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and (s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}')`
-          cql += ` and (s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or s.refno = '${keyword}' or s.indexno = '${keyword}')`
+          sql += ` and (fname like '%${keyword}%' or lname like '%${keyword}%' or refno = '${keyword}' or indexno = '${keyword}')`
+          cql += ` and (fname like '%${keyword}%' or lname like '%${keyword}%' or refno = '${keyword}' or indexno = '${keyword}')`
       }
 
-      sql += ` order by r.created_at desc`
+      sql += ` order by created_at desc`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
@@ -862,22 +862,22 @@ module.exports = {
    // SCORESHEETS - AIS MODELS
 
    fetchScoresheets : async (session_id,page,keyword) => {
-      console.log(session_id,page,keyword)
-      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where s.session_id = "+session_id
-      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where s.session_id = "+session_id;
+      var sql = "select * from ais.fetchsheets where session_id = "+session_id
+      var cql = "select count(*) as total from ais.fetchsheets where session_id = "+session_id;
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
-          cql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
+          sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
+          cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
       }
 
-      sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
+      sql += ` order by session_id desc,prog_id,semester,major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
+      console.log(sql);
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -889,21 +889,20 @@ module.exports = {
    },
 
    fetchMyScoresheets : async (sno,streams,page,keyword) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(s.session_id,'"+streams+"') > 0"
-      var cql = "select count(*) as total from  ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(s.session_id,'"+streams+"') > 0";
+      var sql = "select  * from ais.fetchsheets where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(session_id,'"+streams+"') > 0"
+      var cql = "select count(*) as total from ais.fetchsheets where find_in_set('"+sno+"',tag) > 0 and find_in_set(session_id,'"+streams+"') > 0";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
-          cql += ` and c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
+         sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
+         cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
       }
 
-      sql += ` order by s.session_id desc,s.prog_id,s.semester, s.major_id`
+      sql += ` order by session_id desc,prog_id,semester,major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      console.log(sql)
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -1990,25 +1989,26 @@ module.exports = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 2"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) where t.transtype_id = 2";
+      var sql = "select * from fetchtrans where transtype_id = 2"
+      var cql = "select count(*) as total from fetchtrans where t.transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and (t.transtag like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or t.amount = '${keyword.trim()}')`
-          cql += ` and (t.transtag like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or t.amount = '${keyword.trim()}')`
+          sql += ` and (transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`
+          cql += ` and (transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`
       }
 
-      sql += ` order by t.transdate desc,t.id`
+      sql += ` order by transdate desc,id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
-      console.log(res)
+      console.log("PAYMENTS SQL: ",sql)
+      
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -2017,21 +2017,22 @@ module.exports = {
    },
 
    fetchOtherPayments : async (page,keyword) => {
-      var sql = "select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id not in (1,2)"
-      var cql = "select count(*) as total from fms.transaction t left join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno)) left join fms.transtype m on m.id = t.transtype_id where t.transtype_id not in (1,2)";
+      var sql = "select * from fetchtrans where transtype_id not in (1,2)"
+      var cql = "select count(*) as total from fetchtrans where transtype_id not in (1,2)";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}' or t.reference like '%${keyword}%' or t.transtag like '%${keyword}%' `
-          cql += ` and s.fname like '%${keyword}%' or s.lname like '%${keyword}%' or t.amount = '${keyword}' or t.reference like '%${keyword}%' or t.transtag like '%${keyword}%' `
+          sql += ` and fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%' `
+          cql += ` and fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%' `
       }
 
-      sql += ` order by t.id desc`
+      sql += ` order by id desc`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
+      console.log("PAYMENTS SQL: ",sql)
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -2045,19 +2046,19 @@ module.exports = {
 
 
    fetchVoucherSales : async (page,keyword) => {
-      var sql = "select t.*,s.serial,trim(s.buyer_name) as name,s.buyer_phone,s.pin,s.sms_code,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join fms.voucher_log s on s.tid = t.id left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 1"
-      var cql = "select count(*) as total from fms.transaction t left join fms.voucher_log s on s.tid = t.id left join fms.transtype m on m.id = t.transtype_id where t.transtype_id = 1";
+      var sql = "select * from fetchvouchs"
+      var cql = "select count(*) as total from fetchvouchs";
       
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
       if(keyword){
-          sql += ` and s.buyer_name like '%${keyword}%' or s.buyer_phone like '%${keyword}%' `
-          cql += ` and s.buyer_name like '%${keyword}%' or s.buyer_phone like '%${keyword}%' `
+          sql += ` and name like '%${keyword}%' or buyer_phone like '%${keyword}%' `
+          cql += ` and name like '%${keyword}%' or buyer_phone like '%${keyword}%' `
       }
 
-      sql += ` order by t.id desc`
+      sql += ` order by id desc`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
       const ces = await db.query(cql);
@@ -2073,7 +2074,7 @@ module.exports = {
 
    
    fetchPayment : async (id) => {
-      const res = await db.query("select t.*,s.indexno,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join ais.student s on s.refno = t.refno left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.id = "+id);
+      const res = await db.query("select * from fetchtrans where id = "+id);
       return res;
    },
 

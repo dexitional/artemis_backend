@@ -1,0 +1,7 @@
+# Update Scoresheet from  Structure tbl
+
+update utility.structure t1,ais.sheet t2 set t2.unit_id = t1.unit_id where t1.unit_id is not null and t1.course_id = t2.course_id
+update ais.sheet t2 left join utility.structure t1 on t1.course_id = t2.course_id set t2.unit_id= t1.unit_id where t1.unit_id is not null and t1.course_id = t2.course_id
+
+
+# Application Views [ Scoresheet, Fees, Admissions, students, ]

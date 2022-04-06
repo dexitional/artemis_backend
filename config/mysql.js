@@ -4,9 +4,9 @@ var pool = mysql.createPool({
     multipleStatements: true,
     connectionLimit : 1000,
     host : 'localhost',
-    port : 8889,
+    port : 3306,
     user: 'root',
-    password : 'root',
+    password : '',
     database : 'P06',
 });
 /*
