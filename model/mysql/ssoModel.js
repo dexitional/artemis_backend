@@ -978,7 +978,7 @@ module.exports = {
    },
    
    retireAssessmentTotal : async (session_id) => {
-      const res = await db.query("update ais.assessment set total_score = (class_score+exam_score) where session_id = "+session_id);
+      const res = await db.query("update ais.assessment set total_score = (class_score+exam_score) where (class_score is not null and exam_score is not null) and session_id = "+session_id);
       return res
    },
 
@@ -1225,7 +1225,6 @@ module.exports = {
             }
         }
       } 
-      console.log({...st[0],...session })
       return [{...st[0],...session }];
    },
 
@@ -1245,7 +1244,6 @@ module.exports = {
             }
         }
       } 
-      console.log({...st[0],...session })
       return [{...st[0],...session }];
    },
 
@@ -1264,7 +1262,7 @@ module.exports = {
 
 
 
-   // INFORMER -AIS
+   // INFORMER - AIS
    fetchInformer : async (page,keyword) => {
       var sql = "select s.* from ais.informer s"
       var cql = "select count(*) as total from ais.informer s";
@@ -1677,6 +1675,113 @@ module.exports = {
    },
 
 
+   // Finance Reports
+
+   finReportAdmitted : async () => {
+      var data = [], fileName = 'ADMISSION LIST';
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select h.start_semester,i.session,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         sql += ' order by p.`short`, h.created_at'
+         const res = await db.query(sql);
+         if(res && res.length > 0){
+           for(var row of res){
+             const ds = { 'STUDENT ID':row.serial,'STUDENT_NAME':row.name && row.name.toUpperCase(),'YEAR':Math.ceil(row.start_semester/2),'GENDER':(row.gender == 'M' ? 'MALE':(row.gender == 'F' ? 'FEMALE':'')),'PHONE':row.phone,'PROGRAM':row.program_name,'STUDY MODE':row.session,'DATE OF ADMISSION': moment(row.created_at).format('MM/YYYY')}
+             data.push(ds)
+           }
+         }
+         return { data, fileName }
+      }else { return null }
+   },
+
+   finReportFees : async (start,end) => {
+      var data = [], fileName = `FEES PAYMENT REPORT `;
+      var sql = "select * from ais.fetchtrans where transtype_id = 2"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+  
+
+   finReportOthers : async (start,end) => {
+      var data = [], fileName = `OTHER PAYMENTS REPORT `;
+      var sql = "select * from ais.fetchtrans where transtype_id not in (1,2)"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'TRANSACTION TYPE':row.transtitle, 'NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+   finReportVouchs : async (start,end) => {
+      var data = [], fileName = `VOUCHER SALES REPORT `;
+      var sql = "select * from ais.fetchvouchs where transtype_id = 1"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'APPLICANT SERIAL':row.serial, 'BUYER NAME':row.name && row.name.toUpperCase(),'BUYER PHONE':row.phone,'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),'SMS STATUS':(row.sms_code == '1000' ? 'RECEIVED':'NOT SENT')}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+   finReportAdvance : async () => {
+      var data = [], fileName = `STUDENT ADVANCE REPORT `;
+      var sql = "select * from ais.fetchstudents where transact_account < 0"
+      sql += ' order by transact_account desc, lname desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'BALANCE': Math.abs(row.transact_account) }
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+   finReportEligible : async ({ session,prog_id,major_id,year_group }) => {
+      var data = [], fileName = `EXAMS ELIGIBILITY REPORT `;
+      var sql = "select * from ais.fetchstudents where transact_account > 0"
+      if(session) sql += " and session = '"+session+"'"
+      if(prog_id) sql += " and prog_id = "+prog_id
+      if(major_id) sql += " and major_id = "+major_id
+      if(year_group) sql += " and ceil(semester/2) = "+year_group
+     
+      sql += ' order by prog_id,semester,major_id,session,lname'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NUMBER': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'PROGRAM': row.program_name, 'MAJOR': row.major_name, 'YEAR':Math.ceil(row.semester/2),'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'DEBT': row.transact_amount }
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+
+
+
+
+
    setupSchoresheet: async () => {
 
       // Diploma Sessions -  M, Undergrat Sessions - M,E,W, Postgrat Sessions - W
@@ -1689,7 +1794,6 @@ module.exports = {
       // #  If session is main stream, insert for all semesters 1-8 with session_id
       // #  Check group_id of utility.stru
 
-      
       // Get All Streams - Two Streams
       const main_stream = await db.query("select * from utility.session where tag = 'MAIN' and `default` =  1")
       const sub_stream = await db.query("select * from utility.session where tag = 'SUB' and `default` =  1")
@@ -1989,8 +2093,8 @@ module.exports = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select * from fetchtrans where transtype_id = 2"
-      var cql = "select count(*) as total from fetchtrans where t.transtype_id = 2";
+      var sql = "select * from ais.fetchtrans where transtype_id = 2"
+      var cql = "select count(*) as total from ais.fetchtrans where transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2017,8 +2121,8 @@ module.exports = {
    },
 
    fetchOtherPayments : async (page,keyword) => {
-      var sql = "select * from fetchtrans where transtype_id not in (1,2)"
-      var cql = "select count(*) as total from fetchtrans where transtype_id not in (1,2)";
+      var sql = "select * from ais.fetchtrans where transtype_id not in (1,2)"
+      var cql = "select count(*) as total from ais.fetchtrans where transtype_id not in (1,2)";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2046,8 +2150,8 @@ module.exports = {
 
 
    fetchVoucherSales : async (page,keyword) => {
-      var sql = "select * from fetchvouchs"
-      var cql = "select count(*) as total from fetchvouchs";
+      var sql = "select * from ais.fetchvouchs"
+      var cql = "select count(*) as total from ais.fetchvouchs";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2074,7 +2178,7 @@ module.exports = {
 
    
    fetchPayment : async (id) => {
-      const res = await db.query("select * from fetchtrans where id = "+id);
+      const res = await db.query("select * from ais.fetchtrans where id = "+id);
       return res;
    },
 

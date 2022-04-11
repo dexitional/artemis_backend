@@ -167,7 +167,7 @@ module.exports = {
    },
 
    fetchStudentTrans : async (refno = null) => {
-      const res = await db.query("select s.fname,s.mname,s.lname,p.`short` as program_name,t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.bill_id = b.bid left join ais.student s on t.refno = s.refno left join utility.program p on s.prog_id = p.id where t.refno = '"+refno+"'");
+      const res = await db.query("select ifnull(s.fname,sx.fname) as fname,ifnull(s.mname,sx.mname) as mname,ifnull(s.lname,sx.lname) as lname,ifnull(p.`short`,px.`short`) as program_name,t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.bill_id = b.bid left join ais.student s on t.refno = s.refno left join ais.student sx on t.refno = sx.indexno left join utility.program p on s.prog_id = p.id left join utility.program px on sx.prog_id = px.id where t.refno = '"+refno+"'");
       if(res && res.length > 0) return res
       return null;
    },

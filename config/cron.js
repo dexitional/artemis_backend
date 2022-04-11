@@ -15,7 +15,7 @@ cron.schedule('*/1 * * * *', () => {
         else {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
-          runSetupScoresheet()
+          //runSetupScoresheet()
          
         }
     });
@@ -45,7 +45,6 @@ cron.schedule('*/30 * * * *', async function() {
           //setTimeout(async() => await runUpgradeNames(), 150000) 
           // CORRECT DUPLICATE PAYMENT ENTRIES
           setTimeout(async() =>  await runRemovePaymentDuplicates(), 180000) 
-          
           // RUN RESIT CHECKER
       }
     });

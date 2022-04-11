@@ -2161,6 +2161,38 @@ postDebtorsReportFMS : async (req,res) => {
 },
 
 
+postFinanceReport : async (req,res) => {
+  try{
+    const { type,startdate,endate,prog_id,major_id,unit_id,year_group,session } = req.body
+    var resp;
+    console.log(startdate,endate);
+    if(type == 'fees'){
+      resp = await SSO.finReportFees(startdate,endate);
+    }else  if(type == 'others'){
+      resp = await SSO.finReportOthers(startdate,endate);
+    }else  if(type == 'voucher'){
+      resp = await SSO.finReportVouchs(startdate,endate);
+    }else  if(type == 'advance'){
+      resp = await SSO.finReportAdvance();
+    }else  if(type == 'admitted'){
+      resp = await SSO.finReportAdmitted();
+    }else  if(type == 'eligible'){
+      resp = await SSO.finReportEligible({ session,prog_id,major_id,year_group,semester });
+    }
+
+    console.log(resp)
+    if(resp){
+      res.status(200).json({success:true, ...resp });
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No Data found!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
 // HRStaff  - HRS
 
 fetchHRStaffDataHRS : async (req,res) => {
