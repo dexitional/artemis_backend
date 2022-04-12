@@ -892,7 +892,7 @@ postStudentAIS : async (req,res) => {
     if(req.body.doa == '' || req.body.doa == 'Invalid date' || !req.body.doa){ delete req.body.doa }else{ req.body.doa = moment(req.body.doa).format('YYYY-MM-DD') }
     if(req.body.doc == '' || req.body.doc == 'Invalid date' || !req.body.doc){ delete req.body.doc }else{ req.body.doc = moment(req.body.doc).format('YYYY-MM-DD') }
     delete req.body.uid;delete req.body.flag_locked;
-    delete req.body.flag_disabled;delete req.body.program_name;
+    delete req.body.flag_disabled;delete req.body.program_name;delete req.body.department;
     delete req.body.major_name;delete req.body.name; delete req.body.doc;
     console.log(req.body)
     try{
