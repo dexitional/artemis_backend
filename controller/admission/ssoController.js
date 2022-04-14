@@ -2163,9 +2163,9 @@ postDebtorsReportFMS : async (req,res) => {
 
 postFinanceReport : async (req,res) => {
   try{
-    const { type,startdate,endate,prog_id,major_id,unit_id,year_group,session } = req.body
+    const { type,startdate,endate,prog_id,major_id,year_group,session } = req.body
     var resp;
-    console.log(startdate,endate);
+    console.log(type);
     if(type == 'fees'){
       resp = await SSO.finReportFees(startdate,endate);
     }else  if(type == 'others'){
@@ -2177,7 +2177,7 @@ postFinanceReport : async (req,res) => {
     }else  if(type == 'admitted'){
       resp = await SSO.finReportAdmitted();
     }else  if(type == 'eligible'){
-      resp = await SSO.finReportEligible({ session,prog_id,major_id,year_group,semester });
+      resp = await SSO.finReportEligible({ session,prog_id,major_id,year_group });
     }
 
     console.log(resp)

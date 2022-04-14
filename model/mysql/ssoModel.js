@@ -1759,17 +1759,18 @@ module.exports = {
 
    finReportEligible : async ({ session,prog_id,major_id,year_group }) => {
       var data = [], fileName = `EXAMS ELIGIBILITY REPORT `;
-      var sql = "select * from ais.fetchstudents where transact_account > 0"
+      var sql = "select * from ais.fetchstudents where complete_status = 0 and transact_account <= 0"
       if(session) sql += " and session = '"+session+"'"
       if(prog_id) sql += " and prog_id = "+prog_id
       if(major_id) sql += " and major_id = "+major_id
       if(year_group) sql += " and ceil(semester/2) = "+year_group
      
       sql += ' order by prog_id,semester,major_id,session,lname'
+      console.log(sql)
       const res = await db.query(sql);
       if(res && res.length > 0){
          for(var row of res){
-            const ds = { 'STUDENT ID':row.refno, 'INDEX NUMBER': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'PROGRAM': row.program_name, 'MAJOR': row.major_name, 'YEAR':Math.ceil(row.semester/2),'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'DEBT': row.transact_amount }
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NUMBER': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'PROGRAM': row.program_name, 'MAJOR': row.major_name, 'YEAR':Math.ceil(row.semester/2),'STUDY MODE': row.session,'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'DEBT': row.transact_amount }
             data.push(ds)
          }
       }
@@ -1803,7 +1804,7 @@ module.exports = {
       if(main_meta && main_meta.length > 0 && main_stream && main_stream.length > 0){
          var data = []
          for(var meta of main_meta){
-            if(meta.semester%2 ==  (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
+            if(meta.semester%2 == (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
             var loop_count,session_modes;
             data.push(meta)
             switch(meta.group_id){
@@ -1829,7 +1830,7 @@ module.exports = {
                   const isExist = await db.query(sql)
                   if(isExist && isExist.length <= 0){
                      const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
-                     const ins = await db.query("insert into ais.sheet set ?",dt)
+                     const ins = await db.query("insert into ais.sheet set ?", dt)
                   }
                }
             }
