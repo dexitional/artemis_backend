@@ -2125,14 +2125,13 @@ movePaymentToFees: async (req,res) => {
 
 postPayment : async (req,res) => {
     const { id,refno } = req.body;
-    let dt = {refno:req.body.refno,transdate:req.body.transdate,transtag:req.body.transtag,amount: req.body.amount,currency:req.body.currency,paytype:req.body.paytype,feetype:req.body.feetype,collector_id:2,transtype_id:2,reference:req.body.reference,bankacc_id:req.body.bankacc_id,transtag:'AUCC_FIN'}
-   
+    
     try{
       const verifyRef = await Student.fetchStProfile(refno)
+      
       if(verifyRef && verifyRef.length > 0){
-        var tid;
-        var resp;
-        dt = { ...dt,refno:verifyRef[0].refno }
+        var tid,resp;
+        let dt = {refno:verifyRef[0].refno,transdate:req.body.transdate,transtag:req.body.transtag ? req.body.transtag : 'AUCC_FIN',amount: req.body.amount,currency:req.body.currency,paytype:req.body.paytype,feetype:req.body.feetype,collector_id:2,transtype_id:2,reference:req.body.reference,bankacc_id:req.body.bankacc_id}
         if(id <= 0){
           resp = await SSO.insertPayment(dt)
           tid = resp && resp.insertId;
@@ -2142,7 +2141,7 @@ postPayment : async (req,res) => {
         } 
         if(resp){
           // Update or Insert into Student Account
-          const qt = await SSO.updateStudFinance(tid,refno,(-1*parseInt(req.body.amount)),req.body.transtag)
+          const qt = await SSO.updateStudFinance(tid,refno,(-1*parseInt(req.body.amount)),(req.body.transtag ? req.body.transtag : 'AUCC_FIN'))
           // Check for Quota & Generate Indexno
           //const rt = await SSO.verifyFeesQuota(refno)
           res.status(200).json({success:true, data:resp});
@@ -2159,16 +2158,16 @@ postPayment : async (req,res) => {
 },
 
 deletePayment : async (req,res) => {
-  try{
+  try{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
       const { id } = req.params;
       var resp = await SSO.deletePayment(id);
       if(resp){
           res.status(200).json({success:true, data:resp});
-      }else{
+      }else{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
           res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }
   }catch(e){
-      console.log(e)
+      console.log(e)   
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
