@@ -107,8 +107,8 @@ Router.post('/ais/unassignsheet', SSOController.unassignSheet);
 Router.get('/ais/loadsheet/:id', SSOController.loadSheet);
 Router.post('/ais/savesheet', SSOController.saveSheet);
 Router.post('/ais/importsheet/:id', SSOController.importSheet);
-Router.get('/ais/publishsheet/:id', SSOController.publishSheet);
-Router.get('/ais/certifysheet/:id', SSOController.certifySheet);
+Router.get('/ais/publishsheet/:id/:sno', SSOController.publishSheet);
+Router.get('/ais/certifysheet/:id/:sno', SSOController.certifySheet);
 Router.get('/ais/uncertifysheet/:id', SSOController.uncertifySheet);
 Router.get('/ais/loadcourselist/:id', SSOController.loadCourseList);
 // CURRICULUM routes
@@ -119,7 +119,8 @@ Router.delete('/ais/curriculum/:id', SSOController.deleteStruct);
 Router.get('/ais/calendar/', SSOController.fetchCalendar);
 Router.post('/ais/calendar', SSOController.postCalendar);
 Router.delete('/ais/calendar/:id', SSOController.deleteCalendar);
-Router.delete('/ais/setcalendar/:id', SSOController.activateCalendar);
+Router.get('/ais/setcalendar/:id', SSOController.activateCalendar);
+Router.post('/ais/stagesheet', SSOController.stageSheet);
 // INFORMER routes
 Router.get('/ais/informer/', SSOController.fetchInformer);
 Router.post('/ais/informer', SSOController.postInformer);
@@ -180,6 +181,7 @@ Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
 Router.get('/hrs/stactive', SSOController.fetchActiveStListHRS);
 Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
 Router.get('/hrs/hrstaff/:sno', SSOController.fetchHRStaffHRS);
+Router.get('/hrs/updatehead/:id/:sno', SSOController.updateHRSUnitHead);
 Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
 Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
 Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);

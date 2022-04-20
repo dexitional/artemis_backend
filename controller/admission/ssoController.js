@@ -1154,12 +1154,14 @@ fetchScoresheets : async (req,res) => {
   try{
       const page = req.query.page;
       const keyword = req.query.keyword;
+      const unit_id = req.query.role;
       const stream = req.query.stream;
+
       var session = await SSO.getActiveSessionByMode(1);
       //const sid = stream != 'null' || !stream ? stream : session && session.id
       const sid = stream && stream != 'null' ? stream : session && session.id
-      console.log(sid,page,keyword)
-      var sheets = await SSO.fetchScoresheets(sid,page,keyword);
+      console.log(sid,unit_id,page,keyword)
+      var sheets = await SSO.fetchScoresheets(sid,unit_id,page,keyword);
      
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
@@ -1328,8 +1330,8 @@ importSheet : async (req,res) => {
 
 publishSheet : async (req,res) => {
   try{
-      const { id } = req.params;
-      var resp = await SSO.publishSheet(id);
+      const { id,sno } = req.params;
+      var resp = await SSO.publishSheet(id,sno);
       if(resp){
          res.status(200).json({success:true, data: resp });
       }else{
@@ -1343,8 +1345,8 @@ publishSheet : async (req,res) => {
 
 certifySheet : async (req,res) => {
   try{
-      const { id } = req.params;
-      var resp = await SSO.certifySheet(id);
+      const { id,sno } = req.params;
+      var resp = await SSO.certifySheet(id,sno);
       if(resp){
          res.status(200).json({success:true, data: resp });
       }else{
@@ -1520,6 +1522,28 @@ activateCalendar : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+
+stageSheet : async (req,res) => {
+  try{
+      const { session_id } = req.body;
+      var resp = await SSO.stageSheet(session_id);
+      console.log(resp)
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+
+
 
 
 // STREAMS CONTROLS - AIS
@@ -2234,6 +2258,21 @@ fetchHRStaffHRS : async (req,res) => {
       var staff = await SSO.fetchStaffProfile(sno);
       if(staff && staff.length > 0){
         res.status(200).json({success:true, data:staff[0]});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+updateHRSUnitHead: async (req,res) => {
+  try{
+      const { id,sno } = req.params
+      var resp = await SSO.updateHRSUnitHead(id,sno);
+      if(resp){
+        res.status(200).json({ success:true, data:resp });
       }else{
         res.status(200).json({success:false, data: null, msg:"No records!"});
       }

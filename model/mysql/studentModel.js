@@ -109,32 +109,38 @@ module.exports = {
    // REGISTRATION MODELS
 
    fetchStudentSlip : async (session_id = null,indexno = null) => {
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.score_type from ais.assessment x left join utility.course c on x.course_id = c.id  where x.session_id = "+session_id+" and x.indexno = '"+indexno+"'");
+      let res;
+      if(session_id && indexno) res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.score_type from ais.assessment x left join utility.course c on x.course_id = c.id  where x.session_id = "+session_id+" and x.indexno = '"+indexno+"'");
       return res;
    },
 
    fetchStudentCE : async (prog_id = null ,semester = null) => { // Core & Non-Major Electives
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = "+semester+" and x.prog_id = "+prog_id);
+      let res;
+      if(prog_id && semester) res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = "+semester+" and x.prog_id = "+prog_id);
       return res;
    },
 
    fetchStudentME : async (major_id = null,prog_id = null,semester = null) => { // Major's Electives
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = "+major_id+" and x.semester = "+semester+" and x.prog_id = "+prog_id);
+      let res;
+      if(prog_id && semester) res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = "+major_id+" and x.semester = "+semester+" and x.prog_id = "+prog_id);
       return res;
    },
 
    fetchStudentRT : async (indexno = null) => { // Resit
-      const res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester from ais.resit x left join utility.course c on x.course_id = c.id  where x.taken = 0 and x.indexno = '"+indexno+"'");
+      let res;
+      if(indexno) res = await db.query("select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester from ais.resit x left join utility.course c on x.course_id = c.id  where x.taken = 0 and x.indexno = '"+indexno+"'");
       return res;
    },
 
    fetchRegMeta : async (prog_id = null ,semester = null) => { // Core & Non-Major Electives
-      const res = await db.query("select x.* from utility.structmeta x  where x.semester = "+semester+" and x.prog_id = "+prog_id);
+      let res;
+      if(prog_id && semester)  res = await db.query("select x.* from utility.structmeta x  where x.semester = "+semester+" and x.prog_id = "+prog_id);
       return res;
    },
 
    removeRegData : async (indexno = null ,session_id = null) => { // Core & Non-Major Electives
-      const res = await db.query("delete from ais.assessment where session_id = "+session_id+" and indexno = '"+indexno+"'");
+      let res;
+      if(indexno && session_id) res = await db.query("delete from ais.assessment where session_id = "+session_id+" and indexno = '"+indexno+"'");
       return res;
    },
 
@@ -153,7 +159,8 @@ module.exports = {
    // RESULTS MODELS
 
    fetchStudentResults : async (indexno = null) => {
-      const res = await db.query("select concat(s.academic_year,' SEMESTER ',s.academic_sem) as name,c.title as course_name,x.credit,x.semester,c.id as course_id,c.course_code,x.class_score,x.exam_score,x.total_score,x.score_type,x.flag_visible,m.grade_meta from ais.assessment x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id left join utility.scheme m on m.id = x.scheme_id  where x.indexno = '"+indexno+"' order by s.id asc");
+      let res;
+      if(indexno) res = await db.query("select concat(s.academic_year,' SEMESTER ',s.academic_sem) as name,c.title as course_name,x.credit,x.semester,c.id as course_id,c.course_code,x.class_score,x.exam_score,x.total_score,x.score_type,x.flag_visible,m.grade_meta from ais.assessment x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id left join utility.scheme m on m.id = x.scheme_id  where x.indexno = '"+indexno+"' order by s.id asc");
       return res;
    },
 
@@ -161,7 +168,6 @@ module.exports = {
 
    fetchFeesAccount : async (refno = null) => {
       const res = await db.query("select ifnull(sum(amount),0) as total from fms.studtrans where refno = '"+refno+"'");
-      console.log(res);
       if(res && res.length > 0) return res[0].total
       return 0.0;
    },
