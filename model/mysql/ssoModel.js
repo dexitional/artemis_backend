@@ -2520,11 +2520,12 @@ module.exports = {
    updateHRSUnitHead: async (id,sno) => {
       const m1 = await db.query("select * from utility.unit where id = "+id);
       if(m1 && m1.length > 0 && m1[0].head){
+         const role = m1[0].level == 3 ? 21:22
          const m2 = await db.query("select * from identity.user where tag = '"+m1[0].head+"'")
-         if(m2 && m2.length > 0 && m1[0].type == 'ACADEMIC') await db.query("delete from identity.user_role where uid = "+m2[0].uid)
+         if(m2 && m2.length > 0 && m1[0].type == 'ACADEMIC') await db.query("delete from identity.user_role where uid = "+m2[0].uid+" and arole_id = "+role)
          await db.query("update utility.unit set head = "+sno+" where id = "+id)
          const m3 = await db.query("select * from identity.user where tag = '"+sno+"'")
-         if(m3 && m3.length > 0 && m1[0].type == 'ACADEMIC') await db.query("insert into identity.user_role set ?", { arole_id:(m1[0].level == 3 ? 21:22), role_meta: id, uid: m3[0].uid, status:1 })
+         if(m3 && m3.length > 0 && m1[0].type == 'ACADEMIC') await db.query("insert into identity.user_role set ?", { arole_id:role, role_meta: id, uid: m3[0].uid, status:1 })
       }
       return m1;
    },
