@@ -647,6 +647,38 @@ module.exports = {
    },
 
 
+   // DEFERMENT MODELS
+   fetchDefer : async () => {
+      const res = await db.query("select a.*,date_format(a.verified_at,'%M %d, %Y') as verified_at,upper(concat(s.fname,' ',s.lname)) as name from ais.deferment a left join ais.student s on a.indexno = s.indexno order by id desc");
+      return res;
+   },
+
+   insertDefer : async (data) => {
+      const res = await db.query("insert into ais.deferment set ?", data);
+      return res;
+   },
+
+   updateDefer : async (id,data) => {
+      const res = await db.query("update ais.deferment set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteDefer : async (id) => {
+      const res = await db.query("delete from ais.deferment where id = "+id);
+      return res;
+   },
+
+   approveDefer : async (id,sno) => {
+      var res;
+      const ss = await db.query("select * from ais.deferment where id ="+id);
+      if(ss && ss.length > 0){
+        const st = await db.query("update ais.student set defer_status = 1 where refno = '"+ss[0].refno+"'");
+        res = await db.query("update ais.deferment set verified = 1, verified_at = now(), verified_by = "+sno+" where id ="+id);
+      }
+      return res;
+   },
+
+
 
    // ENTRANCE EXAMS MODELS
 

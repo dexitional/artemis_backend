@@ -784,6 +784,77 @@ setDefaultLetter : async (req,res) => {
 
 
 
+// DEFERMENT CONTROLS
+
+fetchDefer : async (req,res) => {
+  try{
+      var defers = await SSO.fetchDefer();
+      if(defers && defers.length > 0){
+        res.status(200).json({success:true, data:defers});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
+  }
+},
+
+
+postDefer : async (req,res) => {
+    try{
+      const { id } = req.body;
+      console.log(req.body)
+      var resp
+      if(id > 0){ // Updates
+        resp = await SSO.updateDefer(id,req.body);
+      }else{ // Insert
+        resp = await SSO.insertDefer(req.body);
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteDefer : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteDefer(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+approveDefer : async (req,res) => {
+   try{
+      const { id,sno } = req.params;
+      var resp = await SSO.approveDefer(id,sno);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+   }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+   }
+},
+
+
+
 
 // ENTRANCE CONTROLS
 
@@ -2589,7 +2660,6 @@ deleteHRJobData : async (req,res) => {
 
 
 // HELPERS 
-
 
 fetchFMShelpers : async (req,res) => {
   try{

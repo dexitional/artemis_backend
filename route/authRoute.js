@@ -130,6 +130,11 @@ Router.get('/ais/progchange/', SSOController.fetchProgchange);
 Router.post('/ais/progchange', SSOController.postProgchange);
 Router.delete('/ais/progchange/:id', SSOController.deleteProgchange);
 Router.get('/ais/progchange/approve/:id/:sno', SSOController.approveProgchange);
+// DEFERMENT routes
+Router.get('/ais/deferment/', SSOController.fetchDefer);
+Router.post('/ais/deferment', SSOController.postDefer);
+Router.delete('/ais/deferment/:id', SSOController.deleteDefer);
+Router.get('/ais/deferment/approve/:id/:sno', SSOController.approveDefer);
 // STREAMS
 Router.get('/ais/streams', SSOController.fetchStreams);
 
