@@ -660,6 +660,23 @@ admitApplicant : async (req,res) => {
     }
 },
 
+reAdmitApplicant : async (req,res) => {
+  try{
+    const vs = await SSO.reAdmitApplicant(req.body);
+    if(vs){
+      const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`
+      const send = await sms(vs.phone,msg)
+      res.status(200).json({success:true, data:vs});
+    
+    }else{
+      res.status(200).json({success:false, data: null, msg:"PROCESS FAILED !"});
+    }
+  }catch(e){
+      console.warn(e)
+      res.status(200).json({success:false, data: null, msg: "SOMETHING WRONG HAPPENED !"});
+  }
+},
+
 
 // MATRICULANTS CONTROLS
 
@@ -792,10 +809,10 @@ fetchDefer : async (req,res) => {
       if(defers && defers.length > 0){
         res.status(200).json({success:true, data:defers});
       }else{
-        res.status(200).json({success:false, data: null, msg:"No records!"});
+        res.status(200).json({success:true, data: [], msg:"No records!"});
       }
   }catch(e){
-      console.log(e)
+      console.warn(e)
       res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
   }
 },

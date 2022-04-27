@@ -64,6 +64,7 @@ Router.get('/ams/freshers', SSOController.fetchFreshers);
 Router.get('/ams/fresherlist', SSOController.fetchFreshersData);
 Router.get('/ams/deletefresher/:serial', SSOController.removeFresherData);
 Router.post('/ams/admitnow', SSOController.admitApplicant);
+Router.post('/ams/admitfix', SSOController.reAdmitApplicant);
 // LETTERS routes
 Router.get('/ams/letters', SSOController.fetchLetters);
 Router.post('/ams/letters', SSOController.postLetter);

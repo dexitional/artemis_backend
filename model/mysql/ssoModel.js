@@ -549,6 +549,77 @@ module.exports = {
    },
 
 
+   reAdmitApplicant : async (data) => {
+      // Fetch active session for acdemic session (vs )
+      const vs = await db.query("select * from P06.session where status = 1")
+      // Fetch step_profile [ biodata, study_mode ] (sp)
+      const sp = await db.query("select * from P06.step_profile where serial = "+data.serial)
+      // Fetch step_guardian [ biodata] (sg)
+      const sg = await db.query("select * from P06.step_guardian where serial = "+data.serial)
+      // Fetch Program Info
+      const pg = await db.query("select p.*,d.* from P06.admitted d left join utility.program p on d.prog_id = p.id where d.serial = "+data.serial)
+      
+      if(sg && sp && vs && pg && vs.length > 0 && sp.length > 0 && sg.length > 0 && pg.length > 0){
+         // Fetch fms.billinfo for bill_id for freshers bill (bl)
+         var bl,bql; 
+         if(sp[0].resident_country == 84 || sp[0].resident_country == 'GH'){
+            const group_code = pg[0].start_semester > 1 ? '0100,0101,0110,0111,1100,1101,1110,1111':'1000,1001,1010,1011,1100,1101,1110,1111'
+            bql = "select * from fms.billinfo where prog_id = "+pg[0].id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1"
+            bl = await db.query(bql)
+         }else{
+            bql = "select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1"
+            bl = await db.query(bql)
+         }
+
+         const bid = bl && bl.length > 0 ? bl[0].bid : null
+         // Generate Email Address
+         var email,count = 1;
+         const username = getUsername(sp[0].fname,sp[0].lname)
+         email = `${username}@st.aucc.edu.gh`
+         while(true){
+            var isExist = await Student.findEmail(email)
+            if(isExist && isExist.length > 0){
+               count = count+1
+               email = `${username}${count}@st.aucc.edu.gh`
+            }else{
+               break;
+            }
+         }
+         // Generate Password
+         const password = nanoid()
+         // Insert into P06.admitted tbl
+         const da = { serial:data.serial, admit_session:pg[0].admit_session, academ_session:pg[0].admit_session, group_id:pg[0].group_id, stage_id:pg[0].stage_id, apply_type:pg[0].apply_type, sell_type:pg[0].sell_type, bill_id: bid, prog_id:pg[0].prog_id, major_id:pg[0].major_id, start_semester:pg[0].start_semester, session_mode:pg[0].session_mode, username:email, password }
+         //await db.query("insert into P06.admitted set ?", da)
+         // Update into P06.step_profile tbl
+         const dz = { flag_admit:1 }
+         await db.query("update P06.applicant set ? where serial = "+data.serial, dz)
+         // Insert data into ais.student
+         const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:pg[0].prog_id, major_id:pg[0].major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:pg[0].start_semester, entry_semester:pg[0].start_semester, entry_group:(sp[0].resident_country == 84 || sp[0].resident_country == 'GH') ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
+         await db.query("insert into ais.student set ?", dp)
+         // Insert into ais.mail 
+         const dm = { refno:data.serial, mail:email }
+         await db.query("insert into ais.mail set ?", dm)
+         // Insert data into identity.user
+         const du = { group_id:1, tag:data.serial, username:email, password:sha1(password) }
+         await db.query("insert into identity.user set ?", du)
+         // Insert Photo into Database
+         
+         if(bid){
+            // Insert Academic Fees or Bill charged
+            const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency, amount:bl[0].amount }
+            await db.query("insert into fms.studtrans set ?", df)
+            // Insert Discount (Payment)
+            const dj = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: `DISCOUNT ON ${bl[0].narrative} FEES`, currency:bl[0].currency, amount:(-1 * bl[0].discount)}
+            await db.query("insert into fms.studtrans set ?", df)
+         }
+         return { ...da,...dp,...dm,...du, program:pg[0].short, phone:sp[0].phone }
+
+      }else{
+         return null
+      }
+   },
+
+
     // MATRICULANTS - AMS MODELS
     
     fetchFreshers : async (page,keyword) => {
