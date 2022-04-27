@@ -601,8 +601,8 @@ module.exports = {
          await db.query("insert into ais.mail set ?", dm)
          // Insert data into identity.user
          const du = { group_id:1, tag:data.serial, username:email, password:sha1(password) }
-         await db.query("insert into identity.user set ?", du)
-         // Insert Photo into Database
+         const isDu = await db.query("select * from identity.user where tag = '"+data.serial+"'")
+         if(isDu && isDu.length == 0) await db.query("insert into identity.user set ?", du)
          
          if(bid){
             // Insert Academic Fees or Bill charged

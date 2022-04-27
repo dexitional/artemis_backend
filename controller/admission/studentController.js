@@ -123,7 +123,6 @@ module.exports = {
       const session_id = req.query.session_id
       try{
           var student = await Student.fetchStudentProfile(refno);
-          console.log(student)
           if(student && student.length > 0){
            
             const { prog_id,semester,major_id,indexno,session_semester } = student[0];

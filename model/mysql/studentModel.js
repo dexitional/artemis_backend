@@ -58,11 +58,11 @@ module.exports = {
       if(sx && sx.length > 1){
         if(st && st.length > 0){
             if(st[0].semester <= 2 && st[0].admission_code == '01'){
-               session = sx.find(r => r.tag == 'SUB')
+              session = sx.find(r => r.tag == 'SUB')
             }else if(st[0].semester <= 4 && st[0].admission_code == '01' && [3,4].includes(st[0].entry_semester)){
-               session = sx.find(r => r.tag == 'SUB')
+              session = sx.find(r => r.tag == 'SUB')
             }else{
-               session = sx.find(r => r.tag == 'MAIN')
+              session = sx.find(r => r.tag == 'MAIN')
             }
         }
       } 
