@@ -2074,11 +2074,10 @@ sendPayment : async (req,res) => {
 },
 
 generateIndexNo : async (req,res) => {
-    console.log(req.body.refno)
     try{
         const refno = req.body.refno;
         var resp = await Student.fetchStProfile(refno);
-        
+        console.log(resp)
         if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
           
             var indexNo = await SSO.generateIndexNo(refno);
