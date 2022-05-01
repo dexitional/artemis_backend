@@ -749,6 +749,16 @@ module.exports = {
       return res;
    },
 
+   resumeDefer : async (id,sno) => {
+      var res;
+      const ss = await db.query("select * from ais.deferment where id ="+id);
+      if(ss && ss.length > 0){
+        const st = await db.query("update ais.student set defer_status = 0 where refno = '"+ss[0].refno+"'");
+        res = await db.query("update ais.deferment set verified = 2, resumed_at = now(), resumed_by = "+sno+" where id ="+id);
+      }
+      return res;
+   },
+
 
 
    // ENTRANCE EXAMS MODELS

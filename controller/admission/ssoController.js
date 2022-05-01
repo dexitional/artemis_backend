@@ -870,6 +870,21 @@ approveDefer : async (req,res) => {
    }
 },
 
+resumeDefer : async (req,res) => {
+  try{
+     const { id,sno } = req.params;
+     var resp = await SSO.resumeDefer(id,sno);
+     if(resp){
+         res.status(200).json({success:true, data:resp});
+     }else{
+         res.status(200).json({success:false, data: null, msg:"Action failed!"});
+     }
+  }catch(e){
+     console.log(e)
+     res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 
 
 

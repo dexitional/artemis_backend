@@ -136,6 +136,7 @@ Router.get('/ais/deferment/', SSOController.fetchDefer);
 Router.post('/ais/deferment', SSOController.postDefer);
 Router.delete('/ais/deferment/:id', SSOController.deleteDefer);
 Router.get('/ais/deferment/approve/:id/:sno', SSOController.approveDefer);
+Router.get('/ais/deferment/resume/:id/:sno', SSOController.resumeDefer);
 // STREAMS
 Router.get('/ais/streams', SSOController.fetchStreams);
 
