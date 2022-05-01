@@ -1862,7 +1862,7 @@ module.exports = {
       const res = await db.query(sql);
       if(res && res.length > 0){
          for(var row of res){
-            const ds = { 'APPLICANT SERIAL':row.serial, 'BUYER NAME':row.name && row.name.toUpperCase(),'BUYER PHONE':row.phone,'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),'SMS STATUS':(row.sms_code == '1000' ? 'RECEIVED':'NOT SENT')}
+            const ds = { 'APPLICANT SERIAL':row.serial, 'BUYER NAME':row.name && row.name.toUpperCase(),'BUYER PHONE':row.phone,'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.transdate).format('MMM-DD-YYYY').toUpperCase(),'SMS STATUS':(row.sms_code == '1000' ? 'RECEIVED':'NOT SENT')}
             data.push(ds)
          }
       }
