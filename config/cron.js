@@ -9,13 +9,13 @@ var cron = require('node-cron');
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
 cron.schedule('*/1 * * * *', () => {
-    const cmd = "ls -la"; // Command Bash terminal
+    const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
-          runSetupScoresheet()
+          //runSetupScoresheet()
          
         }
     });
@@ -24,7 +24,7 @@ cron.schedule('*/1 * * * *', () => {
 
 // Schedule @ EVERY 15 MINUTES
 cron.schedule('*/30 * * * *', async function() {
-    const cmd = "ls -la"; // Command Bash terminal
+    const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
       else {
@@ -45,7 +45,6 @@ cron.schedule('*/30 * * * *', async function() {
           //setTimeout(async() => await runUpgradeNames(), 150000) 
           // CORRECT DUPLICATE PAYMENT ENTRIES
           setTimeout(async() =>  await runRemovePaymentDuplicates(), 180000) 
-          
           // RUN RESIT CHECKER
       }
     });
@@ -54,7 +53,7 @@ cron.schedule('*/30 * * * *', async function() {
 
 // Schedule @ 11:45 PM b4 Midnight / Daily 
 cron.schedule('45 23 * * *', async function() {
-    const cmd = "ls -la"; // Command Bash terminal
+    const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, function(error, stdout, stderr) {
       if(error){ console.log(error) }
       else {

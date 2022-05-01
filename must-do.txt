@@ -5,3 +5,5 @@ update ais.sheet t2 left join utility.structure t1 on t1.course_id = t2.course_i
 
 
 # Application Views [ Scoresheet, Fees, Admissions, students, ]
+
+['host'=>'192.168.0.28','user'=>'hrms','pass'=>'o$%^Ab$@c296O60dF42$C&e959*!dc$$&e1bD36@3o48!','db'=>'hr'];

@@ -25,7 +25,7 @@ module.exports = {
    
 
    fetchRoles : async (uid) => {
-      const sql = "select u.arole_id,a.role_name,a.role_desc,x.app_name,x.app_tag from identity.user_role u left join identity.app_role a on u.arole_id = a.arole_id left join identity.app x on a.app_id = x.app_id where u.uid = "+uid;
+      const sql = "select u.arole_id,a.role_name,a.role_desc,u.role_meta,x.app_name,x.app_tag from identity.user_role u left join identity.app_role a on u.arole_id = a.arole_id left join identity.app x on a.app_id = x.app_id where u.uid = "+uid;
       const res = await db.query(sql);
       return res;
    },
@@ -549,6 +549,77 @@ module.exports = {
    },
 
 
+   reAdmitApplicant : async (data) => {
+      // Fetch active session for acdemic session (vs )
+      const vs = await db.query("select * from P06.session where status = 1")
+      // Fetch step_profile [ biodata, study_mode ] (sp)
+      const sp = await db.query("select * from P06.step_profile where serial = "+data.serial)
+      // Fetch step_guardian [ biodata] (sg)
+      const sg = await db.query("select * from P06.step_guardian where serial = "+data.serial)
+      // Fetch Program Info
+      const pg = await db.query("select p.*,d.* from P06.admitted d left join utility.program p on d.prog_id = p.id where d.serial = "+data.serial)
+      
+      if(sg && sp && vs && pg && vs.length > 0 && sp.length > 0 && sg.length > 0 && pg.length > 0){
+         // Fetch fms.billinfo for bill_id for freshers bill (bl)
+         var bl,bql; 
+         if(sp[0].resident_country == 84 || sp[0].resident_country == 'GH'){
+            const group_code = pg[0].start_semester > 1 ? '0100,0101,0110,0111,1100,1101,1110,1111':'1000,1001,1010,1011,1100,1101,1110,1111'
+            bql = "select * from fms.billinfo where prog_id = "+pg[0].id+" and session_id = "+vs[0].academic_session_id+" and group_code in ("+group_code+") and post_type = 'GH' and post_status = 1"
+            bl = await db.query(bql)
+         }else{
+            bql = "select * from fms.billinfo where session_id = "+vs[0].academic_session_id+" and post_type = 'INT' and post_status = 1"
+            bl = await db.query(bql)
+         }
+
+         const bid = bl && bl.length > 0 ? bl[0].bid : null
+         // Generate Email Address
+         var email,count = 1;
+         const username = getUsername(sp[0].fname,sp[0].lname)
+         email = `${username}@st.aucc.edu.gh`
+         while(true){
+            var isExist = await Student.findEmail(email)
+            if(isExist && isExist.length > 0){
+               count = count+1
+               email = `${username}${count}@st.aucc.edu.gh`
+            }else{
+               break;
+            }
+         }
+         // Generate Password
+         const password = nanoid()
+         // Insert into P06.admitted tbl
+         const da = { serial:data.serial, admit_session:pg[0].admit_session, academ_session:pg[0].admit_session, group_id:pg[0].group_id, stage_id:pg[0].stage_id, apply_type:pg[0].apply_type, sell_type:pg[0].sell_type, bill_id: bid, prog_id:pg[0].prog_id, major_id:pg[0].major_id, start_semester:pg[0].start_semester, session_mode:pg[0].session_mode, username:email, password }
+         //await db.query("insert into P06.admitted set ?", da)
+         // Update into P06.step_profile tbl
+         const dz = { flag_admit:1 }
+         await db.query("update P06.applicant set ? where serial = "+data.serial, dz)
+         // Insert data into ais.student
+         const dp = { refno:data.serial, fname:sp[0].fname, lname:sp[0].lname, prog_id:pg[0].prog_id, major_id:pg[0].major_id, gender:sp[0].gender, dob:sp[0].dob, phone:sp[0].phone, email:sp[0].email, address:sp[0].resident_address, hometown:sp[0].home_town, session:sp[0].session_mode, country_id:sp[0].resident_country, semester:pg[0].start_semester, entry_semester:pg[0].start_semester, entry_group:(sp[0].resident_country == 84 || sp[0].resident_country == 'GH') ? 'GH':'INT', doa:vs[0].admission_date, institute_email:email, guardian_name:`${sg[0].fname} ${sg[0].lname}`, guardian_phone:sg[0].phone, religion_id:sp[0].religion, disability:sp[0].disabled  }
+         await db.query("insert into ais.student set ?", dp)
+         // Insert into ais.mail 
+         const dm = { refno:data.serial, mail:email }
+         await db.query("insert into ais.mail set ?", dm)
+         // Insert data into identity.user
+         const du = { group_id:1, tag:data.serial, username:email, password:sha1(password) }
+         const isDu = await db.query("select * from identity.user where tag = '"+data.serial+"'")
+         if(isDu && isDu.length == 0) await db.query("insert into identity.user set ?", du)
+         
+         if(bid){
+            // Insert Academic Fees or Bill charged
+            const df = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: bl[0].narrative, currency:bl[0].currency, amount:bl[0].amount }
+            await db.query("insert into fms.studtrans set ?", df)
+            // Insert Discount (Payment)
+            const dj = { session_id:vs[0].academic_session_id, bill_id:bid, refno:data.serial, narrative: `DISCOUNT ON ${bl[0].narrative} FEES`, currency:bl[0].currency, amount:(-1 * bl[0].discount)}
+            await db.query("insert into fms.studtrans set ?", df)
+         }
+         return { ...da,...dp,...dm,...du, program:pg[0].short, phone:sp[0].phone }
+
+      }else{
+         return null
+      }
+   },
+
+
     // MATRICULANTS - AMS MODELS
     
     fetchFreshers : async (page,keyword) => {
@@ -643,6 +714,38 @@ module.exports = {
    setDefaultLetter : async (id) => {
       await db.query("update P06.letter set status = 0");
       const res = await db.query("update P06.letter set status = 1 where id ="+id);
+      return res;
+   },
+
+
+   // DEFERMENT MODELS
+   fetchDefer : async () => {
+      const res = await db.query("select a.*,date_format(a.verified_at,'%M %d, %Y') as verified_at,upper(concat(s.fname,' ',s.lname)) as name from ais.deferment a left join ais.student s on a.indexno = s.indexno order by id desc");
+      return res;
+   },
+
+   insertDefer : async (data) => {
+      const res = await db.query("insert into ais.deferment set ?", data);
+      return res;
+   },
+
+   updateDefer : async (id,data) => {
+      const res = await db.query("update ais.deferment set ? where id = "+id,data);
+      return res;
+   },
+
+   deleteDefer : async (id) => {
+      const res = await db.query("delete from ais.deferment where id = "+id);
+      return res;
+   },
+
+   approveDefer : async (id,sno) => {
+      var res;
+      const ss = await db.query("select * from ais.deferment where id ="+id);
+      if(ss && ss.length > 0){
+        const st = await db.query("update ais.student set defer_status = 1 where refno = '"+ss[0].refno+"'");
+        res = await db.query("update ais.deferment set verified = 1, verified_at = now(), verified_by = "+sno+" where id ="+id);
+      }
       return res;
    },
 
@@ -861,10 +964,21 @@ module.exports = {
 
    // SCORESHEETS - AIS MODELS
 
-   fetchScoresheets : async (session_id,page,keyword) => {
+   fetchScoresheets : async (session_id,unit_id,page,keyword) => {
       var sql = "select * from ais.fetchsheets where session_id = "+session_id
       var cql = "select count(*) as total from ais.fetchsheets where session_id = "+session_id;
-      
+     
+      var units = unit_id;
+      if(unit_id){
+         var unit = await db.query("select * from utility.unit where id = "+unit_id)
+         if(unit && unit.length > 0){
+            if(unit[0].level == 2){
+               const um = await db.query("select * from utility.unit where lev2_id = "+unit_id)
+               if(um && um.length > 0) units = um.map(m => m.id).join(',')
+            }
+         }
+      }
+
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
@@ -872,6 +986,11 @@ module.exports = {
       if(keyword){
           sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
           cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `
+      }
+
+      if(units){
+         sql += ` and find_in_set(unit_id,'${units}') > 0 `
+         cql += ` and find_in_set(unit_id,'${units}') > 0 `
       }
 
       sql += ` order by session_id desc,prog_id,semester,major_id`
@@ -889,7 +1008,7 @@ module.exports = {
    },
 
    fetchMyScoresheets : async (sno,streams,page,keyword) => {
-      var sql = "select  * from ais.fetchsheets where find_in_set('"+sno+"',s.tag) > 0 and find_in_set(session_id,'"+streams+"') > 0"
+      var sql = "select * from ais.fetchsheets where find_in_set('"+sno+"',tag) > 0 and find_in_set(session_id,'"+streams+"') > 0"
       var cql = "select count(*) as total from ais.fetchsheets where find_in_set('"+sno+"',tag) > 0 and find_in_set(session_id,'"+streams+"') > 0";
       
       const size = 10;
@@ -903,6 +1022,8 @@ module.exports = {
 
       sql += ` order by session_id desc,prog_id,semester,major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
+      console.log(sql);
+
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -978,18 +1099,18 @@ module.exports = {
    },
    
    retireAssessmentTotal : async (session_id) => {
-      const res = await db.query("update ais.assessment set total_score = (class_score+exam_score) where session_id = "+session_id);
+      const res = await db.query("update ais.assessment set total_score = (class_score+exam_score) where (class_score is not null and exam_score is not null) and session_id = "+session_id);
       return res
    },
 
-   publishSheet : async (id) => {
-      const res = await db.query("update ais.sheet set flag_assessed = 1 where id = "+id);
+   publishSheet : async (id,sno) => {
+      const res = await db.query("update ais.sheet set flag_assessed = 1, assessed_by = '"+sno+"' where id = "+id);
       if(res && res.affectedRows > 0) return true
       return false;
    },
 
-   certifySheet : async (id) => {
-      const res = await db.query("update ais.sheet set flag_certified = 1 where id = "+id);
+   certifySheet : async (id,sno) => {
+      const res = await db.query("update ais.sheet set flag_certified = 1,certified_by = '"+sno+"' where id = "+id);
       var count = 0;
       if(res && res.affectedRows > 0){
          const resx = await db.query("select * from ais.sheet where id = "+id);
@@ -1225,7 +1346,6 @@ module.exports = {
             }
         }
       } 
-      console.log({...st[0],...session })
       return [{...st[0],...session }];
    },
 
@@ -1245,7 +1365,6 @@ module.exports = {
             }
         }
       } 
-      console.log({...st[0],...session })
       return [{...st[0],...session }];
    },
 
@@ -1264,7 +1383,7 @@ module.exports = {
 
 
 
-   // INFORMER -AIS
+   // INFORMER - AIS
    fetchInformer : async (page,keyword) => {
       var sql = "select s.* from ais.informer s"
       var cql = "select count(*) as total from ais.informer s";
@@ -1463,7 +1582,13 @@ module.exports = {
       if(isRec && isRec.length > 0){ 
         return { insertId:isRec[0].id,...isRec[0] }
       }else{
+        const st = await db.query("select refno from ais.student where (refno = '"+data.refno+"' or indexno = '"+data.refno+"')")
+        if(st && st.length > 0) data.refno = st[0].refno
         const res = await db.query("insert into fms.transaction set ?", data);
+        if(st && st.length > 0 && res.insertId > 0){
+         // Convert All indexno to refno in transaction tbl & studtrans tbl
+         // Run Retirement Code
+        }
         return res;
       }
      
@@ -1677,6 +1802,114 @@ module.exports = {
    },
 
 
+   // Finance Reports
+
+   finReportAdmitted : async () => {
+      var data = [], fileName = 'ADMISSION LIST';
+      var sid = await db.query("select session_id from P06.session where status = 1")
+      if(sid && sid.length > 0){
+         var sql = "select h.start_semester,i.session,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = "+sid[0].session_id
+         sql += ' order by p.`short`, h.created_at'
+         const res = await db.query(sql);
+         if(res && res.length > 0){
+           for(var row of res){
+             const ds = { 'STUDENT ID':row.serial,'STUDENT_NAME':row.name && row.name.toUpperCase(),'YEAR':Math.ceil(row.start_semester/2),'GENDER':(row.gender == 'M' ? 'MALE':(row.gender == 'F' ? 'FEMALE':'')),'PHONE':row.phone,'PROGRAM':row.program_name,'STUDY MODE':row.session,'DATE OF ADMISSION': moment(row.created_at).format('MM/YYYY')}
+             data.push(ds)
+           }
+         }
+         return { data, fileName }
+      }else { return null }
+   },
+
+   finReportFees : async (start,end) => {
+      var data = [], fileName = `FEES PAYMENT REPORT `;
+      var sql = "select * from ais.fetchtrans where transtype_id = 2"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+  
+
+   finReportOthers : async (start,end) => {
+      var data = [], fileName = `OTHER PAYMENTS REPORT `;
+      var sql = "select * from ais.fetchtrans where transtype_id not in (1,2)"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'TRANSACTION TYPE':row.transtitle, 'NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+   finReportVouchs : async (start,end) => {
+      var data = [], fileName = `VOUCHER SALES REPORT `;
+      var sql = "select * from ais.fetchvouchs where transtype_id = 1"
+      if(start && end) sql += " and transdate between date('"+start+"') and date('"+end+"')"
+      sql += ' order by id desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'APPLICANT SERIAL':row.serial, 'BUYER NAME':row.name && row.name.toUpperCase(),'BUYER PHONE':row.phone,'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),'SMS STATUS':(row.sms_code == '1000' ? 'RECEIVED':'NOT SENT')}
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+   finReportAdvance : async () => {
+      var data = [], fileName = `STUDENT ADVANCE REPORT `;
+      var sql = "select * from ais.fetchstudents where transact_account < 0"
+      sql += ' order by transact_account desc, lname desc'
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'BALANCE': Math.abs(row.transact_account) }
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+   finReportEligible : async ({ session,prog_id,major_id,year_group }) => {
+      var data = [], fileName = `EXAMS ELIGIBILITY REPORT `;
+      var sql = "select * from ais.fetchstudents where complete_status = 0 and transact_account <= 0"
+      if(session) sql += " and session = '"+session+"'"
+      if(prog_id) sql += " and prog_id = "+prog_id
+      if(major_id) sql += " and major_id = "+major_id
+      if(year_group) sql += " and ceil(semester/2) = "+year_group
+     
+      sql += ' order by prog_id,semester,major_id,session,lname'
+      console.log(sql)
+      const res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var row of res){
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NUMBER': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(), 'PROGRAM': row.program_name, 'MAJOR': row.major_name, 'YEAR':Math.ceil(row.semester/2),'STUDY MODE': row.session,'STUDENT CATEGORY':(row.entry_group == 'GH' ? 'LOCAL':'INTERNATIONAL'), 'DEBT': row.transact_amount }
+            data.push(ds)
+         }
+      }
+      return { data, fileName }
+   },
+
+
+
+
+
+
+
    setupSchoresheet: async () => {
 
       // Diploma Sessions -  M, Undergrat Sessions - M,E,W, Postgrat Sessions - W
@@ -1689,7 +1922,6 @@ module.exports = {
       // #  If session is main stream, insert for all semesters 1-8 with session_id
       // #  Check group_id of utility.stru
 
-      
       // Get All Streams - Two Streams
       const main_stream = await db.query("select * from utility.session where tag = 'MAIN' and `default` =  1")
       const sub_stream = await db.query("select * from utility.session where tag = 'SUB' and `default` =  1")
@@ -1699,7 +1931,7 @@ module.exports = {
       if(main_meta && main_meta.length > 0 && main_stream && main_stream.length > 0){
          var data = []
          for(var meta of main_meta){
-            if(meta.semester%2 ==  (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
+            if(meta.semester%2 == (main_stream[0].academic_sem == 2 ? 1 : 0)) continue;
             var loop_count,session_modes;
             data.push(meta)
             switch(meta.group_id){
@@ -1725,7 +1957,7 @@ module.exports = {
                   const isExist = await db.query(sql)
                   if(isExist && isExist.length <= 0){
                      const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:session_modes[i], mode_id:1 }
-                     const ins = await db.query("insert into ais.sheet set ?",dt)
+                     const ins = await db.query("insert into ais.sheet set ?", dt)
                   }
                }
             }
@@ -1735,7 +1967,7 @@ module.exports = {
       // Stage for Sub Stream
       const code = `01${moment().format('YY')}`
       var semester = 3
-      const ql = "select prog_id from ais.student where date_format(doa,'%m%y') = '"+code+"' and semester between 3 and 4";
+      const ql = "select prog_id from ais.student where date_format(doa,'%m%y') = '"+code+"' and semester in (3,4,5,6)";
       const st = await db.query(ql);
       if(st && st.length > 0) semester = 5
       const dl = "select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1 and x.semester < "+semester;
@@ -1770,7 +2002,7 @@ module.exports = {
                   sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
                   const isExist = await db.query(sql) 
                   if(isExist && isExist.length <= 0){
-                    const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:sub_session_modes[i], mode_id:1 }
+                    const dt = { unit_id:meta.unit_id,prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:main_stream[0].id, session:sub_session_modes[i], mode_id:1 }
                     const ins = await db.query("insert into ais.sheet set ?",dt)
                   }
                }
@@ -1779,6 +2011,105 @@ module.exports = {
       }
 
       return data;
+   },
+
+
+   stageSheet: async (sid) => {
+      const stream = await db.query("select * from utility.session where id = "+sid)
+      if(stream && stream.length > 0 ){
+         if(stream[0].tag == 'MAIN'){
+            // NORMAL ACADEMIC SESSION - MAIN STREAM
+            const main_meta = await db.query("select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1")
+            if(main_meta && main_meta.length > 0 ){
+               var data = []
+               for(var meta of main_meta){
+                  if(meta.semester%2 == (stream[0].academic_sem == 2 ? 1 : 0)) continue;
+                  var loop_count,session_modes;
+                  data.push(meta)
+                  switch(meta.group_id){
+                  case 'CP': 
+                     session_modes = ['M'];break;
+                  case 'DP': 
+                     session_modes = ['M','W'];break;
+                  case 'UG': 
+                     session_modes = ['M','E','W'];break;
+                  case 'PG': 
+                     session_modes = ['W']; break;
+                  }
+                  
+                  // Run Data For All Existing Session Modes
+                  if(session_modes && session_modes.length > 0){
+                     for(var i = 0; i < session_modes.length; i++){
+                        var sql = "select * from ais.sheet where session_id = "+stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+session_modes[i]+"' and mode_id = 1"
+                        sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
+                        const isExist = await db.query(sql)
+                        if(isExist && isExist.length <= 0){
+                           const dt = { unit_id:meta.unit_id,prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:stream[0].id, session:session_modes[i], mode_id:1 }
+                           const ins = await db.query("insert into ais.sheet set ?", dt)
+                        }
+                     }
+                  }
+               }
+               return data;
+            }  return null;
+
+         }else{
+            // JANUARY STREAM
+            //const code = `01${moment().format('YY')}`
+            const code = stream[0].admission_code
+            var semester = 3
+            const ql = "select distinct prog_id,semester,session from ais.student where date_format(doa,'%m%y') = '"+code+"' and semester in (3,4)"; // Students Admiited to Level 200 for January Stream
+            const st = await db.query(ql);
+            if(st && st.length > 0) semester = 5
+            const dl = "select x.*,p.group_id from utility.structure x left join utility.program p on x.prog_id = p.id where x.status = 1 and p.status = 1 and x.semester < "+semester;  
+            console.log(dl,st,stream)
+            var sub_meta = await db.query(dl)
+            if(sub_meta && sub_meta.length > 0){
+               // Remove Un-admitted Programs for Level 200
+               if(semester = 5 && st.length > 0){ 
+                  let holder = {}
+                  for(const s of st){
+                     holder[`${s.prog_id}${s.semester}${s.session ? s.session : ''}`] = true;
+                  }
+                  sub_meta = sub_meta.filter( r => [1,2].includes(r.semester) || ([3,4].includes(r.semester) && holder[`${r.prog_id}${r.semester}${r.session ? r.session : ''}`]))
+               }
+
+               var data = []
+               for(var meta of sub_meta){
+                  if(meta.semester%2 ==  (stream[0].academic_sem == 2 ? 1 : 0)) continue;
+                  var loop_count,sub_session_modes;
+                  data.push(meta)
+                  switch(meta.group_id){
+                  case 'CP': 
+                    sub_session_modes = ['M'];break;
+                  case 'DP': 
+                    sub_session_modes = ['M','W']; break;
+                  case 'UG': 
+                    sub_session_modes = ['M','E','W']; break;
+                  case 'PG': 
+                    sub_session_modes = ['W']; break;
+                  }
+                  
+                  // Run Data For All Existing Session Modes
+                  if(sub_session_modes && sub_session_modes.length > 0){
+                     for(var i = 0; i < sub_session_modes.length; i++){
+                        var sql = "select * from ais.sheet where session_id = "+stream[0].id+" and prog_id = "+meta.prog_id+" and course_id = "+meta.course_id+" and semester = "+parseInt(meta.semester)+" and session = '"+sub_session_modes[i]+"' and mode_id = 1"
+                        sql += meta.major_id ? " and major_id = "+meta.major_id : " and major_id is null"
+                        const isExist = await db.query(sql) 
+                        if(isExist && isExist.length <= 0){
+                        const dt = { prog_id:meta.prog_id, major_id:meta.major_id, course_id:meta.course_id, semester:parseInt(meta.semester), session_id:stream[0].id, session:sub_session_modes[i], mode_id:1 }
+                        const ins = await db.query("insert into ais.sheet set ?",dt)
+                        }
+                     }
+                  }
+               } 
+               return data;
+            }  return null;
+         }  
+
+      }else{
+         return null;
+      }
    },
 
 
@@ -1866,7 +2197,6 @@ module.exports = {
               await db.query("delete from fms.transaction where id = "+m)
               await db.query("delete from fms.studtrans where tid = "+m)
               await db.query("insert into fms.fmsdelete_log set ?", {tid:m,meta:JSON.stringify(s)})
-
            }else{
               obj[key] = s.id
            }
@@ -1989,8 +2319,8 @@ module.exports = {
    // FEE PAYMENTS - FMS
    
    fetchPayments : async (page,keyword) => {
-      var sql = "select * from fetchtrans where transtype_id = 2"
-      var cql = "select count(*) as total from fetchtrans where t.transtype_id = 2";
+      var sql = "select * from ais.fetchtrans where transtype_id = 2"
+      var cql = "select count(*) as total from ais.fetchtrans where transtype_id = 2";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2017,8 +2347,8 @@ module.exports = {
    },
 
    fetchOtherPayments : async (page,keyword) => {
-      var sql = "select * from fetchtrans where transtype_id not in (1,2)"
-      var cql = "select count(*) as total from fetchtrans where transtype_id not in (1,2)";
+      var sql = "select * from ais.fetchtrans where transtype_id not in (1,2)"
+      var cql = "select count(*) as total from ais.fetchtrans where transtype_id not in (1,2)";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2046,8 +2376,8 @@ module.exports = {
 
 
    fetchVoucherSales : async (page,keyword) => {
-      var sql = "select * from fetchvouchs"
-      var cql = "select count(*) as total from fetchvouchs";
+      var sql = "select * from ais.fetchvouchs"
+      var cql = "select count(*) as total from ais.fetchvouchs";
       
       const size = 10;
       const pg  = parseInt(page);
@@ -2074,7 +2404,7 @@ module.exports = {
 
    
    fetchPayment : async (id) => {
-      const res = await db.query("select * from fetchtrans where id = "+id);
+      const res = await db.query("select * from ais.fetchtrans where id = "+id);
       return res;
    },
 
@@ -2294,6 +2624,19 @@ module.exports = {
    fetchStaffProfile : async (staff_no) => {
       const res = await db.query("select s.*,x.title as unit_name,m.title as designation,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name from hrs.staff s left join identity.user u on u.tag = s.staff_no left join utility.unit x on s.unit_id = x.id left join hrs.job m on s.job_id = m.id  where s.staff_no = "+staff_no);
       return res;
+   },
+
+   updateHRSUnitHead: async (id,sno) => {
+      const m1 = await db.query("select * from utility.unit where id = "+id);
+      if(m1 && m1.length > 0 && m1[0].head){
+         const role = m1[0].level == 3 ? 21:22
+         const m2 = await db.query("select * from identity.user where tag = '"+m1[0].head+"'")
+         if(m2 && m2.length > 0 && m1[0].type == 'ACADEMIC') await db.query("delete from identity.user_role where uid = "+m2[0].uid+" and arole_id = "+role)
+         await db.query("update utility.unit set head = "+sno+" where id = "+id)
+         const m3 = await db.query("select * from identity.user where tag = '"+sno+"'")
+         if(m3 && m3.length > 0 && m1[0].type == 'ACADEMIC') await db.query("insert into identity.user_role set ?", { arole_id:role, role_meta: id, uid: m3[0].uid, status:1 })
+      }
+      return m1;
    },
 
    updateStaffProfile : async (staff_no,data) => {

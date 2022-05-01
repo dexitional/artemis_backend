@@ -660,6 +660,23 @@ admitApplicant : async (req,res) => {
     }
 },
 
+reAdmitApplicant : async (req,res) => {
+  try{
+    const vs = await SSO.reAdmitApplicant(req.body);
+    if(vs){
+      const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`
+      const send = await sms(vs.phone,msg)
+      res.status(200).json({success:true, data:vs});
+    
+    }else{
+      res.status(200).json({success:false, data: null, msg:"PROCESS FAILED !"});
+    }
+  }catch(e){
+      console.warn(e)
+      res.status(200).json({success:false, data: null, msg: "SOMETHING WRONG HAPPENED !"});
+  }
+},
+
 
 // MATRICULANTS CONTROLS
 
@@ -784,6 +801,77 @@ setDefaultLetter : async (req,res) => {
 
 
 
+// DEFERMENT CONTROLS
+
+fetchDefer : async (req,res) => {
+  try{
+      var defers = await SSO.fetchDefer();
+      if(defers && defers.length > 0){
+        res.status(200).json({success:true, data:defers});
+      }else{
+        res.status(200).json({success:true, data: [], msg:"No records!"});
+      }
+  }catch(e){
+      console.warn(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
+  }
+},
+
+
+postDefer : async (req,res) => {
+    try{
+      const { id } = req.body;
+      console.log(req.body)
+      var resp
+      if(id > 0){ // Updates
+        resp = await SSO.updateDefer(id,req.body);
+      }else{ // Insert
+        resp = await SSO.insertDefer(req.body);
+      }
+
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteDefer : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteDefer(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+approveDefer : async (req,res) => {
+   try{
+      const { id,sno } = req.params;
+      var resp = await SSO.approveDefer(id,sno);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+   }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+   }
+},
+
+
+
 
 // ENTRANCE CONTROLS
 
@@ -892,7 +980,7 @@ postStudentAIS : async (req,res) => {
     if(req.body.doa == '' || req.body.doa == 'Invalid date' || !req.body.doa){ delete req.body.doa }else{ req.body.doa = moment(req.body.doa).format('YYYY-MM-DD') }
     if(req.body.doc == '' || req.body.doc == 'Invalid date' || !req.body.doc){ delete req.body.doc }else{ req.body.doc = moment(req.body.doc).format('YYYY-MM-DD') }
     delete req.body.uid;delete req.body.flag_locked;
-    delete req.body.flag_disabled;delete req.body.program_name;
+    delete req.body.flag_disabled;delete req.body.program_name;delete req.body.department;
     delete req.body.major_name;delete req.body.name; delete req.body.doc;
     console.log(req.body)
     try{
@@ -1154,12 +1242,14 @@ fetchScoresheets : async (req,res) => {
   try{
       const page = req.query.page;
       const keyword = req.query.keyword;
+      const unit_id = req.query.role;
       const stream = req.query.stream;
+
       var session = await SSO.getActiveSessionByMode(1);
       //const sid = stream != 'null' || !stream ? stream : session && session.id
       const sid = stream && stream != 'null' ? stream : session && session.id
-      console.log(sid,page,keyword)
-      var sheets = await SSO.fetchScoresheets(sid,page,keyword);
+      console.log(sid,unit_id,page,keyword)
+      var sheets = await SSO.fetchScoresheets(sid,unit_id,page,keyword);
      
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
@@ -1328,8 +1418,8 @@ importSheet : async (req,res) => {
 
 publishSheet : async (req,res) => {
   try{
-      const { id } = req.params;
-      var resp = await SSO.publishSheet(id);
+      const { id,sno } = req.params;
+      var resp = await SSO.publishSheet(id,sno);
       if(resp){
          res.status(200).json({success:true, data: resp });
       }else{
@@ -1343,8 +1433,8 @@ publishSheet : async (req,res) => {
 
 certifySheet : async (req,res) => {
   try{
-      const { id } = req.params;
-      var resp = await SSO.certifySheet(id);
+      const { id,sno } = req.params;
+      var resp = await SSO.certifySheet(id,sno);
       if(resp){
          res.status(200).json({success:true, data: resp });
       }else{
@@ -1520,6 +1610,28 @@ activateCalendar : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+
+stageSheet : async (req,res) => {
+  try{
+      const { session_id } = req.body;
+      var resp = await SSO.stageSheet(session_id);
+      console.log(resp)
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+
+
 
 
 // STREAMS CONTROLS - AIS
@@ -2160,6 +2272,38 @@ postDebtorsReportFMS : async (req,res) => {
 },
 
 
+postFinanceReport : async (req,res) => {
+  try{
+    const { type,startdate,endate,prog_id,major_id,year_group,session } = req.body
+    var resp;
+    console.log(type);
+    if(type == 'fees'){
+      resp = await SSO.finReportFees(startdate,endate);
+    }else  if(type == 'others'){
+      resp = await SSO.finReportOthers(startdate,endate);
+    }else  if(type == 'voucher'){
+      resp = await SSO.finReportVouchs(startdate,endate);
+    }else  if(type == 'advance'){
+      resp = await SSO.finReportAdvance();
+    }else  if(type == 'admitted'){
+      resp = await SSO.finReportAdmitted();
+    }else  if(type == 'eligible'){
+      resp = await SSO.finReportEligible({ session,prog_id,major_id,year_group });
+    }
+
+    console.log(resp)
+    if(resp){
+      res.status(200).json({success:true, ...resp });
+    }else{
+      res.status(200).json({success:false, data: null, msg:"No Data found!"});
+    }
+  }catch(e){
+    console.log(e)
+    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+  }
+},
+
+
 // HRStaff  - HRS
 
 fetchHRStaffDataHRS : async (req,res) => {
@@ -2201,6 +2345,21 @@ fetchHRStaffHRS : async (req,res) => {
       var staff = await SSO.fetchStaffProfile(sno);
       if(staff && staff.length > 0){
         res.status(200).json({success:true, data:staff[0]});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+updateHRSUnitHead: async (req,res) => {
+  try{
+      const { id,sno } = req.params
+      var resp = await SSO.updateHRSUnitHead(id,sno);
+      if(resp){
+        res.status(200).json({ success:true, data:resp });
       }else{
         res.status(200).json({success:false, data: null, msg:"No records!"});
       }
@@ -2517,7 +2676,6 @@ deleteHRJobData : async (req,res) => {
 
 
 // HELPERS 
-
 
 fetchFMShelpers : async (req,res) => {
   try{

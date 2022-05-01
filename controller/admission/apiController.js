@@ -34,7 +34,7 @@ module.exports = {
         if(st && st.length > 0){
           dt = { studentId:st[0].refno,indexNo:st[0].indexno, name:`${st[0].lname ?st[0].lname.trim():''}, ${st[0].fname ? st[0].fname.trim():''} ${st[0].mname ? ' '+st[0].mname.trim():''}`, program:`${st[0].program_name}${st[0].major_name ?'- '+st[0].major_name:''}`,year: st[0].semester ? Math.ceil(st[0].semester/2) : 'none',serviceId:type }
           switch(parseInt(type)){
-            case 2: ft = await Student.fetchFeesAccount(refno);break;
+            case 2: ft = await Student.fetchFeesAccount(st[0].refno);break;
             case 3: ft = await Student.fetchResitAccount(st[0].indexno);break; // Retire resit account on successful payment ( flag paid to '1')
             case 4: ft = await Student.fetchGraduationAccount(st[0].indexno);break; // Automate graduation insertion after second sem certified result
           } res.status(200).json({success:true, data: {...dt,serviceCharge:ft}}) 
@@ -45,14 +45,14 @@ module.exports = {
       // VOUCHER services
       }else if(type && parseInt(type) === 1){
         const st = await SSO.fetchVoucherGroups();
-        res.status(200).json({success:true, data: { serviceId:type,...st }}) 
+        res.status(200).json({ success:true, data: { serviceId:type,...st } }) 
       }else{
-        res.status(403).json({success:false, data: null, msg: "Invalid request"});
+        res.status(403).json({ success:false, data: null, msg: "Invalid request" });
       }
 
     }catch(e){
         console.log(e)
-        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+        res.status(200).json({ success:false, data: null, msg: "Please try again later." });
     }
   },
 
@@ -78,7 +78,6 @@ module.exports = {
               // Log SMS Status
               if(send) await SSO.updateVoucherLog(vouch.logId, { sms_code:send.code }) 
               res.status(200).json({success:true, data: { voucherSerial:vouch.serial,voucherPin:vouch.pin,buyerName,buyerPhone,transId:ins.insertId,serviceId } })
-            
             }else{ 
               res.status(200).json({success:false, data: null, msg: `Voucher quota exhausted`}) 
             }
@@ -90,7 +89,6 @@ module.exports = {
       }else{ 
           const ins = await SSO.sendTransaction(dt);
           if(ins){
-            
             if(serviceId == 2){
               // Send to studtrans tbl, If Payservice = Academic Fees
               const dt = { tid: ins.insertId,refno:studentId, amount: (-1*amountPaid),currency,narrative:`Online Fees Payment, StudentID: ${studentId}`}
@@ -98,7 +96,6 @@ module.exports = {
               // Send SMS to Buyer
               //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
               //if(insm) await sms(buyerPhone,msg)
-              
             }
             res.status(200).json({success:true, data: { transId: ins.insertId,studentId,serviceId } }) 
           }else{

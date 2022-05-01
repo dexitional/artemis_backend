@@ -64,6 +64,7 @@ Router.get('/ams/freshers', SSOController.fetchFreshers);
 Router.get('/ams/fresherlist', SSOController.fetchFreshersData);
 Router.get('/ams/deletefresher/:serial', SSOController.removeFresherData);
 Router.post('/ams/admitnow', SSOController.admitApplicant);
+Router.post('/ams/admitfix', SSOController.reAdmitApplicant);
 // LETTERS routes
 Router.get('/ams/letters', SSOController.fetchLetters);
 Router.post('/ams/letters', SSOController.postLetter);
@@ -107,8 +108,8 @@ Router.post('/ais/unassignsheet', SSOController.unassignSheet);
 Router.get('/ais/loadsheet/:id', SSOController.loadSheet);
 Router.post('/ais/savesheet', SSOController.saveSheet);
 Router.post('/ais/importsheet/:id', SSOController.importSheet);
-Router.get('/ais/publishsheet/:id', SSOController.publishSheet);
-Router.get('/ais/certifysheet/:id', SSOController.certifySheet);
+Router.get('/ais/publishsheet/:id/:sno', SSOController.publishSheet);
+Router.get('/ais/certifysheet/:id/:sno', SSOController.certifySheet);
 Router.get('/ais/uncertifysheet/:id', SSOController.uncertifySheet);
 Router.get('/ais/loadcourselist/:id', SSOController.loadCourseList);
 // CURRICULUM routes
@@ -119,7 +120,8 @@ Router.delete('/ais/curriculum/:id', SSOController.deleteStruct);
 Router.get('/ais/calendar/', SSOController.fetchCalendar);
 Router.post('/ais/calendar', SSOController.postCalendar);
 Router.delete('/ais/calendar/:id', SSOController.deleteCalendar);
-Router.delete('/ais/setcalendar/:id', SSOController.activateCalendar);
+Router.get('/ais/setcalendar/:id', SSOController.activateCalendar);
+Router.post('/ais/stagesheet', SSOController.stageSheet);
 // INFORMER routes
 Router.get('/ais/informer/', SSOController.fetchInformer);
 Router.post('/ais/informer', SSOController.postInformer);
@@ -129,6 +131,11 @@ Router.get('/ais/progchange/', SSOController.fetchProgchange);
 Router.post('/ais/progchange', SSOController.postProgchange);
 Router.delete('/ais/progchange/:id', SSOController.deleteProgchange);
 Router.get('/ais/progchange/approve/:id/:sno', SSOController.approveProgchange);
+// DEFERMENT routes
+Router.get('/ais/deferment/', SSOController.fetchDefer);
+Router.post('/ais/deferment', SSOController.postDefer);
+Router.delete('/ais/deferment/:id', SSOController.deleteDefer);
+Router.get('/ais/deferment/approve/:id/:sno', SSOController.approveDefer);
 // STREAMS
 Router.get('/ais/streams', SSOController.fetchStreams);
 
@@ -169,6 +176,9 @@ Router.get('/fms/movetofees/:id', SSOController.movePaymentToFees);
 Router.get('/fms/debtors/', SSOController.fetchDebtors);
 Router.post('/fms/debtors/report', SSOController.postDebtorsReportFMS);
 
+// FINANCE REPORTS
+Router.post('/fms/reports', SSOController.postFinanceReport);
+
 /* HRS MODULE ROUTES */
 
 // HR Staff routes
@@ -177,6 +187,7 @@ Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
 Router.get('/hrs/stactive', SSOController.fetchActiveStListHRS);
 Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
 Router.get('/hrs/hrstaff/:sno', SSOController.fetchHRStaffHRS);
+Router.get('/hrs/updatehead/:id/:sno', SSOController.updateHRSUnitHead);
 Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
 Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
 Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);
@@ -258,7 +269,8 @@ Router.get('/createviews', async(req,res)=>{
   // FETCH REGISTRATION LOGS VIEW
   const v3 = await db.query("create view fetchregs as select r.*,s.fname,s.mname,s.lname,s.refno,s.prog_id,s.major_id,s.semester,x.title as session_name,x.tag as stream from ais.activity_register r left join ais.student s on r.indexno = s.indexno left join utility.session x on x.id = r.session_id")
   // FETCH FEES & TRANSACTIONS VIEW
-  const v4 = await db.query("create view fetchtrans as select t.*,s.indexno,s.fname,s.lname,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t  left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id inner join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno))")
+  //const v4 = await db.query("create view fetchtrans as select t.*,s.indexno,s.fname,s.lname,concat(trim(s.fname),' ',trim(s.lname)) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t  left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id inner join ais.student s on (trim(s.refno) = trim(t.refno) or trim(s.indexno) = trim(t.refno))")
+  const v4 = await db.query("create view fetchtrans as select t.*,ifnull(s.indexno,x.indexno) as indexno,ifnull(s.fname,x.fname) as fname,ifnull(s.lname,x.lname) as lname,ifnull(concat(trim(s.fname),' ',trim(s.lname)),concat(trim(x.fname),' ',trim(x.lname))) as name,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id inner join ais.student s on trim(s.refno) = trim(t.refno) left join ais.student x on trim(x.indexno) = trim(t.refno)")
   // FETCH VOUCHER TRANSACTIONS VIEW
   const v5 = await db.query("create view fetchvouchs as select t.*,s.serial,trim(s.buyer_name) as name,s.buyer_phone,s.pin,s.sms_code,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join fms.voucher_log s on s.tid = t.id left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 1")
 });
