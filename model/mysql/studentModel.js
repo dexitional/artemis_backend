@@ -48,9 +48,6 @@ module.exports = {
    // PROFILE MODELS
 
    fetchStudentProfile : async (refno) => {
-      //const res = await db.query("select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end,p.scheme_id from ais.student s left join identity.user u on u.tag = s.refno left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.session x on x.mode_id = p.mode_id left join utility.scheme h on p.scheme_id = h.id where x.default = 1 and (s.refno = '"+refno+"' or s.indexno = '"+refno+"')");
-      //return res;
-
       var session;
       const st = await db.query("select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '"+refno+"' or s.indexno = '"+refno+"')");
       const sx = await db.query("select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1");

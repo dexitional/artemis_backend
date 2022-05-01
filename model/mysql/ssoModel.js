@@ -1582,7 +1582,13 @@ module.exports = {
       if(isRec && isRec.length > 0){ 
         return { insertId:isRec[0].id,...isRec[0] }
       }else{
+        const st = await db.query("select refno from ais.student where (refno = '"+data.refno+"' or indexno = '"+data.refno+"')")
+        if(st && st.length > 0) data.refno = st[0].refno
         const res = await db.query("insert into fms.transaction set ?", data);
+        if(st && st.length > 0 && res.insertId > 0){
+         // Convert All indexno to refno in transaction tbl & studtrans tbl
+         // Run Retirement Code
+        }
         return res;
       }
      
