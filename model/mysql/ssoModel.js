@@ -1829,7 +1829,7 @@ module.exports = {
       const res = await db.query(sql);
       if(res && res.length > 0){
          for(var row of res){
-            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            const ds = { 'STUDENT ID':row.refno, 'INDEX NO': row.indexno,'STUDENT_NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.transdate).format('MMM-DD-YYYY').toUpperCase(),}
             data.push(ds)
          }
       }
@@ -1846,7 +1846,7 @@ module.exports = {
       const res = await db.query(sql);
       if(res && res.length > 0){
          for(var row of res){
-            const ds = { 'TRANSACTION TYPE':row.transtitle, 'NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.created_at).format('MMM-DD-YYYY').toUpperCase(),}
+            const ds = { 'TRANSACTION TYPE':row.transtitle, 'NAME':row.name && row.name.toUpperCase(),'CURRENCY':row.currency,'AMOUNT': row.amount ,'REFERENCE':row.transtag,'TRANSACTION DATE': moment(row.transdate).format('MMM-DD-YYYY').toUpperCase(),}
             data.push(ds)
          }
       }
