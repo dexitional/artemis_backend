@@ -2189,13 +2189,10 @@ generateIndexNo : async (req,res) => {
     try{
         const refno = req.body.refno;
         var resp = await Student.fetchStProfile(refno);
-        console.log(resp)
         if(resp && resp.length > 0 && (resp[0].indexno == 'UNIQUE' || resp[0].indexno == null)){
-          
             var indexNo = await SSO.generateIndexNo(refno);
             var ups;
             var email;
-            console.log(indexNo)
             if(!resp[0].institute_email){
               const username = getUsername(resp[0].fname,resp[0].lname)
               email = `${username}@st.aucc.edu.gh`

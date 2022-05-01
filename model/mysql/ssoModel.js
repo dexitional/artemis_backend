@@ -2467,7 +2467,6 @@ module.exports = {
          if(!st[0].code) return null
          const prefix = `${st[0].prefix.trim()}${st[0].code}${st[0].stype}`
          var newIndex, resp, no;
-         
          const sm = await db.query("select indexno,prog_count from ais.student where indexno like '"+prefix+"%' order by prog_count desc limit 1");
          if(sm && sm.length > 0){
             no = parseInt(sm[0].prog_count)+1;
@@ -2483,11 +2482,20 @@ module.exports = {
             no = 1
             newIndex = `${prefix}00${no}`
          }
-
+         
          while(true){
             const sf = await db.query("select indexno from ais.student where indexno = '"+newIndex+"'");
-            if(sf && sf.length <= 0) break;
+            if(sf && sf.length == 0) break;
             no++
+            // Regenerate or Re-compute Index Number
+            var newNo;
+            switch(no.toString().length){
+               case 1: newNo = `00${no}`; break;
+               case 2: newNo = `0${no}`; break;
+               case 3: newNo = `${no}`; break;
+               default: newNo = `${no}`; break;
+             }
+             newIndex = `${prefix}${newNo}`
          }
          resp = await db.query("update ais.student set ? where refno = '"+refno+"'",{ indexno: newIndex, prog_count: no });
          if(resp) return newIndex
