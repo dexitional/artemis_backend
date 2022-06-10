@@ -62,12 +62,10 @@ module.exports = {
         var sendcode;
         if(ups){
           const person = await SSO.fetchUser(user[0].uid,user[0].group_id)
-          
           // Send OTP-SMS
           const msg = `Hi ${person[0].fname}, Reset OTP code is ${otp}`
           const sm = await sms(person && person[0].phone,msg)
           sendcode = sm.code
-          console.log(sm.code)
           //if(sm && sm.code == '1000') sendcode = '1000'
 
         }
@@ -235,12 +233,12 @@ module.exports = {
 
   fetchSessions : async (req,res) => {
     try{
-        var sessions = await SSO.fetchSessions();
-        if(sessions && sessions.length > 0){
-            res.status(200).json({success:true, data:sessions});
-        }else{
-            res.status(200).json({success:false, data: null, msg:"No records!"});
-        }
+      var sessions = await SSO.fetchSessions();
+      if(sessions && sessions.length > 0){
+        res.status(200).json({success:true, data:sessions});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
     }catch(e){
         console.log(e)
         res.status(200).json({success:false, data: null, msg: "Something went wrong error !"});
@@ -249,7 +247,6 @@ module.exports = {
 
 
   postSession : async (req,res) => {
-    console.log(req.body);
       try{
         const { session_id } = req.body;
         if(!req.body.exam_start || req.body.exam_start == 'Invalid date') delete req.body.exam_start
@@ -1263,7 +1260,7 @@ fetchScoresheets : async (req,res) => {
       var session = await SSO.getActiveSessionByMode(1);
       //const sid = stream != 'null' || !stream ? stream : session && session.id
       const sid = stream && stream != 'null' ? stream : session && session.id
-      console.log(sid,unit_id,page,keyword)
+      //console.log(sid,unit_id,page,keyword)
       var sheets = await SSO.fetchScoresheets(sid,unit_id,page,keyword);
      
       if(sheets && sheets.data.length > 0){
@@ -1500,7 +1497,13 @@ fetchStruct : async (req,res) => {
   try{
       const page = req.query.page;
       const keyword = req.query.keyword;
-      var sheets = await SSO.fetchStruct(page,keyword);
+      const unit_id = req.query.role;
+      const stream = req.query.stream;
+      
+      var session = stream && stream != null ? await SSO.getActiveSessionById(stream) : await SSO.getActiveSessionByMode(1);
+      const sem = session && session.academic_sem
+      
+      var sheets = await SSO.fetchStruct(sem,unit_id,page,keyword);
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
       }else{

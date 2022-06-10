@@ -1213,17 +1213,32 @@ module.exports = {
 
    // CURRICULUM -AIS
 
-   fetchStruct : async (page,keyword) => {
-      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,t.title as unit_name from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id"
-      var cql = "select count(*) as total from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id";
+   fetchStruct : async (sem,unit_id,page,keyword) => {
+      var sql = "select s.*,p.short as program_name,m.title as major_name,upper(c.title) as course_name,c.course_code,c.credit,t.title as unit_name from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id where mod(s.semester,2) = "+(sem == 2 ? 0 : 1)
+      var cql = "select count(*) as total from utility.structure s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.unit t on t.id = s.unit_id where mod(s.semester,2) = "+(sem == 2 ? 0 : 1);
       
+      var units = unit_id;
+      if(unit_id){
+         var unit = await db.query("select * from utility.unit where id = "+unit_id)
+         if(unit && unit.length > 0){
+            if(unit[0].level == 2){
+               const um = await db.query("select * from utility.unit where lev2_id = "+unit_id)
+               if(um && um.length > 0) units = um.map(m => m.id).join(',')
+            }
+         }
+      }
       const size = 10;
       const pg  = parseInt(page);
       const offset = (pg * size) || 0;
       
+      if(units){
+         sql += ` and find_in_set(s.unit_id,'${units}') > 0 `
+         cql += ` and find_in_set(s.unit_id,'${units}') > 0 `
+      }
+
       if(keyword){
-          sql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%' `
-          cql += ` where c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%'  `
+         sql += ` and (c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%') `
+         cql += ` and (c.title like '%${keyword.toLowerCase()}%' or c.course_code like '%${keyword}%' or p.short like '%${keyword}%' or t.title like '%${keyword}%')  `
       }
 
       sql += ` order by s.prog_id,s.semester,s.type`
@@ -1313,6 +1328,11 @@ module.exports = {
    
    getActiveSessionByMode : async (mode_id) => {
       const res = await db.query("select * from utility.session where tag = 'MAIN' and `default` = 1 and mode_id = "+mode_id);
+      return res && res[0]
+   },
+
+   getActiveSessionById : async (id) => {
+      const res = await db.query("select * from utility.session where id = "+id);
       return res && res[0]
    },
 
