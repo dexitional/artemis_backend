@@ -974,9 +974,9 @@ module.exports = {
 
    // SCORESHEETS - AIS MODELS
 
-   fetchScoresheets : async (session_id,unit_id,page,keyword) => {
-      var sql = "select * from ais.fetchsheets where session_id = "+session_id
-      var cql = "select count(*) as total from ais.fetchsheets where session_id = "+session_id;
+   fetchScoresheets : async (streams,unit_id,page,keyword) => {
+      var sql = "select * from ais.fetchsheets where find_in_set(session_id,'"+streams+"') > 0 "
+      var cql = "select count(*) as total from ais.fetchsheets where find_in_set(session_id,'"+streams+"') > 0 "
      
       var units = unit_id;
       if(unit_id){
@@ -1006,7 +1006,6 @@ module.exports = {
       sql += ` order by session_id desc,prog_id,semester,major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
       
-      console.log(sql);
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -1032,8 +1031,7 @@ module.exports = {
 
       sql += ` order by session_id desc,prog_id,semester,major_id`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      console.log(sql);
-
+      
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -1243,7 +1241,6 @@ module.exports = {
 
       sql += ` order by s.prog_id,s.semester,s.type`
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`
-      
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
@@ -1273,7 +1270,6 @@ module.exports = {
 
 
    // CALENDAR -AIS
-
 
    fetchCalendar : async (page,keyword) => {
       var sql = "select s.* from utility.session s"

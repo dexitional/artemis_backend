@@ -1255,14 +1255,25 @@ fetchScoresheets : async (req,res) => {
       const page = req.query.page;
       const keyword = req.query.keyword;
       const unit_id = req.query.role;
-      const stream = req.query.stream;
+      const stream_main = req.query.stream;
 
+      var stream = new Set();
+      var streams = '',i = 0;
+      
       var session = await SSO.getActiveSessionByMode(1);
-      //const sid = stream != 'null' || !stream ? stream : session && session.id
-      const sid = stream && stream != 'null' ? stream : session && session.id
+      stream_main && stream_main != 'null' ?  stream.add(stream_main) :  stream.add(session && session.id)
+      
+
+      for(var s of (await SSO.fetchEntriesSessions())){
+         stream.add(s.id)
+      }
+      stream.forEach(m => {
+          streams += m+(i == stream.size-1 ? '':',')
+          i++;
+      })
       //console.log(sid,unit_id,page,keyword)
-      var sheets = await SSO.fetchScoresheets(sid,unit_id,page,keyword);
-     
+      
+      var sheets = await SSO.fetchScoresheets(streams,unit_id,page,keyword);
       if(sheets && sheets.data.length > 0){
         res.status(200).json({success:true, data:sheets});
       }else{
