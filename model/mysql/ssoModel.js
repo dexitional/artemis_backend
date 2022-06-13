@@ -1009,6 +1009,31 @@ module.exports = {
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
+
+      // Update Registered Students & Assessment Completion Percentage
+      if(res && res.length > 0){
+         res.forEach(async row => {
+            //let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and (find_in_set(p.unit_id,'${units}') > 0 or p.unit_id is null)`
+            let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`
+            const ares = await db.query(asl);
+            const num = ares.length;
+            var ratio = 0;
+            if(num > 0){
+               var sum = 0;
+               for(let s of ares){
+                 if(s.total_score && parseInt(s.total_score > 0)) sum += 1
+               }
+               ratio = ((sum / num) * 100).toFixed(2)
+            }
+            
+            const data = { regcount: num, complete_ratio: ratio }
+            console.log(data, asl)
+
+            await db.query("update ais.sheet set ? where id = "+row.id,data)
+         })
+      }
+     
+
       return {
          totalPages: count,
          totalData: ces[0].total,
@@ -1035,6 +1060,28 @@ module.exports = {
       const ces = await db.query(cql);
       const res = await db.query(sql);
       const count = Math.ceil(ces[0].total/size)
+
+     // Update Registered Students & Assessment Completion Percentage
+     if(res && res.length > 0){
+         res.forEach(async row => {
+            //let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and (find_in_set(p.unit_id,'${units}') > 0 or p.unit_id is null)`
+            let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`
+            const ares = await db.query(asl);
+            const num = ares.length;
+            var ratio = 0;
+            if(num > 0){
+               var sum = 0;
+               for(let s of ares){
+                  if(s.total_score && s.total_score > 0) sum += 1
+               }
+               ratio = (sum / num) * 100
+            }
+            
+            const data = { regcount: num, complete_ratio: ratio}
+            await db.query("update ais.sheet set ? where id = "+row.id,data)
+         })
+      }
+  
 
       return {
          totalPages: count,

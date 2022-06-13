@@ -264,7 +264,7 @@ Router.get('/alertapplicants', async(req,res)=>{
 // SCRIPTS - CREATE VIEWS
 Router.get('/createviews', async(req,res)=>{
   // FETCH SCORESHEETS VIEW
-  const v1 = await db.query("create view fetchsheets as select s.*,p.short as program_name,m.title as major_name,c.title as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id")
+  const v1 = await db.query("create view fetchsheets as select s.*,p.short as program_name,m.title as major_name,c.title as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name,s.regcount,s.complete_ratio from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id")
   // FETCH STUDENTS VIEW
   const v2 = await db.query("create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,j.title as department from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id")
   // FETCH REGISTRATION LOGS VIEW
