@@ -850,7 +850,7 @@ module.exports = {
       }
    },
 
-   fetchAISStudentReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type }) => {
+   fetchAISStudentReport : async ({ prog_id,major_id,year_group,session,gender,entry_group,defer_status,type,asession }) => {
       var sql = "select * from ais.fetchstudents where complete_status = 0"
       var res;
       if(prog_id) sql += ` and prog_id = ${prog_id}`
@@ -860,6 +860,7 @@ module.exports = {
       if(gender) sql += ` and gender = '${major_id}'`
       if(entry_group) sql += ` and entry_group = '${entry_group}'`
       if(defer_status) sql += ` and defer_status = ${defer_status}`
+      if(asession) sql += ` and date_format(doa,'%m%y') = '${asession}'`
       
       sql += ` order by prog_id,semester,major_id,session,lname asc`
       res = await db.query(sql);
@@ -2842,8 +2843,9 @@ module.exports = {
       const majs = await db.query("select m.*,p.short as program_name,p.code from ais.major m left join utility.program p on m.prog_id = p.id where m.status = 1");
       const depts = await db.query("select * from utility.unit where type = 'ACADEMIC' and level = '3' and active = '1'");
       const courses = await db.query("select * from utility.course where status = 1 order by title");
+      const sessions = await db.query("select *,date_format(admission_date,'%m%y') as admission_code from P06.session where status = 1");
       //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
-      if(progs && majs) return { programs:progs,majors:majs, departments:depts, courses }
+      if(progs && majs) return { programs:progs,majors:majs, departments:depts, courses,sessions }
       return null;
    },
 
