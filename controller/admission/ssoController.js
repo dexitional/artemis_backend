@@ -30,7 +30,6 @@ module.exports = {
         var photo = await SSO.fetchPhoto(user[0].uid); // Photo
         var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
         var userdata = await SSO.fetchUser(user[0].uid, user[0].group_id); // UserData
-        console.log(userdata);
 
         userdata[0] = userdata
           ? {
@@ -1912,14 +1911,15 @@ module.exports = {
         ? stream.add(stream_main)
         : stream.add(session && session.id);
 
+      /*
       for (var s of await SSO.fetchEntriesSessions()) {
         stream.add(s.id);
       }
+      */
       stream.forEach((m) => {
         streams += m + (i == stream.size - 1 ? "" : ",");
         i++;
       });
-      //console.log(sid,unit_id,page,keyword)
 
       var sheets = await SSO.fetchScoresheets(streams, unit_id, page, keyword);
       if (sheets && sheets.data.length > 0) {
@@ -2439,6 +2439,24 @@ module.exports = {
   fetchStreams: async (req, res) => {
     try {
       var resp = await SSO.fetchStreams();
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  fetchSheetStreams: async (req, res) => {
+    try {
+      var resp = await SSO.fetchSheetStreams();
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {

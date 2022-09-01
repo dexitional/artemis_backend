@@ -156,6 +156,7 @@ Router.get("/ais/deferment/approve/:id/:sno", SSOController.approveDefer);
 Router.get("/ais/deferment/resume/:id/:sno", SSOController.resumeDefer);
 // STREAMS
 Router.get("/ais/streams", SSOController.fetchStreams);
+Router.get("/ais/sheetstreams", SSOController.fetchSheetStreams);
 
 /* FMS MODULE ROUTES */
 
@@ -301,7 +302,7 @@ Router.get("/createviews", async (req, res) => {
   );
   // FETCH STUDENTS VIEW
   const v2 = await db.query(
-    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,j.title as department from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
+    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,m.title as major_name,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,j.title as department,p.scheme_id from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
   );
   // FETCH REGISTRATION LOGS VIEW
   const v3 = await db.query(
