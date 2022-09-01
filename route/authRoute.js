@@ -114,6 +114,7 @@ Router.get("/ais/switchaccess/:tag", SSOController.switchAccount);
 Router.get("/ais/regdata/", SSOController.fetchRegsData);
 Router.get("/ais/reglist/", SSOController.fetchRegsList);
 Router.get("/ais/regmount/", SSOController.fetchMountList);
+Router.post("/ais/backlog", SSOController.processBacklog);
 // SCORESHEETS routes
 Router.get("/ais/scoresheets/", SSOController.fetchScoresheets);
 Router.get("/ais/myscoresheets/", SSOController.fetchMyScoresheets);

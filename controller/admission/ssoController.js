@@ -799,6 +799,7 @@ module.exports = {
               vendor_id,
               created_by,
             };
+            console.log(dt);
             resp = await SSO.insertVoucher(dt);
           }
         }
@@ -1862,6 +1863,24 @@ module.exports = {
       var regs = await SSO.fetchMountList(session.academic_sem);
       if (regs && regs.length > 0) {
         res.status(200).json({ success: true, data: { data: regs, session } });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  processBacklog: async (req, res) => {
+    try {
+      var regs = await SSO.processBacklog(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: { data: regs } });
       } else {
         res
           .status(200)

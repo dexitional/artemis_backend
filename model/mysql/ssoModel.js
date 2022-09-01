@@ -1657,6 +1657,33 @@ module.exports = {
     return data;
   },
 
+  processBacklog: async (data) => {
+    const { session_id, semester, prog_id, year_group, type } = data;
+    // Fetch student for filters
+
+    // Determine Streams for Year 1 - Using doa and choose session_id for stream
+    // Send Back Report of unqualified Year 1 - for selected streams
+    const sts = await db.query(
+      `select *,date_format(doa,"%m") as mon from ais.fetchstudents where prog_id = ${prog_id} and ceil(semester/2) = ${year_group} and indexno <> 'UNIQUE'`
+    );
+    const sall = await Promise.all(
+      sts?.map(async (st) => {
+        const sx = await db.query(
+          `select * from utility.session where session_id = ${session_id} and indexno = '${st.indexno}'`
+        );
+        // If semester in [1,2] and mon == '01' && session.stream == ' -- Get January streams session
+        // Use Main streams session
+        const sm = await db.query(
+          `select * from ais.assessment where session_id = ${session_id} and indexno = '${st.indexno}'`
+        );
+
+        st.course_count = sm?.length || 0;
+        return st;
+      })
+    );
+    return sall;
+  },
+
   // SCORESHEETS - AIS MODELS
 
   fetchScoresheets: async (streams, unit_id, page, keyword) => {
