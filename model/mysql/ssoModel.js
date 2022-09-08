@@ -3497,6 +3497,63 @@ module.exports = {
     }
   },
 
+  // PROGRESS STUDENT
+  progressLevel: async (sid) => {
+    // GET CURRENT YEAR
+    // GET CURRENT SEMESTER OF EVERY ACTIVE & UNDEFFRED STUDENT
+    /* select * from ais.fetchstudents where */
+    // CHECK PROGRAM DURATION - Level increment must not exceed duration else set to 0
+
+    const ss = await db.query(
+      "select s.*,p.indexno from utility.session s left join ais.progression p on s.id = p.session_id where id = " +
+        sid
+    );
+    if (ss && ss.length > 0 && !ss[0].indexno) {
+      const { tag, academic_year, academic_sem } = ss[0];
+      const year = academic_year.split("/")[1];
+      const query =
+        tag == "MAIN"
+          ? `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where !((date_format(doa,'%m') = '01' and year(doa) = '${year}')) and (s.complete_status = 0 and s.defer_status = 0)`
+          : `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where date_format(doa,'%m') = '01' and year(doa) = '${year}' and s.complete_status = 0 and s.defer_status = 0`;
+      const st = await db.query(query);
+      if (st && st.length > 0) {
+        for (s of st) {
+          const chk = await db.query(
+            "select * from ais.progression where indexno = '" +
+              s.indexno +
+              "' and session_id = " +
+              sid
+          );
+          if (chk && chk.length <= 0) {
+            var { semester, semesters, complete_status, indexno } = s;
+            if (s) {
+              const sem = semester + 2;
+              if (sem <= semesters) {
+                semester = sem;
+                complete_status = 0;
+              } else {
+                semester = 0;
+                complete_status = 1;
+              }
+              // Update Student Profile
+              await db.query(
+                "update ais.student set ? where indexno = '" + indexno + "'",
+                { semester, complete_status }
+              );
+              // Log Progression
+              await db.query("insert into ais.progression set ?", {
+                session_id,
+                indexno,
+                semester,
+                meta: JSON.stringify(s),
+              });
+            }
+          }
+        }
+      }
+    }
+  },
+
   // CORRECT STUDENT NAMES
   runUpgradeNames: async () => {
     var count = 0;

@@ -1519,6 +1519,10 @@ module.exports = {
     } else {
       req.body.doc = moment(req.body.doc).format("YYYY-MM-DD");
     }
+    if (req.body.indexno == "") {
+      req.body.indexno = null;
+      req.body.prog_count = 0;
+    }
     delete req.body.uid;
     delete req.body.flag_locked;
     delete req.body.flag_disabled;
@@ -2418,6 +2422,26 @@ module.exports = {
     try {
       const { session_id } = req.body;
       var resp = await SSO.stageSheet(session_id);
+      console.log(resp);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  progressLevel: async (req, res) => {
+    try {
+      const { session_id } = req.body;
+      var resp = await SSO.progressLevel(session_id);
       console.log(resp);
       if (resp) {
         res.status(200).json({ success: true, data: resp });

@@ -139,6 +139,7 @@ Router.post("/ais/calendar", SSOController.postCalendar);
 Router.delete("/ais/calendar/:id", SSOController.deleteCalendar);
 Router.get("/ais/setcalendar/:id", SSOController.activateCalendar);
 Router.post("/ais/stagesheet", SSOController.stageSheet);
+Router.post("/ais/progress", SSOController.progressLevel);
 // INFORMER routes
 Router.get("/ais/informer/", SSOController.fetchInformer);
 Router.post("/ais/informer", SSOController.postInformer);
