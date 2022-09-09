@@ -1107,6 +1107,25 @@ module.exports = {
     }
   },
 
+  switchVoucher: async (req, res) => {
+    try {
+      const vs = await SSO.switchVoucher(req.body);
+      if (vs) {
+        res.status(200).json({ success: true, data: vs });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "PROCESS FAILED !" });
+      }
+    } catch (e) {
+      res.status(200).json({
+        success: false,
+        data: null,
+        msg: "SOMETHING WRONG HAPPENED !",
+      });
+    }
+  },
+
   reAdmitApplicant: async (req, res) => {
     try {
       const vs = await SSO.reAdmitApplicant(req.body);
@@ -2747,6 +2766,26 @@ module.exports = {
       const { id, refno } = req.body;
       console.log(refno);
       const resp = await SSO.revokeBill(id, refno);
+      if (resp) {
+        await SSO.updateBill(id, { post_status: 0 });
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Bill not revoked!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  attachBill: async (req, res) => {
+    try {
+      const { id, refno } = req.body;
+      const resp = await SSO.attachBill(id, refno);
       if (resp) {
         await SSO.updateBill(id, { post_status: 0 });
         res.status(200).json({ success: true, data: resp });

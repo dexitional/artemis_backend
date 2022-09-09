@@ -88,6 +88,8 @@ Router.get("/ams/fresherlist", SSOController.fetchFreshersData);
 Router.get("/ams/deletefresher/:serial", SSOController.removeFresherData);
 Router.post("/ams/admitnow", SSOController.admitApplicant);
 Router.post("/ams/admitfix", SSOController.reAdmitApplicant);
+Router.post("/ams/switchvoucher", SSOController.switchVoucher);
+
 // LETTERS routes
 Router.get("/ams/letters", SSOController.fetchLetters);
 Router.post("/ams/letters", SSOController.postLetter);
@@ -168,6 +170,7 @@ Router.get("/fms/sbills/receivers/:bid", SSOController.fetchBillReceivers);
 Router.post("/fms/sbills", SSOController.postBill);
 Router.post("/fms/revokebill", SSOController.revokeBill);
 Router.post("/fms/revokestbill", SSOController.revokeBill);
+Router.post("/fms/attachstbill", SSOController.attachBill);
 Router.delete("/fms/sbills/:id", SSOController.deleteBill);
 Router.post("/fms/sendbill", SSOController.sendBill);
 

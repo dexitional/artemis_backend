@@ -842,6 +842,17 @@ module.exports = {
     return { data: res };
   },
 
+  switchVoucher: async (data) => {
+    const { voucher, session } = data;
+    const res = await db.query(
+      "update P06.voucher set session_id = " +
+        session +
+        " where serial = " +
+        serial
+    );
+    return res;
+  },
+
   admitApplicant: async (data) => {
     console.log(data);
     // Fetch active session for acdemic session (vs )
@@ -2747,6 +2758,37 @@ module.exports = {
       );
     } else {
       resp = await db.query("delete from fms.studtrans where bill_id = " + id);
+    }
+    return resp;
+  },
+
+  attachBill: async (id, refno) => {
+    var resp;
+    if (refno) {
+      const bl = await db.query("select * from fms.billinfo where bid = " + id);
+      const st = await db.query(
+        "select * from ais.student where refno = '" + refno + "'"
+      );
+      if (bl && st && bl.length > 0 && st.length > 0) {
+        const isExist = await db.query(
+          "select * from fms.studtrans where refno = '" +
+            refno +
+            "' and bill_id = " +
+            id +
+            " and amount > 0"
+        );
+        if (isExist && isExist.length <= 0) {
+          const ins = await db.query("insert into fms.studtrans set ?", {
+            narrative: bl[0].narrative,
+            bill_id: id,
+            amount: bl[0].ammount,
+            refno: refno,
+            session_id: bl[0].session_id,
+            currency: bl[0].currency,
+          });
+          if (ins.insertId > 0) resp = 1;
+        }
+      }
     }
     return resp;
   },
