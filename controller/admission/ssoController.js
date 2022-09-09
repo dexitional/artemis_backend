@@ -2361,6 +2361,7 @@ module.exports = {
     req.body.mode_id = 1;
 
     try {
+      console.log(req.body);
       var resp =
         id <= 0
           ? await SSO.insertAISCalendar(req.body)
@@ -2442,7 +2443,6 @@ module.exports = {
     try {
       const { session_id } = req.body;
       var resp = await SSO.progressLevel(session_id);
-      console.log(resp);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {

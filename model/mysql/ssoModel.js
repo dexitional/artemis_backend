@@ -3499,17 +3499,12 @@ module.exports = {
 
   // PROGRESS STUDENT
   progressLevel: async (sid) => {
-    // GET CURRENT YEAR
-    // GET CURRENT SEMESTER OF EVERY ACTIVE & UNDEFFRED STUDENT
-    /* select * from ais.fetchstudents where */
-    // CHECK PROGRAM DURATION - Level increment must not exceed duration else set to 0
-
     const ss = await db.query(
-      "select s.*,p.indexno from utility.session s left join ais.progression p on s.id = p.session_id where id = " +
+      "select s.*,p.indexno from utility.session s left join ais.progression p on s.id = p.session_id where s.id = " +
         sid
     );
     if (ss && ss.length > 0 && !ss[0].indexno) {
-      const { tag, academic_year, academic_sem } = ss[0];
+      const { tag, academic_year } = ss[0];
       const year = academic_year.split("/")[1];
       const query =
         tag == "MAIN"
@@ -3542,7 +3537,7 @@ module.exports = {
               );
               // Log Progression
               await db.query("insert into ais.progression set ?", {
-                session_id,
+                session_id: sid,
                 indexno,
                 semester,
                 meta: JSON.stringify(s),
@@ -3550,8 +3545,10 @@ module.exports = {
             }
           }
         }
+        return true;
       }
     }
+    return null;
   },
 
   // CORRECT STUDENT NAMES
