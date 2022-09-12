@@ -843,12 +843,13 @@ module.exports = {
   },
 
   switchVoucher: async (data) => {
+    console.log(data);
     const { voucher, session } = data;
     const res = await db.query(
       "update P06.voucher set session_id = " +
         session +
         " where serial = " +
-        serial
+        voucher
     );
     return res;
   },
