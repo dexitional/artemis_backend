@@ -77,9 +77,9 @@ module.exports = {
         "')"
     */
     const query =
-      "select *,date_format(doa,'%m') as admission_code from ais.fetchstudents where (s.refno = '" +
+      "select *,date_format(doa,'%m') as admission_code from ais.fetchstudents where (refno = '" +
       refno +
-      "' or s.indexno = '" +
+      "' or indexno = '" +
       refno +
       "')";
 
