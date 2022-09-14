@@ -68,13 +68,22 @@ module.exports = {
 
   fetchStudentProfile: async (refno) => {
     var session;
-    const st = await db.query(
-      "select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '" +
+
+    /* 
+       "select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '" +
         refno +
         "' or s.indexno = '" +
         refno +
         "')"
-    );
+    */
+    const query =
+      "select *,date_format(doa,'%m') as admission_code from ais.fetchstudents where (s.refno = '" +
+      refno +
+      "' or s.indexno = '" +
+      refno +
+      "')";
+
+    const st = await db.query(query);
 
     if (st && st.length > 0) {
       const sx = await db.query(
