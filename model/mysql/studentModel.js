@@ -75,12 +75,13 @@ module.exports = {
         refno +
         "')"
     );
-    const sx = await db.query(
-      "select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1"
-    );
-    if (sx && sx.length == 1) session = sx[0];
-    if (sx && sx.length > 1) {
-      if (st && st.length > 0) {
+
+    if (st && st.length > 0) {
+      const sx = await db.query(
+        "select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1"
+      );
+      if (sx && sx.length == 1) session = sx[0];
+      if (sx && sx.length > 1) {
         if (st[0].semester <= 2 && st[0].admission_code == "01") {
           session = sx.find((r) => r.tag == "SUB");
         } else if (
@@ -93,8 +94,9 @@ module.exports = {
           session = sx.find((r) => r.tag == "MAIN");
         }
       }
+      return [{ ...st[0], ...session }];
     }
-    return [{ ...st[0], ...session }];
+    return null;
   },
 
   fetchStProfile: async (refno) => {

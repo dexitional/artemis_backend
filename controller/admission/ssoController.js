@@ -1240,6 +1240,7 @@ module.exports = {
         resp = await SSO.updateLetter(id, req.body);
       } else {
         // Insert
+        req.body.status = 0;
         resp = await SSO.insertLetter(req.body);
       }
 

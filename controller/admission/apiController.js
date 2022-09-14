@@ -117,7 +117,7 @@ module.exports = {
 
       /* VOUCHER SERVICE */
       if (serviceId == 1) {
-        if (!sessionId)
+        if (!sessionId || sessionId == "")
           res.status(200).json({
             success: false,
             data: null,
