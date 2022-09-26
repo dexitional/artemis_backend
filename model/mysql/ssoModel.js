@@ -1748,6 +1748,85 @@ module.exports = {
     return sall;
   },
 
+  processSingleBacklog: async (data) => {
+    const { session_id, semester, prog_id, year } = data;
+    // Fetch student for filters
+
+    // Determine Streams for Year 1 - Using doa and choose session_id for stream
+    // Send Back Report of unqualified Year 1 - for selected streams
+    const sx = await db.query(
+      `select * from utility.session where session_id = ${session_id}`
+    );
+    const sts = await db.query(
+      `select *,date_format(doa,"%m") as mon from ais.fetchstudents where prog_id = ${prog_id} and ceil(semester/2) = ${year_group} and indexno <> 'UNIQUE' and complete_status = 0 and defer_status = 0`
+    );
+    const sall = await Promise.all(
+      sts?.map(async (st) => {
+        // If semester in [1,2] and mon == '01' && session.stream == ' -- Get January streams session
+        // Use Main streams session
+        const sm = await db.query(
+          `select * from ais.assessment where session_id = ${session_id} and indexno = '${st.indexno}'`
+        );
+
+        if (sm && sm.length <= 0) {
+          /* FETCH MOUNTED COURSES */
+
+          const { major_id, indexno, scheme_id } = st;
+          var courses = [];
+          const ce = await Student.fetchStudentCE(prog_id, semester); // Get Core & General Electives
+          const me = await Student.fetchStudentME(major_id, prog_id, semester); // Get Majoring Electives
+          //const rt = await Student.fetchStudentRT(indexno); // Get Trailed Courses
+          if (ce.length > 0) {
+            for (var row of ce) {
+              courses.push(row.course_id);
+              courses.push({
+                course_id: row.course_id,
+                credit: row.credit,
+                semester,
+                indexno,
+                class_score: 0,
+                exam_score: 0,
+                total_score: 0,
+                score_type: "N",
+                session_id,
+                scheme_id,
+                flag_visible: 0,
+              });
+            }
+          }
+          if (me.length > 0) {
+            for (var row of me) {
+              courses.push(row.course_id);
+              courses.push({
+                course_id: row.course_id,
+                credit: row.credit,
+                semester,
+                indexno,
+                class_score: 0,
+                exam_score: 0,
+                total_score: 0,
+                score_type: "N",
+                session_id,
+                scheme_id,
+                flag_visible: 0,
+              });
+            }
+          }
+          /* REGISTER MOUNTED COURSES */
+          if (courses.length > 0) {
+            const rem = await Student.removeRegData(indexno, session_id);
+            if (rem) {
+              for (var row of courses) {
+                resp = await Student.insertRegData(row);
+              }
+            }
+          }
+        }
+      })
+    );
+    return sall;
+  },
+
   // SCORESHEETS - AIS MODELS
 
   fetchScoresheets: async (streams, unit_id, page, keyword) => {

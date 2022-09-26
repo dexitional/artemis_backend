@@ -1943,6 +1943,24 @@ module.exports = {
     }
   },
 
+  processSingleBacklog: async (req, res) => {
+    try {
+      var regs = await SSO.processSingleBacklog(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: { data: regs } });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
   // SCOREHEETS CONTROL - AIS
 
   fetchScoresheets: async (req, res) => {
