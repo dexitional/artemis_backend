@@ -100,6 +100,8 @@ Router.get("/ams/entrance", SSOController.fetchEntrance);
 Router.post("/ams/entrance", SSOController.postEntrance);
 Router.delete("/ams/entrance/:id", SSOController.deleteEntrance);
 Router.get("/ams/viewresult/:serial", SSOController.viewEntrance);
+// ADMISSION REPORTS
+Router.post("/ams/reports", SSOController.postAdmisssionReport);
 
 /* AIS MODULE ROUTES */
 
@@ -117,6 +119,7 @@ Router.get("/ais/regdata/", SSOController.fetchRegsData);
 Router.get("/ais/reglist/", SSOController.fetchRegsList);
 Router.get("/ais/regmount/", SSOController.fetchMountList);
 Router.post("/ais/backlog", SSOController.processBacklog);
+Router.post("/ais/singlebacklog", SSOController.processSingleBacklog);
 // SCORESHEETS routes
 Router.get("/ais/scoresheets/", SSOController.fetchScoresheets);
 Router.get("/ais/myscoresheets/", SSOController.fetchMyScoresheets);

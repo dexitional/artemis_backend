@@ -1297,6 +1297,32 @@ module.exports = {
     }
   },
 
+  // ADMISSION REPORTS
+  postAdmisssionReport: async (req, res) => {
+    try {
+      const { prog_id, gender } = req.body;
+      console.log(req.body);
+      var resp = await SSO.AdmissionReport({
+        gender,
+        prog_id,
+      });
+      console.log(resp);
+
+      if (resp) {
+        res.status(200).json({ success: true, ...resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Data found!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
   // DEFERMENT CONTROLS
 
   fetchDefer: async (req, res) => {

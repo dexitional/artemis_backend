@@ -3195,6 +3195,23 @@ module.exports = {
     return { data, fileName };
   },
 
+  AdmissionReport: async ({ prog_id, gender }) => {
+    var data = [],
+      fileName = `ADMISSION REPORT `;
+    var sql =
+      "select a.serial as 'SERIAL/APPLICANT ID/STUDENT ID',concat(p.fname,' ',p.lname) as 'FULL NAME',p.gender as 'GENDER',x.`short` as 'PROGRAM OF STUDY',p.citizen_country as 'COUNTRY',p.session_mode as 'MODE OF STUDY',p.phone as 'CONTACT',a.username as 'STUDENT MAIL', a.password as 'STUDENT PASSWORD' from P06.admitted a left join P06.session s on a.admit_session = s.session_id left join P06.step_profile p on p.serial = a.serial left join utility.program x on a.prog_id = x.id where s.status = 1";
+    if (gender) sql += " and p.gender = '" + gender + "'";
+    if (prog_id) sql += " and a.prog_id = " + prog_id;
+
+    sql += " order by a.group_id,a.prog_id";
+    console.log(sql);
+    const res = await db.query(sql);
+    if (res && res.length > 0) {
+      data = res;
+    }
+    return { data, fileName };
+  },
+
   setupSchoresheet: async () => {
     // Diploma Sessions -  M, Undergrat Sessions - M,E,W, Postgrat Sessions - W
     // Session Groups - Main stream, sub stream
