@@ -245,7 +245,7 @@ module.exports = {
 
   insertRegData: async (data) => {
     // Core & Non-Major Electives
-    const res = await db.query("insert into ais.assessment set ?", data);
+    const res = await db.query("insert into ais.assessment set ? ", data);
     return res;
   },
 
