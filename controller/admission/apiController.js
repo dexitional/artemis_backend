@@ -10,6 +10,7 @@ const sms = require("../../config/sms");
 const API = require("../../model/mysql/apiModel");
 const Student = require("../../model/mysql/studentModel");
 const SSO = require("../../model/mysql/ssoModel");
+const { decodeBase64Image } = require("../../middleware/util");
 
 module.exports = {
   loadservices: async (req, res) => {
@@ -166,6 +167,7 @@ module.exports = {
 
         /* OTHER PAYMENT SERVICE (ACADEMIC FEES, RESIT, GRADUATION) */
       } else {
+        const st = await Student.fetchStudentProfile(studentId);
         const ins = await SSO.sendTransaction(dt);
         if (ins) {
           if (serviceId == 2) {
@@ -176,6 +178,31 @@ module.exports = {
               amount: -1 * amountPaid,
               currency,
               narrative: `Online Fees Payment, StudentID: ${studentId}`,
+            };
+            const insm = await SSO.savePaymentToAccount(dt);
+            // Send SMS to Buyer
+            //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
+            //if(insm) await sms(buyerPhone,msg)
+          }
+
+          if (serviceId == 3) {
+            // Retire Number of Resit Papers
+            const resit_charge = await Student.fetchResitAccount(st[0].indexno);
+            const pay_count = Math.floor(resit_charge % amountPaid);
+            const resits = await SSO.fetchUnpaidResits(st[0].indexno,pay_count)
+            let count = 0;
+            for(const rs of resits){
+              // Update Paid Status of resit_data
+              const ups = await SSO.updateResitData(rs.id,{ paid:1 })
+              if(ups.affectedRows > 0) count += 1
+            }
+            // Send to studtrans tbl, If Payservice = Resit Fees
+            const dt = {
+              tid: ins.insertId,
+              refno: studentId,
+              amount: -1 * amountPaid,
+              currency,
+              narrative: `Resit Payment for ${pay_count} course(s), StudentID: ${studentId}`,
             };
             const insm = await SSO.savePaymentToAccount(dt);
             // Send SMS to Buyer

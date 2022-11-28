@@ -98,6 +98,26 @@ module.exports = {
     }
   },
 
+
+  // Resit
+
+  fetchResitSlip: async (req, res) => {
+    const indexno = req.query.indexno;
+    try {
+      var slip = await Student.fetchResitSlip(indexno);
+      if (slip && slip.length > 0) {
+        res.status(200).json({ success: true, data: slip });
+      } else {
+        res.status(200).json({ success: true, data: [], msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong!" });
+    }
+  },
+
   // Registration
 
   fetchStudentSlip: async (req, res) => {
@@ -152,8 +172,9 @@ module.exports = {
 
         const ce = await Student.fetchStudentCE(prog_id, semester); // Get Core & General Electives
         const me = await Student.fetchStudentME(major_id, prog_id, semester); // Get Majoring Electives
-        const rt = await Student.fetchStudentRT(indexno); // Get Trailed Courses
+        const rt = await Student.fetchStudentRT(indexno,session_semester); // Get Trailed Courses
         const mt = await Student.fetchRegMeta(prog_id, semester); // Get Registration
+        console.log(rt)
         if (ce.length > 0) {
           for (var row of ce) {
             if (row.type == "E")
@@ -176,7 +197,7 @@ module.exports = {
                   if(row.semester && (row.semester%2) == 0) courses.trail.push({...row, type:'R', selected:false, lock:0 })
                 }
                 */
-            if (session_semester == 1)
+            //if (session_semester == 1)
               courses.trail.push({
                 ...row,
                 type: "R",
@@ -196,7 +217,6 @@ module.exports = {
               elective_remark: `[ ADD ${mj.max_elective} ELECTIVES ONLY ]`,
             };
         }
-        console.log(courses);
         //...mt[0],
 
         res.status(200).json({ success: true, data: courses });
@@ -224,7 +244,7 @@ module.exports = {
       } = req.body;
       var resp;
       if (indexno) {
-        var courses = [];
+        var courses = [], resit_ids = [];
         if (core && core.length > 0) {
           // Core
           for (var row of core) {
@@ -266,7 +286,9 @@ module.exports = {
         if (trail && trail.length > 0) {
           // Trail
           for (var row of trail) {
-            if (row.selected || row.lock == 1)
+            const rem = Student.removeResitLog(row.resit_id);
+            if (row.selected || row.lock == 1){
+              /* NB: Resit Selected for Registration is First Logged in [resit_score] and (Appended or Replaced) in [assessment] on Approval in Assessment tbl
               courses.push({
                 course_id: row.course_id,
                 credit: row.credit,
@@ -280,6 +302,9 @@ module.exports = {
                 scheme_id,
                 flag_visible: 0,
               });
+              */
+              const ins = Student.insertResitLog(indexno, row.resit_id,session_id);
+            }
           }
         }
 
@@ -320,7 +345,6 @@ module.exports = {
   },
 
   // Results
-
   fetchStudentResults: async (req, res) => {
     const indexno = req.query.indexno;
     try {
@@ -339,7 +363,6 @@ module.exports = {
   },
 
   // Fees && Charges
-
   fetchStudentTrans: async (req, res) => {
     const refno = req.params.refno;
     try {

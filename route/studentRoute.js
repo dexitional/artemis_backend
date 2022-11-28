@@ -19,6 +19,8 @@ Router.get('/student/semesterslip', StudentController.fetchStudentSlip);
 Router.get('/student/semregslip', StudentController.fetchStudentSlipAIS)
 Router.get('/student/semesterreg', StudentController.fetchStudentReg);
 Router.post('/student/semesterreg', StudentController.postStudentReg);
+// RESIT routes
+Router.get('/student/resitslip', StudentController.fetchResitSlip);
 // RESULTS routes
 Router.get('/student/allresults', StudentController.fetchStudentResults);
 // FEES routes

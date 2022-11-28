@@ -6,7 +6,7 @@ var jwt = require("jsonwebtoken");
 const sha1 = require("sha1");
 const { customAlphabet } = require("nanoid");
 const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
-
+  
 /* Controllers */
 var ApplicantController = require("../controller/admission/applicantController");
 var SSOController = require("../controller/admission/ssoController");
@@ -163,6 +163,17 @@ Router.get("/ais/deferment/resume/:id/:sno", SSOController.resumeDefer);
 // STREAMS
 Router.get("/ais/streams", SSOController.fetchStreams);
 Router.get("/ais/sheetstreams", SSOController.fetchSheetStreams);
+// RESIT
+Router.get("/ais/resits", SSOController.fetchResits);
+Router.get("/ais/resitstreams", SSOController.fetchResitStreams);
+Router.get("/ais/resits/info/:id", SSOController.fetchResitInfo);
+Router.post("/ais/resits/score", SSOController.postResitScore);
+Router.post("/ais/resits/backlog", SSOController.postResitBacklog);
+Router.get("/ais/resits/register/:id", SSOController.registerResit);
+Router.get("/ais/resits/approve/:id", SSOController.approveResit);
+
+
+
 
 /* FMS MODULE ROUTES */
 
@@ -323,6 +334,10 @@ Router.get("/createviews", async (req, res) => {
   // FETCH VOUCHER TRANSACTIONS VIEW
   const v5 = await db.query(
     "create view fetchvouchs as select t.*,s.serial,trim(s.buyer_name) as name,s.buyer_phone,s.pin,s.sms_code,b.tag as tag,b.bank_account,m.title as transtitle from fms.transaction t left join fms.voucher_log s on s.tid = t.id left join fms.transtype m on m.id = t.transtype_id left join fms.bankacc b on b.id = t.bankacc_id where t.transtype_id = 1"
+  );
+  // FETCH RESIT VIEW
+  const v6 = await db.query(
+    "create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
   );
 });
 

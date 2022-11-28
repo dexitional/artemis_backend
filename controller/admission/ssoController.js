@@ -2560,6 +2560,24 @@ module.exports = {
     }
   },
 
+  fetchResitStreams: async (req, res) => {
+    try {
+      var resp = await SSO.getResitSessions();
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
   // INFORMER CONTROLS - AIS
 
   fetchInformer: async (req, res) => {
@@ -2704,6 +2722,153 @@ module.exports = {
         .json({ success: false, data: null, msg: "Something wrong !" });
     }
   },
+
+
+  // RESITS - AIS
+
+  fetchResits: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      const stream_main = req.query.stream;
+
+      var stream = new Set();
+      var streams = "",
+        i = 0;
+
+      var session = await SSO.getActiveResitSession();
+      stream_main && stream_main != "null"
+        ? stream.add(stream_main)
+        : stream.add(session && session.id);
+
+      stream.forEach((m) => {
+        streams += m + (i == stream.size - 1 ? "" : ",");
+        i++;
+      });
+
+      var resits = await SSO.fetchResits(streams, page, keyword);
+      if (resits && resits.data.length > 0) {
+        res.status(200).json({ success: true, data: resits });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+
+  
+  fetchResitInfo: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchResitInfo(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  
+  postResitScore: async (req, res) => {
+    try {
+      const { id } = req.body;
+      console.log(req.body);
+      var resp;
+      if (id > 0) {
+        resp = await SSO.updateResitScore(id, req.body);
+      } 
+
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  
+  postResitBacklog: async (req, res) => {
+    console.log(req.body)
+    try {
+      var resp = await SSO.saveResitBacklog(req.body);
+      console.log(resp)
+      if (resp) {
+        if(resp == 'dups') res.status(200).json({ success: true, data: null, msg: `Course has multiple records for index number: ${req.body.indexno}` });
+        else res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Initial Assessment for Course!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened !" });
+    }
+  },
+
+  registerResit: async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log(req.body);
+      var resp = await SSO.registerResit(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  approveResit: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.approveResit(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+         .status(200)
+         .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+  
 
   // BILLS CONTROLS - FMS
 

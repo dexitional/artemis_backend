@@ -161,10 +161,25 @@ module.exports = {
     return res;
   },
 
+  // RESIT MODELS
+
+  fetchResitSlip: async (indexno = null) => {
+    let res;
+    if(indexno == undefined) return null
+    if (indexno)
+      res = await db.query(
+        "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.taken,x.paid, ifnull(r.id,0) as register from ais.resit_data x left join utility.course c on x.course_id = c.id left join ais.resit_score r on r.resit_id = x.id where x.indexno = '" +
+          indexno +
+          "'"
+      );
+    return res;
+  },
+
   // REGISTRATION MODELS
 
   fetchStudentSlip: async (session_id = null, indexno = null) => {
     let res;
+    if(session_id == undefined || indexno == undefined) return null
     if (session_id && indexno)
       res = await db.query(
         "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.score_type from ais.assessment x left join utility.course c on x.course_id = c.id  where x.session_id = " +
@@ -178,41 +193,78 @@ module.exports = {
 
   fetchStudentCE: async (prog_id = null, semester = null) => {
     // Core & Non-Major Electives
-    let res;
-    if (prog_id && semester)
-      res = await db.query(
-        "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = " +
+    let res = [];
+    if (prog_id && semester){
+      const courses = await db.query(
+        "select distinct(c.id) as cid from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id is null and x.semester = " +
           semester +
           " and x.prog_id = " +
           prog_id
       );
+      if(courses && courses.length > 0){
+        const dm = []
+        for(var cs of courses){
+          const ct = await db.query(
+            "select c.id as course_id,c.title as course_name,c.credit,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id where x.major_id is null and x.semester = " +
+              semester +
+              " and x.course_id = " +
+              cs.cid
+          );
+          if(ct && ct.length > 0) dm.push(ct[0])
+        }
+        res = dm;
+      }
+     
+    }
     return res;
   },
 
   fetchStudentME: async (major_id = null, prog_id = null, semester = null) => {
     // Major's Electives
-    let res;
-    if (prog_id && semester)
-      res = await db.query(
-        "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = " +
+    let res = [];
+    if (prog_id && semester){
+      const courses = await db.query(
+        "select distinct(c.id) as cid from utility.structure x left join utility.course c on x.course_id = c.id where x.major_id = " +
           major_id +
           " and x.semester = " +
           semester +
           " and x.prog_id = " +
           prog_id
       );
+      if(courses && courses.length > 0){
+        const dm = []
+        for(var cs of courses){
+          const ct = await db.query(
+            "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.`type`,x.`lock` from utility.structure x left join utility.course c on x.course_id = c.id  where x.major_id = " +
+            major_id +
+            " and x.semester = " +
+            semester +
+            " and x.course_id = " +
+            cs.cid
+          );
+          if(ct && ct.length > 0) dm.push(ct[0])
+        }
+        res = dm;
+      }
+
+    }
+      
     return res;
   },
 
-  fetchStudentRT: async (indexno = null) => {
+  fetchStudentRT: async (indexno = null, academic_sem  = null) => {
     // Resit
-    let res;
-    if (indexno)
-      res = await db.query(
-        "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester from ais.resit x left join utility.course c on x.course_id = c.id  where x.taken = 0 and x.indexno = '" +
-          indexno +
-          "'"
-      );
+    /* NB : Resit courses for the same academic_sem should be loaded for registration */
+    let res = [];
+    if (indexno && academic_sem){
+      const sql = "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester,x.id as resit_id,x.scheme_id from ais.resit_data x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id where x.taken = 0 and x.paid = 1 and x.indexno = '" +
+      indexno +
+      "' and s.academic_sem = "
+      + academic_sem;
+        res = await db.query(sql);
+        console.log(sql,res)
+    
+    }
     return res;
   },
 
@@ -221,7 +273,7 @@ module.exports = {
     let res;
     if (prog_id && semester)
       res = await db.query(
-        "select x.* from utility.structmeta x  where x.semester = " +
+        "select x.* from utility.structmeta x where x.semester = " +
           semester +
           " and x.prog_id = " +
           prog_id
@@ -232,7 +284,7 @@ module.exports = {
   removeRegData: async (indexno = null, session_id = null) => {
     // Core & Non-Major Electives
     let res;
-    if (indexno && session_id)
+    if (indexno && session_id){
       res = await db.query(
         "delete from ais.assessment where session_id = " +
           session_id +
@@ -240,8 +292,38 @@ module.exports = {
           indexno +
           "'"
       );
+    }
     return res;
   },
+
+  removeResitLog: async (resit_id = null) => {
+    // Remove Resit_score Registration log
+    let res;
+    if (resit_id ){
+      res = await db.query("delete from ais.resit_score where resit_id = "+resit_id);
+    }
+    return res;
+  },
+
+  insertResitLog: async (indexno = null, resit_id = null, reg_session_id = null) => {
+    let res;
+    if (indexno && resit_id){
+      // Log Resit Registration in resit_score table
+      try{
+          const sql = "select if(s.semester in (p.semesters,(p.semesters-1)),true,false) as final from ais.student s left join utility.program p on s.prog_id = p.id where s.indexno = '"+indexno+"'";
+          const { final } = (await db.query(sql))[0]
+          const dt = { resit_id,reg_session_id,action_type: final ? 'REPLACE':'APPEND',approved:0, created_at: new Date() }
+          const ins = await db.query("insert into ais.resit_score set ?", dt)
+          res = ins;
+      } catch(e){
+        console.log(e)
+      }
+    }
+    return res;
+  },
+
+  
+
 
   insertRegData: async (data) => {
     // Core & Non-Major Electives
@@ -295,7 +377,7 @@ module.exports = {
 
   fetchResitAccount: async (indexno = null) => {
     const res = await db.query(
-      "select * from ais.resit where paid = 0 and indexno = '" + indexno + "'"
+      "select * from ais.resit_data where paid = 0 and indexno = '" + indexno + "'"
     );
     const resm = await db.query(
       "select amount from fms.servicefee where transtype_id = 03"

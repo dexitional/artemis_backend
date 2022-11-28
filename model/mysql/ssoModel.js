@@ -7,6 +7,7 @@ const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
 const Student = require("../../model/mysql/studentModel");
 const { getUsername } = require("../../middleware/util");
 const SR = require("../../model/mysql/sharedModel");
+const { getGrade, isTrailed } = require("../../utils/helper");
 
 module.exports = {
   verifyUser: async ({ username, password }) => {
@@ -2101,10 +2102,11 @@ module.exports = {
       const resx = await db.query("select * from ais.sheet where id = " + id);
       if (resx && resx.length > 0) {
         const vs = resx[0];
-        let sql = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
+        let sql = `select x.*,grade_meta,resit_score from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme m on x.scheme_id = m.id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
         const rs = await db.query(sql);
         if (rs && rs.length > 0) {
           for (var r of rs) {
+            // Update Visibility Status of Assessments
             const ups = await db.query(
               "update ais.assessment set flag_visible = 1 where session_id = " +
                 r.session_id +
@@ -2113,8 +2115,32 @@ module.exports = {
                 " and indexno = '" +
                 r.indexno +
                 "'"
-            );
-            if (ups && ups.affectedRows > 0) count += 1;
+            ); 
+
+            if (ups && ups.affectedRows > 0){
+              count += 1;
+              // Trailed logics
+              const trailed = isTrailed(r.total_score,r.resit_score)
+              if(trailed){
+                // Record Trailed Papers into Resit Table
+                const insGet = await db.query(
+                  "select * from ais.resit_data where session_id = " +
+                    r.session_id +
+                    " and course_id = " +
+                    r.course_id +
+                    " and indexno = '" +
+                    r.indexno +
+                    "'"
+                );
+                if(insGet && insGet.length <= 0){
+                  const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id }
+                  const insRep = await db.query(
+                    "insert into ais.resit_data set ? ", 
+                    dt
+                  );
+                }
+              }
+            } 
           }
         }
       }
@@ -2144,7 +2170,19 @@ module.exports = {
                 r.indexno +
                 "'"
             );
-            if (ups && ups.affectedRows > 0) count += 1;
+            if (ups && ups.affectedRows > 0){
+              count += 1;
+              // Remove Trailed Papers inside Resit Table
+              const insGet = await db.query(
+                "delete from ais.resit_data where session_id = " +
+                  r.session_id +
+                  " and course_id = " +
+                  r.course_id +
+                  " and indexno = '" +
+                  r.indexno +
+                  "'"
+              );
+            } 
           }
         }
       }
@@ -2354,6 +2392,32 @@ module.exports = {
       "update utility.session set `default` = 1 where id = " + id
     );
     return res;
+  },
+
+  getResitSessions: async () => {
+    const ids = [];
+    let res;
+    const sess = await db.query("select distinct(session_id) as id from ais.fetchResits order by session_id desc");
+    if(sess && sess.length > 0){
+      for(var s of sess){
+        ids.push(s.id)
+      }
+      res = await db.query("select * from utility.session where id in ("+ids.join(',')+")");
+    }
+    return res;
+  },
+
+  getActiveResitSession: async () => {
+    const ids = [];
+    let res;
+    const sess = await db.query("select distinct(session_id) as id from ais.fetchResits order by session_id desc limit 1");
+    if(sess && sess.length > 0){
+      for(var s of sess){
+        ids.push(s.id)
+      }
+      res = await db.query("select * from utility.session where id in ("+ids.join(',')+")");
+    }
+    return res && res[0];
   },
 
   getActiveSessionByMode: async (mode_id) => {
@@ -2730,6 +2794,147 @@ module.exports = {
     }
     return null;
   },
+
+
+   // RESITS - AIS MODELS
+
+   fetchResits: async (streams, page, keyword) => {
+    var sql =
+      "select * from ais.fetchresits where find_in_set(session_id,'" +
+      streams +
+      "') > 0 ";
+    var cql =
+      "select count(*) as total from ais.fetchresits where find_in_set(session_id,'" +
+      streams +
+      "') > 0 ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(name) like '%${keyword.toLowerCase()}%' or lower(indexno) like '%${keyword.toLowerCase()}%' `;
+      cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(name) like '%${keyword.toLowerCase()}%' or lower(indexno) like '%${keyword.toLowerCase()}%' `;
+    }
+    sql += ` order by id desc,course_id,semester`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchResitInfo: async (id) => {
+    const res = await db.query("select * from ais.fetchresits where id = " + id);
+    return res && res[0];
+  },
+
+  fetchUnpaidResits: async (indexno,limit) => {
+    const res = await db.query("select * from ais.fetchresits where paid = 0 and indexno = '"+indexno+"' limit " + limit);
+    return res;
+  },
+
+
+  updateResitScore: async (id,data) => {
+    const dt = { raw_score:data.raw_score, total_score:data.total_score }
+    const rs = await db.query("update ais.resit_score set ? where id = "+id, dt);
+    if (rs) return rs;
+    return null;
+  },
+
+  updateResitData: async (id,data) => {
+    const rs = await db.query("update ais.resit_score set ? where id = "+id, data);
+    if (rs) return rs;
+    return null;
+  },
+
+  saveResitBacklog: async (data) => {
+    const { course_id,indexno,total_score,session_id:rid } = data
+    // Get Previous Original score 
+    const ss = await db.query("select x.*,p.semesters,u.academic_sem from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id left join utility.session u on x.session_id = u.id where x.course_id = "+course_id+" and x.indexno = '"+indexno+"'");
+    console.log(ss)
+    if(ss.length > 1) return 'dups'
+    if(ss.length > 0){
+      const sm = ss[0]
+      const { scheme_id,credit,session_id,semester,academic_sem } = ss[0]
+      const sx = await db.query("select * from utility.session where id > "+session_id+" and id <= "+rid+" and tag = 'MAIN' and academic_sem = "+academic_sem);
+      console.log(sx)
+      const num = sx && sx.length || 0;
+      let dt;
+      // Calculate Semester number from resit session_id
+      if([sm.semesters,sm.semesters-1].includes(sm.semester)){
+        // If Final Year -- replace assessment and Log orinal data
+        const dm = { resit_id:null, assessment: JSON.stringify(ss[0]), created_at: Date.now()}
+        await db.query("insert into ais.resit_replace set ?", dm);
+        dt = { total_score, class_score:null, exam_score:null, score_type:'R', flag_visible: 1 }
+        await db.query("update ais.assessment set ? where course_id = "+course_id+" and indexno = '"+indexno+"'", dt);
+      }
+      if(sm.semester < sm.semesters-1){
+        // Check If Not Final Year -- Insert record into assessment table
+        dt = { scheme_id,course_id,indexno,credit,session_id:rid,semester:semester+num,total_score,score_type:'R',flag_visible:1 }
+        await db.query("insert into ais.assessment set ?", dt);
+      }
+      return dt
+    }
+    return null;
+  },
+
+  registerResit: async (id) => {
+    // Get Resit info 
+    // Get Current Registration Session - Compare with trailed session sem-num and run
+    // Insert into resit_score
+    let res;
+    const rs = await db.query("select * from ais.resit_data r left join ais.fetchresits s on r.id = s.id where r.id = " + id);
+    if (rs && rs.length > 0){
+      const session_id = await SR.getActiveSessionByRefNo(rs[0].refno);
+      if(session_id){
+        const sess = await db.query("select * from utility.session where id = " + session_id);
+        if(sess && sess.length > 0){
+          if(sess[0].academic_sem == rs[0].session_sem){
+            const dt = { reg_session_id: sess[0].id, resit_id: rs[0].id }
+            res = await db.query("insert into ais.resit_score set ?", dt)
+          }
+        }
+      }
+    }
+    return res;
+  },
+
+  approveResit: async (id) => {
+    let res;
+    const rs = await db.query("select s.*,r.course_id,indexno from ais.resit_score s left join ais.fetchresits r on s.resit_id = r.id where s.resit_id ="+id);
+    if (rs && rs.length > 0){
+      const { course_id,indexno,total_score } = rs[0]
+      const as = await db.query("select * from ais.assessment where course_id = "+course_id+" and indexno = '"+indexno+"'");
+      if (as && as.length > 0){
+        // Insert into assessment tbl
+        const { action_type,resit_id } = rs[0];
+        const { session_id,scheme_id,semester,credit } = as[0]
+        let dt;
+        if( action_type == 'APPEND'){
+          dt = { scheme_id,course_id,indexno,credit,session_id,semester,total_score,score_type:'R',flag_visible:1 }
+          await db.query("insert into ais.assessment set ?", dt);
+        }
+        if( action_type == 'REPLACE'){
+          const dm = { resit_id, assessment: JSON.stringify(as[0]), created_at: Date.now()}
+          await db.query("insert into ais.resit_replace set ?", dm);
+          dt = { total_score, class_score:null, exam_score:null, score_type:'R', flag_visible: 1 }
+          await db.query("update ais.assessment set ? where course_id = "+course_id+" and indexno = '"+indexno+"'", dt);
+        }
+      }
+      // Update approved in resit_score tbl to approved
+      res = await db.query("update ais.resit_score set approved = 1 where resit_id = "+id)
+      // Update take status in resit_data tbl to taken
+      res = await db.query("update ais.resit_data set taken = 1 where id = "+id)
+    }
+    return res;
+  },
+
 
   // TRANSACTION - FMS
 
