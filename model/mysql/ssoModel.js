@@ -2397,7 +2397,7 @@ module.exports = {
   getResitSessions: async () => {
     const ids = [];
     let res;
-    const sess = await db.query("select distinct(session_id) as id from ais.fetchResits order by session_id desc");
+    const sess = await db.query("select distinct(session_id) as id from ais.fetchresits order by session_id desc");
     if(sess && sess.length > 0){
       for(var s of sess){
         ids.push(s.id)
@@ -2410,7 +2410,7 @@ module.exports = {
   getActiveResitSession: async () => {
     const ids = [];
     let res;
-    const sess = await db.query("select distinct(session_id) as id from ais.fetchResits order by session_id desc limit 1");
+    const sess = await db.query("select distinct(session_id) as id from ais.fetchresits order by session_id desc limit 1");
     if(sess && sess.length > 0){
       for(var s of sess){
         ids.push(s.id)
