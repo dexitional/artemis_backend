@@ -1155,7 +1155,7 @@ module.exports = {
       const page = req.query.page;
       const keyword = req.query.keyword;
       var applicants = await SSO.fetchFreshers(page, keyword);
-
+      console.log(applicants)
       if (applicants && applicants.data.length > 0) {
         res.status(200).json({ success: true, data: applicants });
       } else {
@@ -1928,6 +1928,26 @@ module.exports = {
   processBacklog: async (req, res) => {
     try {
       var regs = await SSO.processBacklog(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: { data: regs } });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  processBackview: async (req, res) => {
+    try {
+      var regs = await SSO.processBackview(req.body);
+      console.log(req.body);
       if (regs) {
         res.status(200).json({ success: true, data: { data: regs } });
       } else {
@@ -2869,6 +2889,29 @@ module.exports = {
     }
   },
   
+
+  // TRANSCRIPT & RESULTS
+  
+  postTranscript: async (req, res) => {
+    console.log(req.body)
+    try {
+      const { indexno } = req.body
+      var resp = await SSO.fetchTranscript(indexno);
+      console.log(resp)
+      if (resp) {
+        res.status(200).json({ success: true, data: resp.data });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Initial Assessment for Course!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened !" });
+    }
+  },
 
   // BILLS CONTROLS - FMS
 

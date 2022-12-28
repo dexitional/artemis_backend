@@ -189,14 +189,18 @@ module.exports = {
 
   fetchAdmittedStudent : async (req,res) => {
     const { serial } = req.params;
+    console.log(serial)
     try{
       var data = await Admission.fetchAdmittedStudent(serial);
+      console.log(data)
+      
       if(data){
         res.status(200).json({success:true, data});
       }else{
         res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }
     }catch(e){
+      console.log(e)
       res.status(200).json({success:false, data: null, msg: "System error detected."});
     }
   },

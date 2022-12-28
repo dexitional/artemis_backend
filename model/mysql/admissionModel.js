@@ -105,6 +105,7 @@ module.exports = {
       serial +
       "'";
     const res = await db.query(sql);
+    console.log(res)
     return res && res[0];
   },
 

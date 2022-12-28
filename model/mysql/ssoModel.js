@@ -1196,10 +1196,10 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
+        "select distinct h.serial,h.start_semester,h.created_at,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
         sid[0].session_id;
       var cql =
-        "select count(*) as total from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
+        "select count(distinct(h.serial)) as total from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
         sid[0].session_id;
 
       const size = 50;
@@ -1238,7 +1238,7 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select h.start_semester,h.created_at,h.serial,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
+        "select distinct h.serial,h.start_semester,h.created_at,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,i.phone,p.`short` as program_name from P06.admitted h left join ais.student i on h.serial = i.refno left join utility.program p on p.id = h.prog_id where h.admit_session = " +
         sid[0].session_id;
       sql += " order by p.`short`, h.created_at";
       const res = await db.query(sql);
@@ -1749,6 +1749,38 @@ module.exports = {
     return sall;
   },
 
+
+  processBackview: async (data) => {
+    const { session_id, prog_id, year_group, course_id } = data;
+    var mdata = {}, student = {}
+    const js = await db.query(
+     // `select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,s.name,s.refno,x.indexno,x.class_score,x.exam_score,x.total_score,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id  where session_id = ${session_id} and s.prog_id = ${prog_id} and ceil(x.semester/2) = ${year_group}`
+      `select * from ais.fetchbackviews where session_id = ${session_id} and prog_id = ${prog_id} and ceil(semester/2) = ${year_group}`
+    );
+    
+    if (js && js.length > 0) {
+      for(const sv of js){
+        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)) }
+        // Data By Courses
+        if(mdata[sv.course_code]){
+          mdata[sv.course_code] = [...mdata[sv.course_code],{...zd}]
+        }else{
+          mdata[sv.course_code] = [{...zd}]
+        }
+
+        // Data By Students
+        if(!student[sv.indexno]){
+          student[sv.indexno] = { name: sv.name, indexno: sv.indexno, refno: sv.refno, count: 1 }
+        } else {
+          student[sv.indexno] = { ...student[sv.indexno], count: student[sv.indexno].count+1 }
+        }
+      }
+    }
+
+    return { course_data: mdata, student_data: student, courses: Object.keys(mdata) }
+  },
+  
+
   processSingleBacklog: async (data) => {
     const { session_id, year, indexno } = data;
     const getSemester = (sem_no, year) => {
@@ -1855,6 +1887,27 @@ module.exports = {
       return courses;
     }
     return null
+  },
+
+  // TRANSCRIPT/TRANSWIFT - AIS MODELS
+  fetchTranscript: async (indexno) => {
+    var mdata = {}
+    const js = await db.query(
+     `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
+    );
+    
+    if (js && js.length > 0) {
+      for(const sv of js){
+        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)) }
+        // Data By Courses
+        if(mdata[sv.session_title]){
+          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
+        }else{
+          mdata[sv.session_title] = [{...zd}]
+        }
+      }
+    }
+    return { data: mdata }
   },
 
   // SCORESHEETS - AIS MODELS
