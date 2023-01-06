@@ -25,18 +25,6 @@ app.use("/public",express.static("public"));
 app.use(cors()); 
 app.use(compression()); 
 
-//app.use(helmet()); // Security & Vulnearbilities guard
-//app.use(json2xls.middleware); // Excel Export
-
-/*
-app.use(session({
-  secret: 'sess', 
-  resave: true,
-  saveUninitialized: false,
-  cookie: { secure: false , maxAge:  24 * 60 * 60 * 1000 }
-}));
-*/
-
 // Initialise App Routes
 app.use('/api',auth); 
 app.use('/api',student); 
@@ -45,8 +33,7 @@ app.use('/api/v1',api);
 app.use('/',site); 
 
 // Intialise Cron Jobs
-const cron = require('./config/cron');
-
+require('./config/cron');
 
 // Start Server Instance
 var port = process.env.PORT || 5020;

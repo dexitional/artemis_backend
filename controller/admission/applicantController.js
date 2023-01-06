@@ -189,7 +189,6 @@ module.exports = {
 
   fetchAdmittedStudent : async (req,res) => {
     const { serial } = req.params;
-    console.log(serial)
     try{
       var data = await Admission.fetchAdmittedStudent(serial);
       console.log(data)

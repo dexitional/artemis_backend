@@ -212,6 +212,9 @@ Router.get("/fms/movetofees/:id", SSOController.movePaymentToFees);
 Router.get("/fms/debtors/", SSOController.fetchDebtors);
 Router.post("/fms/debtors/report", SSOController.postDebtorsReportFMS);
 
+// ACCOUNT RECONCILIATION
+Router.get("/fms/retireaccbyrefno/:refno", SSOController.retireAccountByRefno);
+
 // FINANCE REPORTS
 Router.post("/fms/reports", SSOController.postFinanceReport);
 

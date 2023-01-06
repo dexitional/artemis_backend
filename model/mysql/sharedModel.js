@@ -1,11 +1,4 @@
-const moment = require("moment");
-const email = require("../../config/email");
 var db = require("../../config/mysql");
-const sha1 = require("sha1");
-const { customAlphabet } = require("nanoid");
-const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
-const Student = require("../../model/mysql/studentModel");
-const { getUsername } = require("../../middleware/util");
 
 module.exports = {
   getActiveSessionByMode: async (mode_id) => {
@@ -110,6 +103,19 @@ module.exports = {
     }
     console.log({ ...st[0], ...session });
     return [{ ...st[0], ...session }];
+  },
+
+  retireAccountByRefno: async (refno) => {
+    const bal = await db.query("select ifnull(sum(amount),0) as amount from fms.studtrans where refno = '"+refno+"'");
+    if (bal && bal.length > 0) {
+      const ups = await db.query(
+        "update ais.student s set ? where (refno = '"+refno+"' or indexno = '"+refno+"')",
+        { transact_account: bal[0].amount }
+      );
+      console.log(ups.affectedRows)
+      return ups.affectedRows;
+    }
+    return null;
   },
 
   retireAssessmentTotal: async (session_id) => {

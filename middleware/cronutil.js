@@ -1,6 +1,6 @@
 const sms = require("../config/sms");
 const SSO = require("../model/mysql/ssoModel");
-const { getUsername,getSemestersByCode } = require("../middleware/util")
+const { getSemestersByCode } = require("../middleware/util")
 
 // CRON BOTS
 
@@ -46,12 +46,12 @@ const cleanBills = async () => {
 
 
 const runRetireStudentAccount = async () => {
-  var resp = await SSO.retireAccount();
+  var resp = await SSO.retireStudentAccount();
   return resp;
 }
 
-const runRetireFeesTransact = async () => {
-  var resp = await SSO.retireFeesTransact();
+const runRetireAccountTransact = async () => {
+  var resp = await SSO.retireAccountTransact();
   return resp;
 }
 
@@ -142,4 +142,4 @@ const populate = async () => {
 
 
 
-module.exports = { runBills,runRetireStudentAccount,runVoucherSender,runRetireFeesTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData,populate,cleanBills }
+module.exports = { runBills,runRetireStudentAccount,runVoucherSender,runRetireAccountTransact,runSetupScoresheet,runMsgDispatcher,runUpgradeNames,runRemovePaymentDuplicates,runData,populate,cleanBills }

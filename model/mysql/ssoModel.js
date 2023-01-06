@@ -3349,13 +3349,29 @@ module.exports = {
     return count;
   },
 
-  retireFeesTransact: async () => {
+
+  retireAccountTransact: async () => {
     var count = 0;
     //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
     //if(st) count = st.affectedRows
-    const st = await db.query(
-      "select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid"
-    );
+    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,3,4,8) and m.tid is null order by tid");
+    if (st && st.length > 0) {
+      for (const s of st) {
+        const session_id = await SR.getActiveSessionByRefNo(s.refno);
+        const dt = { ...s, session_id };
+        const ins = await db.query("insert into fms.studtrans set ?", dt);
+        if (ins && ins.insertId > 0) count += 1;
+      }
+    }
+    //insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative)
+    return count;
+  },
+
+  retireAccountTransact: async () => {
+    var count = 0;
+    //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
+    //if(st) count = st.affectedRows
+    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
     if (st && st.length > 0) {
       for (const s of st) {
         const session_id = await SR.getActiveSessionByRefNo(s.refno);
@@ -3385,6 +3401,34 @@ module.exports = {
     }
     return count;
   },
+
+
+  retireStudentAccountByRefno: async (refno) => {
+    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,3,4,8) and m.tid is null order by tid");
+    if (st && st.length > 0) {
+      const session_id = await SR.getActiveSessionByRefNo(refno);
+      const dt = { ...st[0], session_id };
+      const ins = await db.query("insert into fms.studtrans set ?", dt);
+    } 
+    const rt = SR.retireAccountByRefno(refno)
+    return rt
+  },
+
+  retireStudentAccount: async () => {
+    var count = 0;
+    const st = await db.query(
+      "select distinct(refno) as refno from ais.fetchstudents where complete_status = 0"
+    );
+    if (st && st.length > 0) {
+      for (let s of st) {
+        const rt = SR.retireAccountByRefno(s.refno)
+        if (rt > 0) count++;
+      }
+    }
+    return count;
+  },
+
+  
 
   // Finance Reports
 

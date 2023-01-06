@@ -10,6 +10,8 @@ const sms = require("../../config/sms");
 const API = require("../../model/mysql/apiModel");
 const Student = require("../../model/mysql/studentModel");
 const SSO = require("../../model/mysql/ssoModel");
+const SR = require("../../model/mysql/sharedModel");
+
 const { decodeBase64Image } = require("../../middleware/util");
 
 module.exports = {
@@ -170,6 +172,7 @@ module.exports = {
         const st = await Student.fetchStudentProfile(studentId);
         const ins = await SSO.sendTransaction(dt);
         if (ins) {
+          /* ACADEMIC FEES PAYMENT */
           if (serviceId == 2) {
             // Send to studtrans tbl, If Payservice = Academic Fees
             const dt = {
@@ -177,20 +180,24 @@ module.exports = {
               refno: studentId,
               amount: -1 * amountPaid,
               currency,
-              narrative: `Online Fees Payment, StudentID: ${studentId}`,
+              narrative: `Online academic fees payment, StudentID: ${studentId}`,
             };
             const insm = await SSO.savePaymentToAccount(dt);
+            if(insm && insm.insertId > 0)
+              await SR.retireAccountByRefno(studentId)
+    
             // Send SMS to Buyer
             //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
-            //if(insm) await sms(buyerPhone,msg)
+            //if(insm) await sms(st[0].phone,msg)
           }
-
+          
+          /* RESIT PAYMENTS */
           if (serviceId == 3) {
             // Retire Number of Resit Papers
             const resit_charge = await Student.fetchResitAccount(st[0].indexno);
             const pay_count = Math.floor(resit_charge % amountPaid);
             const resits = await SSO.fetchUnpaidResits(st[0].indexno,pay_count)
-            let count = 0;
+            var count = 0;
             for(const rs of resits){
               // Update Paid Status of resit_data
               const ups = await SSO.updateResitData(rs.id,{ paid:1 })
@@ -205,6 +212,27 @@ module.exports = {
               narrative: `Resit Payment for ${pay_count} course(s), StudentID: ${studentId}`,
             };
             const insm = await SSO.savePaymentToAccount(dt);
+            if(insm && insm.insertId > 0)
+              await SR.retireAccountByRefno(studentId)
+            // Send SMS to Buyer
+            //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
+            //if(insm) await sms(buyerPhone,msg)
+          }
+
+          /* GRADUATION FEES */
+          if (serviceId == 4) {
+            // Send to studtrans tbl, If Payservice = Academic Fees
+            const dt = {
+              tid: ins.insertId,
+              refno: studentId,
+              amount: -1 * amountPaid,
+              currency,
+              narrative: `Online graduaion fees payment, StudentID: ${studentId}`,
+            };
+            const insm = await SSO.savePaymentToAccount(dt);
+            if(insm && insm.insertId > 0)
+              await SR.retireAccountByRefno(studentId)
+    
             // Send SMS to Buyer
             //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
             //if(insm) await sms(buyerPhone,msg)

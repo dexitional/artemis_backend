@@ -100,14 +100,36 @@ module.exports = {
   },
 
   fetchAdmittedStudent: async (serial) => {
-    const sql =
-      "select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,l.signature,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = x.letter_id  left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '" +
-      serial +
-      "'";
+    //"select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,l.signature,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = x.letter_id  left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'";
+    const sql = "select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,l.tag,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,l.signature,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = if(a.group_id = 'PG',x.pg_letter,x.ug_letter) left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'";
     const res = await db.query(sql);
-    console.log(res)
     return res && res[0];
   },
+
+  /*
+  
+  fetchAdmittedStudent: async (serial) => {
+    let data = {}
+    //"select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,l.signature,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = x.letter_id  left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'";
+    //const sql = await db.query("select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,l.tag,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,l.signatory,l.template,l.signature,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.letter l on l.id = if(a.group_id = 'PG',x.pg_letter,x.ug_letter) left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'");
+    const res = await db.query("select s.academic_year,s.cal_lecture_start,s.cal_register_start,s.cal_register_end,s.cal_orient_start,t.letter_condition,b.amount,b.currency,b.discount,m.title as major_name,r.`long` as program_name,f.fname,f.lname,f.resident_address,f.resident_country,x.admission_date,x.admission_show,x.title as admission_title,x.ug_letter,x.pg_letter,c.bank_account,a.* from P06.admitted a left join utility.session s on a.academ_session = s.id left join P06.session x on a.admit_session = x.session_id left join P06.step_profile f on f.serial = a.serial left join P06.apply_type t on a.apply_type = t.type_id left join fms.billinfo b on a.bill_id = b.bid left join utility.program r on r.id = a.prog_id left join ais.major m on m.id = a.major_id left join fms.bankacc c on c.id = b.bankacc_id where a.serial = '"+serial+"'");
+    if(res && res.length > 0){
+      console.log(res)
+      const dt = res[0]
+      const lid = dt.group_id === 'PG' ? dt.pg_letter : dt.ug_letter
+      const ls = await db.query("select signatory,template,signature from P06.letter where id = "+lid);
+      if(ls && ls.length > 0)
+        data = { ...res[0], ...ls[0] }
+      else
+        data = { ...res[0] }
+    }
+    console.log(data)
+    return data;
+  },
+  
+  
+  
+  */
 
   updateAdmittedTbl: async (serial, data) => {
     var res = await db.query(

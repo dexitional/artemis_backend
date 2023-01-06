@@ -3678,6 +3678,47 @@ module.exports = {
     }
   },
 
+
+  // Account Reconciliation By Refno - FMS
+  retireAccountByRefno: async (req, res) => {
+    try {
+      const refno = req.params.refno;
+      var data = await SSO.retireStudentAccountByRefno(refno);
+      console.log("Data",data)
+      if (data) {
+        res.status(200).json({ success: true, data });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No record!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  // Account Reconciliation - FMS
+  retireAccount: async (req, res) => {
+    try {
+      var data = await SSO.retireStudentAccount();
+      console.log("Data",data)
+      if (data) {
+        res.status(200).json({ success: true, data });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No record!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
   // HRStaff  - HRS
 
   fetchHRStaffDataHRS: async (req, res) => {
