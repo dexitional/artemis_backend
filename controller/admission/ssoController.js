@@ -1963,6 +1963,25 @@ module.exports = {
     }
   },
 
+  processRegreport: async (req, res) => {
+    try {
+      var regs = await SSO.processRegreport(req.body);
+      console.log(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: regs });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
   processSingleBacklog: async (req, res) => {
     try {
       var regs = await SSO.processSingleBacklog(req.body);

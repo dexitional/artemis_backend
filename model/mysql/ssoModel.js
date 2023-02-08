@@ -8,6 +8,7 @@ const Student = require("../../model/mysql/studentModel");
 const { getUsername } = require("../../middleware/util");
 const SR = require("../../model/mysql/sharedModel");
 const { getGrade, isTrailed } = require("../../utils/helper");
+const delay = require('delay')
 
 module.exports = {
   verifyUser: async ({ username, password }) => {
@@ -1776,8 +1777,28 @@ module.exports = {
         }
       }
     }
-
     return { course_data: mdata, student_data: student, courses: Object.keys(mdata) }
+  },
+
+  processRegreport: async (data) => {
+    const { session_id, prog_id, year_group, course_id } = data;
+    var student = {}, title = "";
+    const js = await db.query(
+     // `select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,s.name,s.refno,x.indexno,x.class_score,x.exam_score,x.total_score,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id  where session_id = ${session_id} and s.prog_id = ${prog_id} and ceil(x.semester/2) = ${year_group}`
+      `select * from ais.fetchbackviews where session_id = ${session_id} and prog_id = ${prog_id} and ceil(semester/2) = ${year_group}`
+    );
+    
+    if (js && js.length > 0) {
+      for(const sv of js){
+        title = sv.session_title.split(" ").join("_").split("/").join("_")+"_YEAR_"+year_group+"_REGISTRATION_LIST";
+        // Data By Students
+        if(!student[sv.indexno]){
+          student[sv.indexno] = { "FULL NAME": sv.name, "INDEX NUMBER": sv.indexno, "STUDENT REFERENCE ID": sv.refno, "PROGRAMME": sv.program_name, "MAJOR": sv.major_name, "MODE OF STUDY": sv.mode  }
+        }
+      }
+    }
+    console.log({ title, student: Object.values(student) })
+    return { title, student: Object.values(student) }
   },
   
 
@@ -3423,6 +3444,7 @@ module.exports = {
       for (let s of st) {
         const rt = SR.retireAccountByRefno(s.refno)
         if (rt > 0) count++;
+        await delay(100)
       }
     }
     return count;

@@ -120,6 +120,7 @@ Router.get("/ais/reglist/", SSOController.fetchRegsList);
 Router.get("/ais/regmount/", SSOController.fetchMountList);
 Router.post("/ais/backlog", SSOController.processBacklog);
 Router.post("/ais/backview", SSOController.processBackview);
+Router.post("/ais/regreport", SSOController.processRegreport);
 
 Router.post("/ais/singlebacklog", SSOController.processSingleBacklog);
 // SCORESHEETS routes
