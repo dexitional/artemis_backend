@@ -3169,7 +3169,7 @@ module.exports = {
           const ins = await db.query("insert into fms.studtrans set ?", {
             narrative: bl[0].narrative,
             bill_id: id,
-            amount: bl[0].ammount,
+            amount: bl[0].amount,
             refno: refno,
             session_id: bl[0].session_id,
             currency: bl[0].currency,

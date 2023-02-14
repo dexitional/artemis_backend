@@ -18,6 +18,8 @@ cron.schedule('*/1 * * * *', () => {
           // INFORMANT MESSAGES - AIS
           runMsgDispatcher()
           //runSetupScoresheet()
+          runBills()
+          
          
         }
     });
