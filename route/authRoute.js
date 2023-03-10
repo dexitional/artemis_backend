@@ -209,6 +209,21 @@ Router.delete("/fms/feestrans/:id", SSOController.deletePayment);
 Router.post("/fms/genindexno", SSOController.generateIndexNo);
 Router.get("/fms/movetofees/:id", SSOController.movePaymentToFees);
 
+// CHARGES
+Router.get("/fms/charges/", SSOController.fetchCharges);
+Router.get("/fms/charges/:id", SSOController.fetchCharge);
+Router.post("/fms/charges", SSOController.postCharge);
+Router.delete("/fms/charges/:id", SSOController.deleteCharge);
+Router.get("/fms/charges/publish/:id", SSOController.publishCharge);
+
+// SERVICE COSTS
+Router.get("/fms/services/", SSOController.fetchServices);
+Router.get("/fms/services/:id", SSOController.fetchService);
+Router.post("/fms/services", SSOController.postService);
+Router.get("/fms/servicehelper", SSOController.loadAllServices);
+Router.delete("/fms/services/:id", SSOController.deleteService);
+
+
 // DEBTORS
 Router.get("/fms/debtors/", SSOController.fetchDebtors);
 Router.post("/fms/debtors/report", SSOController.postDebtorsReportFMS);
@@ -350,6 +365,12 @@ Router.get("/createviews", async (req, res) => {
   const v7 = await db.query(
     //"create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
     "create view fetchbackviews as select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,i.title as session_title,i.academic_year as session_year,i.academic_sem as session_sem,s.name,s.refno,s.prog_id,s.program_name,s.major_name,s.session as mode,x.session_id,x.scheme_id,x.indexno,x.class_score,x.exam_score,x.total_score,x.semester,x.score_type,x.course_id,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id"
+  );
+
+  // FETCH ADMISSION SHORLIST
+  const v8 = await db.query(
+    //"create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
+    "create view shortlist as select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,r1.`short` as choice_name1,r2.`short` as choice_name2,p.started_at,p.photo,g.title as group_name,t.title as applytype from P06.sorted h left join P06.step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join P06.voucher v on v.serial = h.serial left join P06.step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join P06.step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join P06.`group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id left join P06.admitted a on h.serial = a.serial where a.serial is null"
   );
 
 });

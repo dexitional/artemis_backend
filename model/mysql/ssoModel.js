@@ -797,10 +797,10 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select h.*,concat(i.fname,' ',i.lname) as name,i.dob,i.gender,r1.`short` as choice_name1,r2.`short` as choice_name2,p.started_at,p.photo,v.sell_type,g.title as group_name,v.group_id,t.title as applytype from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id left join admitted a on h.serial = a.serial where a.serial is null and h.session_id = " +
+        "select distinct h.serial, h.* FROM ais.fetchshortlist h where h.session_id = " +
         sid[0].session_id;
       var cql =
-        "select count(*) as total from P06.sorted h left join step_profile i on h.serial = i.serial left join P06.applicant p on p.serial = h.serial left join voucher v on v.serial = h.serial left join step_choice c1 on h.choice1_id = c1.choice_id left join utility.program r1 on r1.id = c1.program_id left join step_choice c2 on h.choice2_id = c2.choice_id left join utility.program r2 on r2.id = c2.program_id left join `group` g on v.group_id = g.group_id left join P06.apply_type t on h.apply_type = t.type_id left join admitted a on h.serial = a.serial where a.serial is null and h.session_id = " +
+        "select count(distinct(serial)) as total from ais.fetchshortlist h where h.session_id = " +
         sid[0].session_id;
 
       const size = 50;
@@ -808,11 +808,11 @@ module.exports = {
       const offset = pg * size || 0;
 
       if (keyword) {
-        sql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`;
-        cql += ` and h.serial = '${keyword}' or i.fname like '%${keyword}%' or i.lname like '%${keyword}%' or g.title like '%${keyword}%' or r2.\`short\` like '%${keyword}%' or r1.\`short\` like '%${keyword}%' or t.title like '%${keyword}%'`;
+        sql += ` and (serial = '${keyword}' or name like '%${keyword}%' or group_name like '%${keyword}%' or choice_name1 like '%${keyword}%' or choice_name2 like '%${keyword}%')`;
+        cql += ` and (serial = '${keyword}' or name like '%${keyword}%' or group_name like '%${keyword}%' or choice_name1 like '%${keyword}%' or choice_name2 like '%${keyword}%')`;
       }
 
-      sql += " order by r1.`short` asc";
+      sql += " order by h.`choice_name1` asc";
       sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
 
       const ces = await db.query(cql);
@@ -986,7 +986,8 @@ module.exports = {
         // Insert Academic Fees or Bill charged
         const df = {
           session_id: vs[0].academic_session_id,
-          bill_id: bid,
+          cr_id: bid,
+          cr_type: 'BILL',
           refno: data.serial,
           narrative: bl[0].narrative,
           currency: bl[0].currency,
@@ -996,7 +997,8 @@ module.exports = {
         // Insert Discount (Payment)
         const dj = {
           session_id: vs[0].academic_session_id,
-          bill_id: bid,
+          cr_id: bid,
+          cr_type: 'BILL',
           refno: data.serial,
           narrative: `DISCOUNT ON ${bl[0].narrative} FEES`,
           currency: bl[0].currency,
@@ -1158,7 +1160,8 @@ module.exports = {
         // Insert Academic Fees or Bill charged
         const df = {
           session_id: vs[0].academic_session_id,
-          bill_id: bid,
+          cr_id: bid,
+          cr_type: 'BILL',
           refno: data.serial,
           narrative: bl[0].narrative,
           currency: bl[0].currency,
@@ -1168,7 +1171,8 @@ module.exports = {
         // Insert Discount (Payment)
         const dj = {
           session_id: vs[0].academic_session_id,
-          bill_id: bid,
+          cr_id: bid,
+          cr_type: 'BILL',
           refno: data.serial,
           narrative: `DISCOUNT ON ${bl[0].narrative} FEES`,
           currency: bl[0].currency,
@@ -3102,7 +3106,7 @@ module.exports = {
 
   fetchBillReceivers: async (id) => {
     const res = await db.query(
-      "select b.*,p.`short` as program_name, ceil(s.semester/2) as year_group,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.indexno from fms.studtrans b left join ais.student s on s.refno = b.refno left join utility.program p on s.prog_id = p.id where b.amount > 0 and b.bill_id = " +
+      "select b.*,p.`short` as program_name, ceil(s.semester/2) as year_group,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.indexno from fms.studtrans b left join ais.student s on s.refno = b.refno left join utility.program p on s.prog_id = p.id where b.amount > 0 and b.cr_id = " +
         id
     );
     return res;
@@ -3141,11 +3145,11 @@ module.exports = {
       resp = await db.query(
         "delete from fms.studtrans where refno = '" +
           refno +
-          "' and bill_id = " +
+          "' and cr_id = " +
           id
       );
     } else {
-      resp = await db.query("delete from fms.studtrans where bill_id = " + id);
+      resp = await db.query("delete from fms.studtrans where cr_id = " + id);
     }
     return resp;
   },
@@ -3161,14 +3165,15 @@ module.exports = {
         const isExist = await db.query(
           "select * from fms.studtrans where refno = '" +
             refno +
-            "' and bill_id = " +
+            "' and cr_id = " +
             id +
             " and amount > 0"
         );
         if (isExist && isExist.length <= 0) {
           const ins = await db.query("insert into fms.studtrans set ?", {
             narrative: bl[0].narrative,
-            bill_id: id,
+            cr_id: id,
+            cr_type: 'BILL',
             amount: bl[0].amount,
             refno: refno,
             session_id: bl[0].session_id,
@@ -3195,34 +3200,31 @@ module.exports = {
     var count = 0,
       dcount = 0;
     const sts = await db.query(
-      "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +
-        prog_id +
-        " and s.entry_group = 'GH' and find_in_set(s.semester,'" +
-        sem +
-        "') > 0"
+      sem 
+       ? "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +sem +"') > 0"
+       : ""
     );
     const dts = await db.query(
-      "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +
-        prog_id +
-        " and s.entry_group = 'GH' and find_in_set(s.semester,'" +
-        dsem +
-        "') > 0"
+      dsem
+      ? "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +dsem +"') > 0"
+      : ""
     );
-    if (sts.length > 0) {
+    if (sts && sts.length > 0) {
       for (var st of sts) {
         const session_id = await SR.getActiveSessionByRefNo(st.refno);
         if (session_id == sess) {
           const isExist = await db.query(
             "select * from fms.studtrans where refno = '" +
               st.refno +
-              "' and bill_id = " +
+              "' and cr_id = " +
               bid +
               " and amount > 0"
           );
           if (isExist && isExist.length <= 0) {
             const ins = await db.query("insert into fms.studtrans set ?", {
               narrative: bname,
-              bill_id: bid,
+              cr_id: bid,
+              cr_type: 'BILL',
               amount,
               refno: st.refno,
               session_id: sess,
@@ -3233,21 +3235,22 @@ module.exports = {
         }
       }
     }
-    if (dts.length > 0 && discount && discount > 0) {
+    if (dts && dts.length > 0 && discount && discount > 0) {
       for (var st of dts) {
         const session_id = await SR.getActiveSessionByRefNo(st.refno);
         if (session_id == sess) {
           const isExist = await db.query(
             "select * from fms.studtrans where refno = '" +
               st.refno +
-              "' and bill_id = " +
+              "' and cr_id = " +
               bid +
               " and amount < 0"
           );
           if (isExist && isExist.length <= 0) {
             const ins = await db.query("insert into fms.studtrans set ?", {
               narrative: `DISCOUNT - ${bname}`,
-              bill_id: bid,
+              cr_id: bid,
+              cr_type: 'BILL',
               amount: -1 * discount,
               refno: st.refno,
               session_id: sess,
@@ -3296,14 +3299,15 @@ module.exports = {
           const isExist = await db.query(
             "select * from fms.studtrans where refno = '" +
               st.refno +
-              "' and bill_id = " +
+              "' and cr_id = " +
               bid +
               " and amount > 0"
           );
           if (isExist && isExist.length <= 0) {
             const ins = await db.query("insert into fms.studtrans set ?", {
               narrative: bname,
-              bill_id: bid,
+              cr_id: bid,
+              cr_type: 'BILL',
               amount,
               refno: st.refno,
               session_id: sess,
@@ -3321,14 +3325,15 @@ module.exports = {
           const isExist = await db.query(
             "select * from fms.studtrans where refno = '" +
               st.refno +
-              "' and bill_id = " +
+              "' and cr_id = " +
               bid +
               " and amount < 0"
           );
           if (isExist && isExist.length <= 0) {
             const ins = await db.query("insert into fms.studtrans set ?", {
               narrative: `DISCOUNT - ${bname}`,
-              bill_id: bid,
+              cr_id: bid,
+              cr_type: 'BILL',
               amount: -1 * discount,
               refno: st.refno,
               session_id: sess,
@@ -4402,13 +4407,36 @@ module.exports = {
     return fid;
   },
 
+  updateStudCharge: async (cid,refno,amount,narrative) => {
+    const session_id = await SR.getActiveSessionByRefNo(refno);
+    const fin = await db.query("select * from fms.studtrans where cr_type = 'CHARGE' and cr_id = " + cid);
+    const dt = {
+      cr_id: cid,
+      cr_type: 'CHARGE',
+      amount,
+      refno,
+      session_id,
+      narrative,
+    };
+    var resp;
+    var fid;
+    if (fin && fin.length > 0) {
+      resp = await db.query("update fms.studtrans set ? where cr_type = 'CHARGE' and cr_id = " + cid,dt);
+      fid = resp && fin[0].id;
+    } else {
+      resp = await db.query("insert into fms.studtrans set ?", dt);
+      fid = resp && resp.insertId;
+    }
+    return fid;
+  },
+
   verifyFeesQuota: async (refno) => {
     const st = await db.query(
       "select x.id from ais.student s left join utility.program p on s.prog_id = p.id left join utility.session x on x.mode_id = p.mode_id where x.default = 1 and s.refno = " +
         refno
     );
     const fin = await db.query(
-      "select * fms.studtrans where bill is not null and session_id = " +
+      "select * fms.studtrans where cr_id is not null and session_id = " +
         st[0].id
     );
     const dt = {
@@ -4523,6 +4551,123 @@ module.exports = {
     if (rs && ms) return rs;
     return null;
   },
+
+
+   // CHARGES - FMS
+
+   fetchCharges: async (page, keyword) => {
+    var sql = "select c.*,s.name as student from fms.charge c left join ais.fetchstudents s on c.refno = s.refno ";
+    var cql =
+      "select count(*) as total from fms.charge c left join ais.fetchstudents s on c.refno = s.refno ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `where (c.name like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
+      cql += `where (c.name like '%${keyword.trim()}%' or s.fname like '%${keyword.trim()}%' or s.lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
+    }
+
+    sql += `order by id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchCharge: async (id) => {
+    const res = await db.query("select * from fms.charge where id = " + id);
+    return res;
+  },
+
+  insertCharge: async (data) => {
+    const res = await db.query("insert into fms.charge set ?", data);
+    return res;
+  },
+
+  updateCharge: async (id, data) => {
+    const res = await db.query(
+      "update fms.charge set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteCharge: async (id) => {
+    const resm = await db.query("delete from fms.studtrans where cr_id = " + id);
+    const res = await db.query("delete from fms.charge where id = " + id);
+    return res;
+  },
+
+
+  // SERVICE COSTS - FMS
+
+  fetchServices: async (page, keyword) => {
+    var sql = "select c.*,t.title from fms.servicefee c left join fms.transtype t on c.transtype_id = t.id where t.id > 2 ";
+    var cql =
+      "select count(*) as total from fms.servicefee c left join fms.transtype t on c.transtype_id = t.id where t.id > 2 ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `and (t.title like '%${keyword.trim()}%' or c.amount like '%${keyword.trim()}%')`;
+      cql += `and (t.title like '%${keyword.trim()}%' or c.amount like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by transtype_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchService: async (id) => {
+    const res = await db.query("select * from fms.servicefee where transtype_id = " + id);
+    return res;
+  },
+
+  insertService: async (data) => {
+    const res = await db.query("insert into fms.servicefee set ?", data);
+    return res;
+  },
+
+  updateService: async (id, data) => {
+    const res = await db.query(
+      "update fms.servicefee set ? where transtype_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteService: async (id) => {
+    const res = await db.query("delete from fms.servicefee where transtype_id = " + id);
+    return res;
+  },
+
+  loadAllServices: async () => {
+    const res = await db.query("select * from fms.transtype where id > 2");
+    return res;
+  },
+
 
   // DEBTORS - FMS MODELS
 

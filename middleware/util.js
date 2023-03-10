@@ -62,7 +62,7 @@ const getSemestersByCode = (group_code) => {
     case '1110':  yr = `1,2,3,4,5,6`; break;
     case '1101':  yr = `1,2,3,4,7,8`; break;
     case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
-    case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
+    case '0000':  yr = ``; break;
   }
   return yr
 }

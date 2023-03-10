@@ -3013,6 +3013,7 @@ module.exports = {
     if (req.body.prog_id != "") dt.prog_id = req.body.prog_id;
     if (req.body.discount == "" || req.body.discount == 0) delete dt.discount;
     if (req.body.discount_code == "") delete dt.discount_code;
+    if (req.body.group_code == "") dt.group_code = '0000';
     console.log(dt);
 
     try {
@@ -3606,6 +3607,274 @@ module.exports = {
         .json({ success: false, data: null, msg: "Something went wrong !" });
     }
   },
+
+
+  // Charges - FMS
+
+  fetchCharges: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var charges = await SSO.fetchCharges(page, keyword);
+      if (charges && charges.data.length > 0) {
+        res.status(200).json({ success: true, data: charges });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  fetchCharge: async (req, res) => {
+    try {
+      const id = req.params.id;
+      var charge = await SSO.fetchCharge(id);
+
+      if (charge && charge.length > 0) {
+        res.status(200).json({ success: true, data: charge });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  postCharge: async (req, res) => {
+    const { id, refno } = req.body;
+
+    try {
+      const verifyRef = await Student.fetchStProfile(refno);
+
+      if (verifyRef && verifyRef.length > 0) {
+        var tid, resp;
+        let dt = {
+          refno: verifyRef[0].refno,
+          amount: req.body.amount,
+          type: req.body.type,
+          name: req.body.name,
+        };
+        
+        if (id <= 0) {
+          dt.created_at = new Date()
+          resp = await SSO.insertCharge(dt);
+          tid = resp && resp.insertId;
+        } else {
+          resp = await SSO.updateCharge(id, dt);
+          tid = id;
+        }
+
+        if (resp) {
+          res.status(200).json({ success: true, data: resp });
+        } else {
+          res
+            .status(200)
+            .json({ success: false, data: null, msg: "Action Failed" });
+        }
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Student Doesn't Exist" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something Wrong Happened" });
+    }
+  },
+
+  publishCharge: async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const cs = await SSO.fetchCharge(id);
+      console.log(cs)
+      if (cs && cs.length > 0) {
+       const dt = cs[0]
+        
+        if (!dt.post_status) {
+          // Update Charges Post Status to Published (1)
+          const ct = await SSO.updateCharge(id, { post_status: 1 });
+          if(ct){
+            // Update or Insert into Student Account
+            const qt = await SSO.updateStudCharge(
+              dt.id,
+              dt.refno,
+              parseInt(dt.amount),
+              dt.name,
+            );
+            res.status(200).json({ success: true, data: ct });
+          }
+          
+        } else {
+          res
+            .status(200)
+            .json({ success: true, data: null, msg: "Charge Already published" });
+        }
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Charge Not Found!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something Wrong Happened" });
+    }
+  },
+
+  deleteCharge: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteCharge(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+  // Service Costs - FMS
+
+  fetchServices: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var charges = await SSO.fetchServices(page, keyword);
+      if (charges && charges.data.length > 0) {
+        res.status(200).json({ success: true, data: charges });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  fetchService: async (req, res) => {
+    try {
+      const id = req.params.id;
+      var charge = await SSO.fetchService(id);
+
+      if (charge && charge.length > 0) {
+        res.status(200).json({ success: true, data: charge });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  postService: async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        var resp;
+        let dt = {
+          transtype_id: req.body.transtype_id,
+          amount_ghc: req.body.amount_ghc,
+          amount_usd: req.body.amount_usd,
+        };
+        
+        if (id <= 0) {
+          dt.created_at = new Date()
+          resp = await SSO.insertService(dt);
+        } else {
+          resp = await SSO.updateService(id, dt);
+        }
+
+        if (resp) {
+          res.status(200).json({ success: true, data: resp });
+        } else {
+          res
+            .status(200)
+            .json({ success: false, data: null, msg: "Action Failed" });
+        }
+     
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something Wrong Happened" });
+    }
+  },
+
+  deleteService: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteService(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+  loadAllServices: async (req, res) => {
+    try {
+      var charge = await SSO.loadAllServices();
+
+      if (charge && charge.length > 0) {
+        res.status(200).json({ success: true, data: charge });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+  
 
   // Debtors - FMS
 
