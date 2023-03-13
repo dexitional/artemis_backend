@@ -2874,6 +2874,343 @@ module.exports = {
   },
 
 
+
+  // PROGRAM - AIS
+
+  fetchPrograms: async (page, keyword) => {
+    var sql =
+      "select p.*,s.title as scheme,u.title as dept from utility.program p left join utility.unit u on p.unit_id = u.id left join utility.scheme s on p.scheme_id = s.id ";
+    var cql =
+      "select count(*) as total from utility.program p left join utility.unit u on p.unit_id = u.id left join utility.scheme s on p.scheme_id = s.id ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where p.`short` like '%"+keyword.toLowerCase()+"%' or p.`long` like '%"+keyword.toLowerCase()+"%' or u.title like '%"+keyword.toLowerCase()+"%' or p.group_id = '"+keyword.toLowerCase()+"' ";
+      cql += " where p.`short` like '%"+keyword.toLowerCase()+"%' or p.`long` like '%"+keyword.toLowerCase()+"%' or u.title like '%"+keyword.toLowerCase()+"%' or p.group_id = '"+keyword.toLowerCase()+"' ";
+    }
+
+    sql += ` order by p.id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchProgram: async (id) => {
+    const res = await db.query("select * from utility.program where id = " + id);
+    return res;
+  },
+
+  insertProgram: async (data) => {
+    const res = await db.query("insert into utility.program set ?", data);
+    return res;
+  },
+
+  updateProgram: async (id, data) => {
+    const res = await db.query(
+      "update utility.program set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteProgram: async (id) => {
+    const res = await db.query("delete from utility.program where id = " + id);
+    return res;
+  },
+
+
+
+  // COURSES - AIS
+
+  fetchCourses: async (page, keyword) => {
+    var sql =
+      "select * from utility.course ";
+    var cql =
+      "select count(*) as total from utility.course ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where title like '%"+keyword.toLowerCase()+"%' or course_code like '%"+keyword.toLowerCase()+"%' or credit = '"+keyword+"' ";
+      cql += " where title like '%"+keyword.toLowerCase()+"%' or course_code like '%"+keyword.toLowerCase()+"%' or credit = '"+keyword+"' ";
+    }
+
+    sql += ` order by title asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchCourse: async (id) => {
+    const res = await db.query("select * from utility.course where id = " + id);
+    return res;
+  },
+
+  insertCourse: async (data) => {
+    const res = await db.query("insert into utility.course set ?", data);
+    return res;
+  },
+
+  updateCourse: async (id, data) => {
+    const res = await db.query(
+      "update utility.course set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteCourse: async (id) => {
+    const res = await db.query("delete from utility.course where id = " + id);
+    return res;
+  },
+
+
+   // GRADING SCHEME - AIS
+
+   fetchSchemes: async (page, keyword) => {
+    var sql =
+      "select * from utility.scheme ";
+    var cql =
+      "select count(*) as total from utility.scheme ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where title like '%"+keyword.toLowerCase()+"%' ";
+      cql += " where title like '%"+keyword.toLowerCase()+"%' ";
+    }
+
+    sql += ` order by id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchScheme: async (id) => {
+    const res = await db.query("select * from utility.scheme where id = " + id);
+    return res;
+  },
+
+  insertScheme: async (data) => {
+    const res = await db.query("insert into utility.scheme set ?", data);
+    return res;
+  },
+
+  updateScheme: async (id, data) => {
+    const res = await db.query(
+      "update utility.scheme set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteScheme: async (id) => {
+    const res = await db.query("delete from utility.scheme where id = " + id);
+    return res;
+  },
+
+
+  // COUNTRIES - AIS
+
+  fetchCountries: async (page, keyword) => {
+    var sql =
+      "select * from utility.country ";
+    var cql =
+      "select count(*) as total from utility.country ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where title like '%"+keyword.toLowerCase()+"%' ";
+      cql += " where title like '%"+keyword.toLowerCase()+"%' ";
+    }
+
+    sql += ` order by id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchCountry: async (id) => {
+    const res = await db.query("select * from utility.country where id = " + id);
+    return res;
+  },
+
+  insertCountry: async (data) => {
+    const res = await db.query("insert into utility.country set ?", data);
+    return res;
+  },
+
+  updateCountry: async (id, data) => {
+    const res = await db.query(
+      "update utility.country set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteCountry: async (id) => {
+    const res = await db.query("delete from utility.country where id = " + id);
+    return res;
+  },
+
+
+
+  
+
+  // REGIONS - AIS
+
+  fetchRegions: async (page, keyword) => {
+    var sql =
+      "select * from utility.region ";
+    var cql =
+      "select count(*) as total from utility.region ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where title like '%"+keyword.toLowerCase()+"%' ";
+      cql += " where title like '%"+keyword.toLowerCase()+"%' ";
+    }
+
+    sql += ` order by id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchRegion: async (id) => {
+    const res = await db.query("select * from utility.region where id = " + id);
+    return res;
+  },
+
+  insertRegion: async (data) => {
+    const res = await db.query("insert into utility.region set ?", data);
+    return res;
+  },
+
+  updateRegion: async (id, data) => {
+    const res = await db.query(
+      "update utility.region set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteRegion: async (id) => {
+    const res = await db.query("delete from utility.region where id = " + id);
+    return res;
+  },
+
+
+
+  // RELIGIONS - AIS
+
+  fetchReligions: async (page, keyword) => {
+    var sql =
+      "select * from utility.religion ";
+    var cql =
+      "select count(*) as total from utility.religion ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where title like '%"+keyword.toLowerCase()+"%' ";
+      cql += " where title like '%"+keyword.toLowerCase()+"%' ";
+    }
+
+    sql += ` order by id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchReligion: async (id) => {
+    const res = await db.query("select * from utility.religion where id = " + id);
+    return res;
+  },
+
+  insertReligion: async (data) => {
+    const res = await db.query("insert into utility.religion set ?", data);
+    return res;
+  },
+
+  updateReligion: async (id, data) => {
+    const res = await db.query(
+      "update utility.religion set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteReligion: async (id) => {
+    const res = await db.query("delete from utility.religion where id = " + id);
+    return res;
+  },
+
+
+
    // RESITS - AIS MODELS
 
    fetchResits: async (streams, page, keyword) => {
@@ -3052,8 +3389,8 @@ module.exports = {
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += ` where b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`;
-      cql += ` where b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`;
+      sql += ` where b.bid = '${keyword}' or b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`;
+      cql += ` where b.bid = '${keyword}' or b.narrative like '%${keyword}%' or s.title like '%${keyword}%' or b.tag like '%${keyword}%' or b.group_code = '${keyword}' or b.amount = '${keyword}'`;
     }
 
     sql += ` order by b.bid desc,b.narrative asc`;
@@ -4669,6 +5006,64 @@ module.exports = {
   },
 
 
+  
+
+  // VOUCHER COSTS - FMS
+
+  fetchVcosts: async (page, keyword) => {
+    var sql = "select * from P06.price c ";
+    var cql =
+      "select count(*) as total from P06.price c ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `and (c.title like '%${keyword.trim()}%' or c.group_id like '%${keyword.trim()}%')`;
+      cql += `and (c.title like '%${keyword.trim()}%' or c.group_id like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by price_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchVcost: async (id) => {
+    const res = await db.query("select * from P06.price where price_id = " + id);
+    return res;
+  },
+
+  insertVcost: async (data) => {
+    const res = await db.query("insert into P06.price set ?", data);
+    return res;
+  },
+
+  updateVcost: async (id, data) => {
+    const res = await db.query(
+      "update P06.price set ? where price_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteVcost: async (id) => {
+    const res = await db.query("delete from P06.price where price_id = " + id);
+    return res;
+  },
+
+
+
   // DEBTORS - FMS MODELS
 
   fetchDebtors: async (page, keyword) => {
@@ -5352,6 +5747,12 @@ module.exports = {
     const sessions = await db.query(
       "select *,date_format(admission_date,'%m%y') as admission_code from P06.session where status = 1"
     );
+    const schemes = await db.query(
+      "select * from utility.scheme"
+    );
+    const units = await db.query(
+      "select * from utility.unit"
+    );
     //const resm = await db.query("select s.session_id as `sessionId`,s.title as `sessionName` from P06.session s where s.status = 1");
     if (progs && majs)
       return {
@@ -5360,6 +5761,8 @@ module.exports = {
         departments: depts,
         courses,
         sessions,
+        schemes,
+        units
       };
     return null;
   },

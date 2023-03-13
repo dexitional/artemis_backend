@@ -2932,6 +2932,511 @@ module.exports = {
     }
   },
 
+
+  // PROGRAMS - AIS
+
+  fetchPrograms: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchPrograms(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchProgram: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchProgram(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postProgram: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertProgram(req.body)
+          : await SSO.updateProgram(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteProgram: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteProgram(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+  // COURSES - AIS
+
+  fetchCourses: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchCourses(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchCourse: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchCourse(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postCourse: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertCourse(req.body)
+          : await SSO.updateCourse(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteCourse: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteCourse(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+   // SCHEMES - AIS
+
+   fetchSchemes: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchSchemes(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchScheme: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchScheme(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postScheme: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertScheme(req.body)
+          : await SSO.updateScheme(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteScheme: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteScheme(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+
+   // COUNTRIES - AIS
+
+   fetchCountries: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchCountries(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchCountry: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchCountry(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postCountry: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertCountry(req.body)
+          : await SSO.updateCountry(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteCountry: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteCountry(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+
+  // REGIONS - AIS
+
+  fetchRegions: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchRegions(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchRegion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchRegion(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postRegion: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertRegion(req.body)
+          : await SSO.updateRegion(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteRegion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteRegion(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+  // RELIGIONS - AIS
+
+  fetchReligions: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchReligions(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchReligion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchReligion(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postReligion: async (req, res) => {
+    const { id } = req.body;
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertReligion(req.body)
+          : await SSO.updateReligion(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteReligion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteReligion(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+
+
+
+
   // BILLS CONTROLS - FMS
 
   fetchBills: async (req, res) => {
@@ -3875,6 +4380,108 @@ module.exports = {
     }
   },
   
+
+
+  // Voucher Costs - FMS
+
+  fetchVcosts: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var charges = await SSO.fetchVcosts(page, keyword);
+      if (charges && charges.data.length > 0) {
+        res.status(200).json({ success: true, data: charges });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  fetchVcost: async (req, res) => {
+    try {
+      const id = req.params.id;
+      var charge = await SSO.fetchVcost(id);
+
+      if (charge && charge.length > 0) {
+        res.status(200).json({ success: true, data: charge });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  postVcost: async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        var resp;
+        let dt = {
+          title: req.body.title,
+          amount: req.body.amount,
+          group_id: req.body.group_id,
+          sell_type: req.body.sell_type,
+          currency: req.body.currency,
+        };
+        
+        if (id <= 0) {
+          dt.created_at = new Date()
+          resp = await SSO.insertVcost(dt);
+        } else {
+          resp = await SSO.updateVcost(id, dt);
+        }
+
+        if (resp) {
+          res.status(200).json({ success: true, data: resp });
+        } else {
+          res
+            .status(200)
+            .json({ success: false, data: null, msg: "Action Failed" });
+        }
+     
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something Wrong Happened" });
+    }
+  },
+
+  deleteVcost: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteVcost(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
 
   // Debtors - FMS
 

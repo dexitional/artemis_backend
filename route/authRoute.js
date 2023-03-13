@@ -176,6 +176,42 @@ Router.get("/ais/resits/register/:id", SSOController.registerResit);
 Router.get("/ais/resits/approve/:id", SSOController.approveResit);
 // TRANSCRIPT 
 Router.post("/ais/transcript", SSOController.postTranscript);
+// PROGRAM routes
+Router.get("/ais/programs", SSOController.fetchPrograms);
+Router.get("/ais/programs/:id", SSOController.fetchProgram);
+Router.post("/ais/programs", SSOController.postProgram);
+Router.delete("/ais/programs/:id", SSOController.deleteProgram);
+// COURSE routes
+Router.get("/ais/courses", SSOController.fetchCourses);
+Router.get("/ais/courses/:id", SSOController.fetchCourse);
+Router.post("/ais/courses", SSOController.postCourse);
+Router.delete("/ais/courses/:id", SSOController.deleteCourse);
+// SCHEME routes
+Router.get("/ais/schemes", SSOController.fetchSchemes);
+Router.get("/ais/schemes/:id", SSOController.fetchScheme);
+Router.post("/ais/schemes", SSOController.postScheme);
+Router.delete("/ais/schemes/:id", SSOController.deleteScheme);
+// COUNTRY routes
+Router.get("/ais/countries", SSOController.fetchCountries);
+Router.get("/ais/countries/:id", SSOController.fetchCountry);
+Router.post("/ais/countries", SSOController.postCountry);
+Router.delete("/ais/countries/:id", SSOController.deleteCountry);
+// REGION routes
+Router.get("/ais/regions/", SSOController.fetchRegions);
+Router.get("/ais/regions/:id", SSOController.fetchRegion);
+Router.post("/ais/regions", SSOController.postRegion);
+Router.delete("/ais/regions/:id", SSOController.deleteRegion);
+// RELIGION routes
+Router.get("/ais/religions", SSOController.fetchReligions);
+Router.get("/ais/religions/:id", SSOController.fetchReligion);
+Router.post("/ais/religions", SSOController.postReligion);
+Router.delete("/ais/religions/:id", SSOController.deleteReligion);
+
+
+
+
+
+
 
 
 
@@ -222,6 +258,12 @@ Router.get("/fms/services/:id", SSOController.fetchService);
 Router.post("/fms/services", SSOController.postService);
 Router.get("/fms/servicehelper", SSOController.loadAllServices);
 Router.delete("/fms/services/:id", SSOController.deleteService);
+
+// VOUCHER COSTS
+Router.get("/fms/vcosts/", SSOController.fetchVcosts);
+Router.get("/fms/vcosts/:id", SSOController.fetchVcost);
+Router.post("/fms/vcosts", SSOController.postVcost);
+Router.delete("/fms/vcosts/:id", SSOController.deleteVcost);
 
 
 // DEBTORS
