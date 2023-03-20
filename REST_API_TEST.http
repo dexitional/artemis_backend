@@ -1,0 +1,18 @@
+POST http://localhost:5020/api/v1/payservice HTTP/1.1
+Content-Type: application/json
+
+{
+    "serviceId": "02",
+    "amountPaid": "200",
+    "currency":"GHC",
+    "studentId":"41329275",
+    "refNote":"Test",
+    "transRef":"Test",
+    "buyerName":"",
+    "buyerPhone":"",
+    "formId":"",
+    "sessionId":"40"
+}
+
+###
+

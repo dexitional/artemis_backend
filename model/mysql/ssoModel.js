@@ -3734,13 +3734,19 @@ module.exports = {
     var count = 0;
     //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
     //if(st) count = st.affectedRows
-    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
+    //const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
+    
+    const st = await db.query("select t.transtype_id,t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id where (t.id not in (select tid from fms.studtrans where tid is not null)) order by t.id desc");
+    
     if (st && st.length > 0) {
       for (const s of st) {
-        const session_id = await SR.getActiveSessionByRefNo(s.refno);
-        const dt = { ...s, session_id };
-        const ins = await db.query("insert into fms.studtrans set ?", dt);
-        if (ins && ins.insertId > 0) count += 1;
+        if([2,4].includes(parseInt(s.transtype_id))){
+          const session_id = await SR.getActiveSessionByRefNo(s.refno);
+          delete s.transtype_id;
+          const dt = { ...s, session_id };
+          const ins = await db.query("insert into fms.studtrans set ?", dt);
+          if (ins && ins.insertId > 0) count += 1;
+        }
       }
     }
     //insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative)
@@ -4609,8 +4615,8 @@ module.exports = {
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += ` and (transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
-      cql += ` and (transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
+      sql += ` and (indexno = '${keyword.trim()}' or refno = '${keyword.trim()}' or transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
+      cql += ` and (indexno = '${keyword.trim()}' or transtag like '%${keyword.trim()}%' or fname like '%${keyword.trim()}%' or lname like '%${keyword.trim()}%' or amount = '${keyword.trim()}')`;
     }
 
     sql += ` order by transdate desc,id`;
@@ -4619,8 +4625,7 @@ module.exports = {
     const ces = await db.query(cql);
     const res = await db.query(sql);
     const count = Math.ceil(ces[0].total / size);
-    console.log("PAYMENTS SQL: ", sql);
-
+    
     return {
       totalPages: count,
       totalData: ces[0].total,
@@ -4638,14 +4643,13 @@ module.exports = {
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += ` and fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%' `;
-      cql += ` and fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%' `;
+      sql += ` and (indexno = '${keyword.trim()}' or refno = '${keyword.trim()}' or fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%') `;
+      cql += ` and (indexno = '${keyword.trim()}' or refno = '${keyword.trim()}' or fname like '%${keyword}%' or lname like '%${keyword}%' or amount = '${keyword}' or reference like '%${keyword}%' or transtag like '%${keyword}%') `;
     }
 
     sql += ` order by id desc`;
     sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
 
-    console.log("PAYMENTS SQL: ", sql);
     const ces = await db.query(cql);
     const res = await db.query(sql);
     const count = Math.ceil(ces[0].total / size);
