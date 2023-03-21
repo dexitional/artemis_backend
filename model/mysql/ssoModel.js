@@ -797,7 +797,7 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select distinct h.serial, h.* FROM ais.fetchshortlist h where h.session_id = " +
+        "select distinct h.serial, h.* from ais.fetchshortlist h where h.session_id = " +
         sid[0].session_id;
       var cql =
         "select count(distinct(serial)) as total from ais.fetchshortlist h where h.session_id = " +
@@ -842,6 +842,24 @@ module.exports = {
         " order by p.serial asc"
     );
     return { data: res };
+  },
+
+  removeSortData: async (serial) => {
+    // Delete from P06.admitted tbl
+    var ins = await db.query(
+      "delete from P06.sorted where serial = " + serial
+    );
+    // Reset Flag_admit from P06.applicant tbl
+    var ins = await db.query(
+      "update P06.applicant set flag_admit = 0 where serial = " + serial
+    );
+    // Delete from ais.student
+    var ins = await db.query(
+      "delete from ais.student where refno = '" + serial + "'"
+    );
+    
+    if (ins) return ins;
+    return null;
   },
 
   switchVoucher: async (data) => {
@@ -3737,14 +3755,17 @@ module.exports = {
     //const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
     
     const st = await db.query("select t.transtype_id,t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id where (t.id not in (select tid from fms.studtrans where tid is not null)) order by t.id desc");
-    
+    console.log(st.length)
     if (st && st.length > 0) {
       for (const s of st) {
+        console.log("REC",s)
         if([2,4].includes(parseInt(s.transtype_id))){
+          console.log("PASSED",s)
           const session_id = await SR.getActiveSessionByRefNo(s.refno);
           delete s.transtype_id;
           const dt = { ...s, session_id };
           const ins = await db.query("insert into fms.studtrans set ?", dt);
+          console.log(ins)
           if (ins && ins.insertId > 0) count += 1;
         }
       }

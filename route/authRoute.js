@@ -81,7 +81,8 @@ Router.get("/ams/getdocs/:serial", SSOController.fetchDocuments);
 Router.get("/ams/addtosort/:serial", SSOController.addToSort);
 // SORTED routes
 Router.get("/ams/sorted", SSOController.fetchSortedApplicants);
-Router.post("/ams/admitnow", SSOController.admitApplicant);
+Router.get("/ams/admitrevoke/:serial", SSOController.removeSortData);
+
 // MATRICULANT routes
 Router.get("/ams/freshers", SSOController.fetchFreshers);
 Router.get("/ams/fresherlist", SSOController.fetchFreshersData);

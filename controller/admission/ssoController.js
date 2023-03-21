@@ -1082,6 +1082,26 @@ module.exports = {
     }
   },
 
+  // REMOVE SORTED APPLICANT
+  removeSortData: async (req, res) => {
+    try {
+      const { serial } = req.params;
+      var resp = await SSO.removeSortData(serial);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
   // ADMIT APPLICANT AS STUDENT
   admitApplicant: async (req, res) => {
     try {

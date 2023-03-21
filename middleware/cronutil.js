@@ -5,6 +5,7 @@ const { getSemestersByCode } = require("../middleware/util")
 // CRON BOTS
 
 const runBills = async () => {
+    console.log("RUNNING BILLS POSTING ....")
     var bl = await SSO.fetchCurrentBills();
     //const sess = await SSO.getActiveSessionByMode(1)
     var resp = {};
@@ -34,6 +35,8 @@ const runBills = async () => {
 
 
 const cleanBills = async () => {
+  console.log("RUNNING CLEAN BILLS ....")
+  
   var count = 0;
   var bills = await SSO.fetchUnpublisedBills();
   if(bills && bills.length > 0){
@@ -46,16 +49,19 @@ const cleanBills = async () => {
 
 
 const runRetireStudentAccount = async () => {
+  console.log("RUNNING STUDENT BALANCE RETIREMENT ....")
   var resp = await SSO.retireStudentAccount();
   return resp;
 }
 
 const runRetireAccountTransact = async () => {
+  console.log("RUNNING ACCOUNTS RETIREMENT ....")
   var resp = await SSO.retireAccountTransact();
   return resp;
 }
 
 const retireResitTransact = async () => {
+  console.log("RUNNING RESIT RETIREMENT ....")
   var resp = await SSO.retireResitTransact();
   return resp;
 }
@@ -78,12 +84,14 @@ const runVoucherSender = async () => {
 
 
 const runSetupScoresheet = async () => {
+  console.log("RUNNING SCORESHEET SETUP ....")
   var resp = await SSO.setupSchoresheet();
   return resp;
 }
 
 
 const runMsgDispatcher = async () => {
+  console.log("RUNNING MESSAGE DISPATCHER ....")
   var count = 0;
   var res = await SSO.fetchInformerData();
   if(res && res.length > 0){
@@ -126,6 +134,7 @@ const runUpgradeNames = async () => {
 }
 
 const runRemovePaymentDuplicates = async () => {
+  console.log("RUNNING TRANSACTION DUPLICATES REMOVAL ....")
   var resp = await SSO.runRemovePaymentDuplicates();
   return resp;
 }

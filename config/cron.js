@@ -5,21 +5,23 @@ const { runBills, runVoucherSender, runRetireStudentAccount, runRetireAccountTra
 const cron = require('node-cron'); 
 //import PQueue from 'p-queue';
 //const queue = new PQueue({concurrency: 1});
+const { Queue } = require('async-await-queue');
+const queue = new Queue(1, 100);
 
 
 /* CRON SCHEDULES   */
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/1 * * * *', () => {
     const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          runMsgDispatcher()
-          //runSetupScoresheet()
+          // queue.run(() => runMsgDispatcher())
+          // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
+          queue.run(() => runRetireAccountTransact())
           
-         
         }
     });
 });
@@ -34,43 +36,22 @@ cron.schedule('*/15 * * * *', async function() {
         /* FMS CRON JOBS  */
 
           // RUN BILLS CHARGED
-          runBills()
-          cleanBills()
+          queue.run(() => runBills())
+          queue.run(() => cleanBills())
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          setTimeout(async() =>  await runRetireAccountTransact(), 30000) 
+          queue.run(() => runRetireAccountTransact())
           // RUN RETIREMENT ON STUDENT ACCOUNTS 
-          setTimeout(async() =>  await runRetireStudentAccount(), 60000) 
+          queue.run(() => runRetireStudentAccount())
           // RUN VOUCHERS RETIREMENT & RESEND
-          setTimeout(async() =>  await runVoucherSender(), 90000) 
+          queue.run(() => runVoucherSender())
+          // CORRECT DUPLICATE PAYMENT ENTRIES
+          queue.run(() => runRemovePaymentDuplicates())
+          
           // RUN SCORESHEET SETUP FOR NEW CALENDAR
           //setTimeout(async() =>  await runSetupScoresheet(),120000) 
           // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME), 200) 
           //setTimeout(async() => await runUpgradeNames(), 150000) 
-          // CORRECT DUPLICATE PAYMENT ENTRIES
-          setTimeout(async() =>  await runRemovePaymentDuplicates(), 180000) 
           // RUN RESIT CHECKER
-
-          /*
-          
-          
-          // RUN BILLS CHARGED
-          (async () => await queue.add(() => runBills()))();
-          (async () => await queue.add(() => cleanBills()))();
-          // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          (async () => await queue.add(() => runRetireFeesTransact()))();
-          // RUN RETIREMENT ON STUDENT ACCOUNTS 
-          (async () => await queue.add(() => runRetireStudentAccount()))();
-          // RUN VOUCHERS RETIREMENT & RESEND
-          (async () => await queue.add(() => runVoucherSender()))();
-          // RUN SCORESHEET SETUP FOR NEW CALENDAR
-          //setTimeout(async() =>  await runSetupScoresheet(),120000) 
-          // CORRECT STUDENT NAMES (FNAME,MNAME,LNAME), 200) 
-          //setTimeout(async() => await runUpgradeNames(), 150000) 
-          // CORRECT DUPLICATE PAYMENT ENTRIES
-          (async () => await queue.add(() => runRemovePaymentDuplicates()))();
-          // RUN RESIT CHECKER
-          
-          */
       }
     });
 });
