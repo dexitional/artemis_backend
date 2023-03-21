@@ -12,15 +12,15 @@ const queue = new Queue(1, 100);
 /* CRON SCHEDULES   */
 
 // Schedule @ EVERY MINUTE - MINOR & QUICK CHECKS
-cron.schedule('*/1 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
     const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
         if(error){ console.log(error) }
         else {
           // INFORMANT MESSAGES - AIS
-          // queue.run(() => runMsgDispatcher())
+          queue.run(() => runMsgDispatcher())
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          queue.run(() => runRetireAccountTransact())
+          // queue.run(() => runRetireAccountTransact())
           
         }
     });
