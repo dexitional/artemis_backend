@@ -797,10 +797,10 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select distinct h.serial, h.* from ais.fetchshortlist h where h.session_id = " +
+        "select distinct h.serial, h.* from ais.shortlist h where h.session_id = " +
         sid[0].session_id;
       var cql =
-        "select count(distinct(serial)) as total from ais.fetchshortlist h where h.session_id = " +
+        "select count(distinct(serial)) as total from ais.shortlist h where h.session_id = " +
         sid[0].session_id;
 
       const size = 50;
