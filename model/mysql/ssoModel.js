@@ -2269,7 +2269,7 @@ module.exports = {
             if (ups && ups.affectedRows > 0){
               count += 1;
               // Remove Trailed Papers inside Resit Table
-              const insGet = await db.query(
+              const insGet = await db.query(  
                 "delete from ais.resit_data where session_id = " +
                   r.session_id +
                   " and course_id = " +

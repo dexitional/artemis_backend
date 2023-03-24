@@ -324,6 +324,20 @@ Router.get("/setupstaffno", async (req, res) => {
   res.json(ss);
 });
 
+Router.get("/fixfinance", async (req, res) => {
+  const ss = await db.query("select s.refno as sid,t.id as tid from fms.transaction t left join ais.student s on t.refno in (s.refno,s.indexno) where t.transtype_id in (2,4) where t.refno is not null");
+  var count = 0;
+  if (ss.length > 0) {
+    for (var s of ss) {
+      const st = 
+      await db.query("update fms.transaction set refno = '"+s.sid+"' where id = " + s.tid);
+      await db.query("update fms.studtrans set refno = '"+s.sid+"' where tid = " + s.tid);
+      count++;
+    }
+  }
+  res.json(count);
+});
+
 Router.get("/setupstaffaccess", async (req, res) => {
   const ss = await db.query(
     "select phone,inst_mail,staff_no from hrs.staff where phone is not NULL and inst_mail is not null"
