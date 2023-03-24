@@ -4483,7 +4483,7 @@ module.exports = {
   runRemovePaymentDuplicates: async () => {
     var count = 0;
     const st = await db.query(
-      "select *,id,refno,amount,transtag,date_format(transdate,'%Y-%m-%d') as transdate from fms.transaction where transtype_id = 2 order by id"
+      "select *,id,refno,amount,transtag,date_format(transdate,'%Y-%m-%d') as transdate from fms.transaction where transtype_id in (2,4) order by id"
     );
     const dup = [];
     const obj = {};

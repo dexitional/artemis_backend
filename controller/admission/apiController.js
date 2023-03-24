@@ -171,6 +171,7 @@ module.exports = {
       } else {
         const st = await Student.fetchStudentProfile(studentId);
         const ins = await SSO.sendTransaction(dt);
+        const studentId = st[0].refno;
         if (ins) {
           /* ACADEMIC FEES PAYMENT */
           if (serviceId == 2) {
@@ -227,7 +228,7 @@ module.exports = {
               refno: studentId,
               amount: -1 * amountPaid,
               currency,
-              narrative: `Online graduaion fees payment, StudentID: ${studentId}`,
+              narrative: `Online graduation fees payment, StudentID: ${studentId}`,
             };
             const insm = await SSO.savePaymentToAccount(dt);
             if(insm && insm.insertId > 0)
