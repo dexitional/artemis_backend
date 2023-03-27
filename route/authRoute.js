@@ -37,6 +37,57 @@ Router.post("/reset/sendpwd", SSOController.sendPwd);
 Router.get("/reset/stageusers", SSOController.stageusers);
 Router.get("/reset/testsms", SSOController.testsms);
 
+/* SSO MODULE ROUTES */
+
+// USER ACCOUNTS
+Router.get("/sso/users/", SSOController.fetchVcosts);
+Router.get("/sso/users/:id", SSOController.fetchVcost);
+Router.post("/sso/users", SSOController.postVcost);
+Router.delete("/sso/users/:id", SSOController.deleteVcost);
+
+
+// USER GROUPS
+Router.get("/sso/groups/", SSOController.fetchGroups);
+Router.get("/sso/groups/:id", SSOController.fetchGroup);
+Router.post("/sso/groups", SSOController.postGroup);
+Router.delete("/sso/groups/:id", SSOController.deleteGroup);
+
+
+// USER ROLES
+Router.get("/sso/uroles/", SSOController.fetchUserRoles);
+Router.get("/sso/uroles/:id", SSOController.fetchUserRole);
+Router.post("/sso/uroles", SSOController.postUserRole);
+Router.delete("/sso/uroles/:id", SSOController.deleteUserRole);
+
+
+// ACTIVE APPS
+Router.get("/sso/apps/", SSOController.fetchApps);
+Router.get("/sso/apps/:id", SSOController.fetchApp);
+Router.post("/sso/apps", SSOController.postApp);
+Router.delete("/sso/apps/:id", SSOController.deleteApp);
+
+
+// APP ROLES
+Router.get("/sso/aroles/", SSOController.fetchAppRoles);
+Router.get("/sso/aroles/:id", SSOController.fetchAppRole);
+Router.post("/sso/aroles", SSOController.postAppRole);
+Router.delete("/sso/aroles/:id", SSOController.deleteAppRole);
+
+
+// STAFF ID CARD
+Router.get("/sso/stafffids/", SSOController.fetchVcosts);
+Router.get("/sso/staffids/:id", SSOController.fetchVcost);
+
+
+// STUDENT ID CARD
+Router.get("/sso/studentids/", SSOController.fetchVcosts);
+Router.get("/sso/studentids/:id", SSOController.fetchVcost);
+
+
+
+
+
+
 /* EVS MODULE ROUTES */
 Router.get("/evs/data/:id/:tag", SSOController.fetchEvsData);
 Router.post("/evs/data", SSOController.postEvsData);
@@ -307,6 +358,8 @@ Router.get("/hrs/helpers", SSOController.fetchHRShelpers);
 Router.get("/fms/helpers", SSOController.fetchFMShelpers);
 Router.get("/ais/helpers", SSOController.fetchAIShelpers);
 Router.get("/ams/helpers", SSOController.fetchAMShelpers);
+Router.get("/sso/helpers", SSOController.fetchSSOhelpers);
+
 
 // SCRIPTS
 Router.get("/setupstaffno", async (req, res) => {

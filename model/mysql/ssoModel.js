@@ -5738,6 +5738,235 @@ module.exports = {
     return res;
   },
 
+
+
+  
+
+  // USER GROUPS - SSO
+
+  fetchGroups: async (page, keyword) => {
+    var sql = "select * from identity.group c ";
+    var cql =
+      "select count(*) as total from identity.group c ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `and (c.group_name like '%${keyword.trim()}%' or c.group_desc like '%${keyword.trim()}%')`;
+      cql += `and (c.group_name like '%${keyword.trim()}%' or c.group_desc like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by group_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchGroup: async (id) => {
+    const res = await db.query("select * from identity.group where group_id = " + id);
+    return res;
+  },
+
+  insertGroup: async (data) => {
+    const res = await db.query("insert into identity.group set ?", data);
+    return res;
+  },
+
+  updateGroup: async (id, data) => {
+    const res = await db.query(
+      "update identity.group set ? where group_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteGroup: async (id) => {
+    const res = await db.query("delete from identity.group where group_id = " + id);
+    return res;
+  },
+
+
+
+  // USER ROLES - SSO
+
+  fetchUserRoles: async (page, keyword) => {
+    var sql = "select c.*,a.role_desc,a.role_name,u.tag,u.username,u.group_id from identity.user_role c left join identity.user u on c.uid = u.uid left join identity.app_role a on c.arole_id = a.arole_id ";
+    var cql =
+      "select count(*) as total from identity.user_role c left join identity.user u on c.uid = u.uid left join identity.app_role a on c.arole_id = a.arole_id ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `where (a.role_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+      cql += `where (a.role_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by u.tag,c.urole_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchUserRole: async (id) => {
+    const res = await db.query("select * from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+  insertUserRole: async (data) => {
+    const res = await db.query("insert into identity.user_role set ?", data);
+    return res;
+  },
+
+  updateUserRole: async (id, data) => {
+    const res = await db.query(
+      "update identity.user_role set ? where urole_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteUserRole: async (id) => {
+    const res = await db.query("delete from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+
+  
+  // ACTIVE APPS - SSO
+
+  fetchApps: async (page, keyword) => {
+    var sql = "select c.*,a.role_desc,a.role_name,u.tag,u.username,u.group_id from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+    var cql =
+      "select count(*) as total from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+      cql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by u.tag,c.urole_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchApp: async (id) => {
+    const res = await db.query("select * from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+  insertApp: async (data) => {
+    const res = await db.query("insert into identity.user_role set ?", data);
+    return res;
+  },
+
+  updateApp: async (id, data) => {
+    const res = await db.query(
+      "update identity.user_role set ? where urole_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteApp: async (id) => {
+    const res = await db.query("delete from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+
+   // APP ROLES - SSO
+
+   fetchAppRoles: async (page, keyword) => {
+    var sql = "select c.*,a.role_desc,a.role_name,u.tag,u.username,u.group_id from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+    var cql =
+      "select count(*) as total from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+      cql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by u.tag,c.urole_id asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchAppRole: async (id) => {
+    const res = await db.query("select * from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+  insertAppRole: async (data) => {
+    const res = await db.query("insert into identity.user_role set ?", data);
+    return res;
+  },
+
+  updateAppRole: async (id, data) => {
+    const res = await db.query(
+      "update identity.user_role set ? where urole_id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteAppRole: async (id) => {
+    const res = await db.query("delete from identity.user_role where urole_id = " + id);
+    return res;
+  },
+
+
+
+
+
   // HELPERS
 
   fetchFMShelpers: async () => {
@@ -5873,6 +6102,22 @@ module.exports = {
         countries,
         letters,
         calendars,
+      };
+    return null;
+  },
+
+
+  fetchSSOhelpers: async () => {
+    const users = await db.query("select * from identity.user where flag_locked = 0 and flag_disabled = 0 order by group_id");
+    const aroles = await db.query("select * from identity.app_role where status = 1");
+    // const calendars = await db.query("select * from utility.session where `default` = 1");
+    // const programs = await db.query("select * from utility.program where status = 1");
+    // const majors = await db.query("select m.*,p.`short` as program_name from ais.major m left join utility.program p on p.id = m.prog_id where m.status = 1");
+    // const stages = await db.query("select * from P06.stage where status = 1");
+    if (users && aroles)
+      return {
+        users,
+        aroles,
       };
     return null;
   },

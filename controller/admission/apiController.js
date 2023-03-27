@@ -171,7 +171,7 @@ module.exports = {
       } else {
         const st = await Student.fetchStudentProfile(studentId);
         const ins = await SSO.sendTransaction(dt);
-        const studentId = st[0].refno;
+        //const studentId = st[0].refno;
         if (ins) {
           /* ACADEMIC FEES PAYMENT */
           if (serviceId == 2) {
