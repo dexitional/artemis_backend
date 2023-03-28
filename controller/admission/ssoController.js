@@ -5594,7 +5594,7 @@ module.exports = {
 
   
   postApp: async (req, res) => {
-    const { group_id:id } = req.body;
+    const { app_id:id } = req.body;
     try {
         var resp;
         if (id <= 0) {
@@ -5684,7 +5684,7 @@ module.exports = {
 
   
   postAppRole: async (req, res) => {
-    const { group_id:id } = req.body;
+    const { arole_id:id } = req.body;
     try {
         var resp;
         if (id <= 0) {
@@ -5713,6 +5713,96 @@ module.exports = {
     try {
       const { id } = req.params;
       var resp = await SSO.deleteAppRole(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
+  // User Accounts - SSO
+
+  fetchUserAccounts: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var charges = await SSO.fetchUserAccounts(page, keyword);
+      if (charges && charges.data.length > 0) {
+        res.status(200).json({ success: true, data: charges });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  fetchUserAccount: async (req, res) => {
+    try {
+      const id = req.params.id;
+      var charge = await SSO.fetchUserAccount(id);
+
+      if (charge && charge.length > 0) {
+        res.status(200).json({ success: true, data: charge });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  
+  postUserAccount: async (req, res) => {
+    const { uid:id } = req.body;
+    try {
+        var resp;
+        if (id <= 0) {
+          resp = await SSO.insertUserAccount(req.body);
+        } else {
+          resp = await SSO.updateUserAccount(id, req.body);
+        }
+
+        if (resp) {
+          res.status(200).json({ success: true, data: resp });
+        } else {
+          res
+            .status(200)
+            .json({ success: false, data: null, msg: "Action Failed" });
+        }
+     
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something Wrong Happened" });
+    }
+  },
+
+  deleteUserAccount: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteUserAccount(id);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {

@@ -5857,20 +5857,20 @@ module.exports = {
   // ACTIVE APPS - SSO
 
   fetchApps: async (page, keyword) => {
-    var sql = "select c.*,a.role_desc,a.role_name,u.tag,u.username,u.group_id from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+    var sql = "select c.* from identity.app c ";
     var cql =
-      "select count(*) as total from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+      "select count(*) as total from identity.app c ";
 
     const size = 10;
     const pg = parseInt(page);
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
-      cql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+      sql += `where (c.app_name like '%${keyword.trim()}%' or c.app_desc like '%${keyword.trim()}%' or c.app_tag like '%${keyword.trim()}%')`;
+      cql += `where (c.app_name like '%${keyword.trim()}%' or c.app_desc like '%${keyword.trim()}%' or c.app_tag like '%${keyword.trim()}%')`;
     }
 
-    sql += `order by u.tag,c.urole_id asc`;
+    sql += `order by c.app_id asc`;
     sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
 
     const ces = await db.query(cql);
@@ -5886,25 +5886,25 @@ module.exports = {
 
   
   fetchApp: async (id) => {
-    const res = await db.query("select * from identity.user_role where urole_id = " + id);
+    const res = await db.query("select * from identity.app where app_id = " + id);
     return res;
   },
 
   insertApp: async (data) => {
-    const res = await db.query("insert into identity.user_role set ?", data);
+    const res = await db.query("insert into identity.app set ?", data);
     return res;
   },
 
   updateApp: async (id, data) => {
     const res = await db.query(
-      "update identity.user_role set ? where urole_id = " + id,
+      "update identity.app set ? where app_id = " + id,
       data
     );
     return res;
   },
 
   deleteApp: async (id) => {
-    const res = await db.query("delete from identity.user_role where urole_id = " + id);
+    const res = await db.query("delete from identity.app where app_id = " + id);
     return res;
   },
 
@@ -5912,20 +5912,20 @@ module.exports = {
    // APP ROLES - SSO
 
    fetchAppRoles: async (page, keyword) => {
-    var sql = "select c.*,a.role_desc,a.role_name,u.tag,u.username,u.group_id from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+    var sql = "select c.*,a.app_name from identity.app_role c left join identity.app a on c.app_id = a.app_id ";
     var cql =
-      "select count(*) as total from identity.user_role c left join identity.user u on c.uid = u.id left join identity.app_role a on c.arole_id = a.arole_id ";
+      "select count(*) as total from identity.app_role c left join identity.app a on c.app_id = a.app_id ";
 
     const size = 10;
     const pg = parseInt(page);
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
-      cql += `and (a.group_name like '%${keyword.trim()}%' or u.username like '%${keyword.trim()}%' or u.tag like '%${keyword.trim()}%')`;
+      sql += `where (a.app_name like '%${keyword.trim()}%' or c.role_name like '%${keyword.trim()}%' or c.role_desc like '%${keyword.trim()}%')`;
+      cql += `where (a.app_name like '%${keyword.trim()}%' or c.role_name like '%${keyword.trim()}%' or c.role_desc like '%${keyword.trim()}%')`;
     }
 
-    sql += `order by u.tag,c.urole_id asc`;
+    sql += `order by c.arole_id asc`;
     sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
 
     const ces = await db.query(cql);
@@ -5941,29 +5941,86 @@ module.exports = {
 
   
   fetchAppRole: async (id) => {
-    const res = await db.query("select * from identity.user_role where urole_id = " + id);
+    const res = await db.query("select * from identity.app_role where arole_id = " + id);
     return res;
   },
 
   insertAppRole: async (data) => {
-    const res = await db.query("insert into identity.user_role set ?", data);
+    const res = await db.query("insert into identity.app_role set ?", data);
     return res;
   },
 
   updateAppRole: async (id, data) => {
     const res = await db.query(
-      "update identity.user_role set ? where urole_id = " + id,
+      "update identity.app_role set ? where arole_id = " + id,
       data
     );
     return res;
   },
 
   deleteAppRole: async (id) => {
-    const res = await db.query("delete from identity.user_role where urole_id = " + id);
+    const res = await db.query("delete from identity.app_role where arole_id = " + id);
     return res;
   },
 
 
+  
+   // APP ROLES - SSO
+
+   fetchUserAccounts: async (page, keyword) => {
+    var sql = "select * from identity.user c ";
+    var cql = "select count(*) as total from identity.user c ";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += `where (c.tag like '%${keyword.trim()}%' or c.username like '%${keyword.trim()}%')`;
+      cql += `where (c.tag like '%${keyword.trim()}%' or c.username like '%${keyword.trim()}%')`;
+    }
+
+    sql += `order by c.uid asc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+    
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  
+  fetchUserAccount: async (id) => {
+    const res = await db.query("select * from identity.user where uid = " + id);
+    return res;
+  },
+
+  insertAppRole: async (data) => {
+    const res = await db.query("insert into identity.user set ?", data);
+    return res;
+  },
+
+  updateAppRole: async (id, data) => {
+    const res = await db.query(
+      "update identity.user set ? where uid = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteAppRole: async (id) => {
+    const res = await db.query("delete from identity.user where uid = " + id);
+    return res;
+  },
+
+
+
+  
 
 
 
@@ -6110,14 +6167,18 @@ module.exports = {
   fetchSSOhelpers: async () => {
     const users = await db.query("select * from identity.user where flag_locked = 0 and flag_disabled = 0 order by group_id");
     const aroles = await db.query("select * from identity.app_role where status = 1");
+    const apps = await db.query("select * from identity.app where status = 1");
+    const groups = await db.query("select * from identity.group where status = 1");
     // const calendars = await db.query("select * from utility.session where `default` = 1");
     // const programs = await db.query("select * from utility.program where status = 1");
     // const majors = await db.query("select m.*,p.`short` as program_name from ais.major m left join utility.program p on p.id = m.prog_id where m.status = 1");
     // const stages = await db.query("select * from P06.stage where status = 1");
-    if (users && aroles)
+    if (users && aroles && apps && groups)
       return {
         users,
         aroles,
+        apps,
+        groups
       };
     return null;
   },

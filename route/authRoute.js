@@ -40,10 +40,10 @@ Router.get("/reset/testsms", SSOController.testsms);
 /* SSO MODULE ROUTES */
 
 // USER ACCOUNTS
-Router.get("/sso/users/", SSOController.fetchVcosts);
-Router.get("/sso/users/:id", SSOController.fetchVcost);
-Router.post("/sso/users", SSOController.postVcost);
-Router.delete("/sso/users/:id", SSOController.deleteVcost);
+Router.get("/sso/users/", SSOController.fetchUserAccounts);
+Router.get("/sso/users/:id", SSOController.fetchUserAccount);
+Router.post("/sso/users", SSOController.postUserAccount);
+Router.delete("/sso/users/:id", SSOController.deleteUserAccount);
 
 
 // USER GROUPS
