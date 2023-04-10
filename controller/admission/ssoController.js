@@ -355,40 +355,34 @@ module.exports = {
   },
 
   fetchPhoto: async (req, res) => {
-    const tag = req.query.tag;
-    var pic = await SSO.fetchPhoto(tag); // Photo
-    if (pic.length > 0) {
-      var filepath = path.join(__dirname, "/../../", pic[0].path);
-      try {
-        var stats = fs.statSync(filepath);
-        console.log(stats);
-        if (stats) {
-          res
-            .status(200)
-            .sendFile(path.join(__dirname, "/../../", pic[0].path));
+    const tag = req.query.tag.trim().toLowerCase();
+    try {
+      const bio = await SSO.fetchUserByVerb(tag); // Biodata
+      console.log(tag,bio)
+      if (bio) {
+        var pic = await SSO.fetchPhoto(tag, bio.gid); // Photo
+        if (pic) {
+          res.status(200).sendFile(pic);
         } else {
           res
             .status(200)
-            .sendFile(
-              path.join(__dirname, "/../../public/cdn/photo", "none.png")
-            );
+            .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
         }
-      } catch (e) {
-        console.log(e);
+      } else {
         res
           .status(200)
-          .sendFile(
-            path.join(__dirname, "/../../public/cdn/photo", "none.png")
-          );
+          .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
       }
-    } else {
+    } catch (err) {
+      console.log(err);
       res
         .status(200)
-        .sendFile(path.join(__dirname, "/../../public/cdn/photo", "none.png"));
+        .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
     }
   },
 
   postPhoto: async (req, res) => {
+    console.log(req.body)
     const { tag, group_id, lock } = req.body;
     var mpath;
     switch (group_id) {
@@ -412,41 +406,18 @@ module.exports = {
         break;
     }
     var imageBuffer = decodeBase64Image(req.body.photo);
-    const dest = path.join(
-      __dirname,
-      "/../../public/cdn/photo/" + mpath,
-      tag && tag.trim().toLowerCase() + "." + imageBuffer.type.split("/")[1]
-    );
-    const dbpath =
-      "./public/cdn/photo/" +
-      mpath +
-      "/" +
-      tag.trim().toLowerCase() +
-      "." +
-      imageBuffer.type.split("/")[1];
+    const dest = path.join(__dirname,"/../../public/cdn/photo/" + mpath,tag && tag.toString().replaceAll("/", "").trim().toLowerCase() + ".jpg");
+    const dbpath = "./public/cdn/photo/" +mpath +"/" +tag.toString().replaceAll("/", "").trim().toLowerCase() +".jpg";
     console.log(`Tag: ${tag}, Group ID: ${group_id}`);
     fs.writeFile(dest, imageBuffer.data, async function (err) {
-      if (err)
-        res
-          .status(200)
-          .json({ success: false, data: null, msg: "Photo not saved!" });
-      const ssoUser = await SSO.fetchSSOUser(tag);
-      if (ssoUser.length > 0) {
-        const insertData = !ssoUser[0].photo_id
-          ? await SSO.insertPhoto(ssoUser[0].uid, tag, group_id, dbpath)
-          : await SSO.updatePhoto(ssoUser[0].photo_id, dbpath);
-        if (lock) {
-          if (group_id == "01") {
-            const slk = await Student.updateStudentProfile(tag, {
-              flag_photo_lock: 1,
-            });
-          }
-        }
-        const stphoto = `${req.protocol}://${req.get(
-          "host"
-        )}/api/photos/?tag=${tag}`;
-        if (insertData) res.status(200).json({ success: true, data: stphoto });
-      }
+      if (err) res.status(200).json({ success: false, data: null, msg: "Photo not saved!" });
+     
+      const stphoto = `${req.protocol}://${req.get(
+        "host"
+      )}/api/photos/?tag=${tag.toString().toLowerCase()}&cache=${
+        Math.random() * 1000
+      }`;
+      res.status(200).json({ success: true, data: stphoto });  
     });
   },
 

@@ -8,7 +8,11 @@ const Student = require("../../model/mysql/studentModel");
 const { getUsername } = require("../../middleware/util");
 const SR = require("../../model/mysql/sharedModel");
 const { getGrade, isTrailed } = require("../../utils/helper");
-const delay = require('delay')
+const delay = require('delay');
+const path = require('path');
+const fs = require('fs');
+
+
 
 module.exports = {
   verifyUser: async ({ username, password }) => {
@@ -103,12 +107,51 @@ module.exports = {
     return res;
   },
 
-  fetchPhoto: async (uid) => {
-    //const sql = "select p.tag,p.path from identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
-    const sql =
-      "select p.tag,p.path from identity.photo p where p.tag = '" + uid + "'";
-    const res = await db.query(sql);
-    return res;
+  // fetchPhoto: async (uid) => {
+  //   //const sql = "select p.tag,p.path from identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
+  //   const sql =
+  //     "select p.tag,p.path from identity.photo p where p.tag = '" + uid + "'";
+  //   const res = await db.query(sql);
+  //   return res;
+  // },
+
+  fetchPhoto: async (tag, gid) => {
+    //var mpath = `${process.env.CDN_DIR}`
+    var mpath = path.join(__dirname, "/../../public/cdn/photo"),
+      spath;
+    switch (parseInt(gid)) {
+      case 1:
+        spath = `${mpath}/student/`;
+        break;
+      case 2:
+        spath = `${mpath}/staff/`;
+        break;
+      case 3:
+        spath = `${mpath}/nss/`;
+        break;
+      case 4:
+        spath = `${mpath}/alumni/`;
+        break;
+      case 5:
+        spath = `${mpath}/applicant/`;
+        break;
+     
+    }
+    var tag = tag.replaceAll("/", "").trim();
+    const file = `${spath}${tag}.jpg`;
+    const file2 = `${spath}${tag}.jpeg`;
+    try {
+      if (fs.statSync(file)) {
+        return file;
+      } else if (fs.statSync(file2)) {
+        return file2;
+      } else {
+        return `${mpath}/none.png`;
+      }
+    } catch (e) {
+      console.log(e)
+      return `${mpath}/none.png`;
+    }
   },
 
   fetchEvsPhoto: async (tag, eid) => {
@@ -198,9 +241,9 @@ module.exports = {
     var sql, res;
     // Student
     sql =
-      "select s.*,s.name,s.institute_email as mail,s.regno as tag,s.phone,'01' as gid,'STUDENT' as group_name,s.program_name as descriptor,s.department as unitname from ais.fetchstudents s where s.indexno = '" +
+      "select s.*,s.name,s.institute_email as mail,s.refno as tag,s.phone,'01' as gid,'STUDENT' as group_name,s.program_name as descriptor,s.department as unitname from ais.fetchstudents s where s.indexno = '" +
       keyword +
-      "' or s.institute_email = '" +
+      "' or s.refno = '"+keyword+"' or s.institute_email = '" +
       keyword +
       "'";
     const res1 = await db.query(sql);
@@ -208,7 +251,7 @@ module.exports = {
 
     // Staff
     sql =
-      "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor from hrs.staff s left join hrs.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join utitlity.unit x on p.unit_id = x.id where (s.inst_mail = '" +
+      "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor from hrs.staff s left join hrs.promotion p on s.promo_id = p.id left join hrs.job j on j.id = p.job_id left join utility.unit x on p.unit_id = x.id where (s.inst_mail = '" +
       keyword +
       "' or trim(s.staff_no) = '" +
       keyword +
