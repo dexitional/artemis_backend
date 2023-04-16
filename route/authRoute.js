@@ -209,6 +209,8 @@ Router.get("/ais/progchange/", SSOController.fetchProgchange);
 Router.post("/ais/progchange", SSOController.postProgchange);
 Router.delete("/ais/progchange/:id", SSOController.deleteProgchange);
 Router.get("/ais/progchange/approve/:id/:sno", SSOController.approveProgchange);
+// LETTER routes
+Router.get("/ais/letter/:tag", SSOController.fetchLetter);
 // DEFERMENT routes
 Router.get("/ais/deferment/", SSOController.fetchDefer);
 Router.post("/ais/deferment", SSOController.postDefer);

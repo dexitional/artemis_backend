@@ -342,7 +342,6 @@ module.exports = {
             .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
         }
       } catch (e) {
-        console.log(e);
         res
           .status(200)
           .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
@@ -374,7 +373,6 @@ module.exports = {
           .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
       }
     } catch (err) {
-      console.log(err);
       res
         .status(200)
         .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
@@ -408,7 +406,6 @@ module.exports = {
     var imageBuffer = decodeBase64Image(req.body.photo);
     const dest = path.join(__dirname,"/../../public/cdn/photo/" + mpath,tag && tag.toString().replaceAll("/", "").trim().toLowerCase() + ".jpg");
     const dbpath = "./public/cdn/photo/" +mpath +"/" +tag.toString().replaceAll("/", "").trim().toLowerCase() +".jpg";
-    console.log(`Tag: ${tag}, Group ID: ${group_id}`);
     fs.writeFile(dest, imageBuffer.data, async function (err) {
       if (err) res.status(200).json({ success: false, data: null, msg: "Photo not saved!" });
      
@@ -423,8 +420,7 @@ module.exports = {
 
   sendPhotos: async (req, res) => {
     var { gid } = req.body;
-    var spath = `${process.env.CDN_DIR}`,
-      mpath;
+    var spath = path.join(__dirname,"/../../public/cdn/photo/"), mpath;
     if (req.files && req.files.photos.length > 0) {
       for (var file of req.files.photos) {
         switch (parseInt(gid)) {
@@ -464,7 +460,7 @@ module.exports = {
 
   rotatePhoto: async (req, res) => {
     var { tag, group_id } = req.body;
-    var spath = `${process.env.CDN_DIR}`;
+    var spath = path.join(__dirname,"/../../public/cdn/photo/");
     switch (parseInt(group_id)) {
       case 1:
         spath = `${spath}/student/`;
@@ -505,7 +501,7 @@ module.exports = {
 
   removePhoto: async (req, res) => {
     var { tag, group_id } = req.body;
-    var spath = `${process.env.CDN_DIR}`;
+    var spath = path.join(__dirname,"/../../public/cdn/photo/");
     switch (parseInt(group_id)) {
       case 1:
         spath = `${spath}/student/`;
@@ -1311,6 +1307,28 @@ module.exports = {
       res
         .status(200)
         .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+
+  // SERVICE LETTER
+
+  fetchLetter: async (req, res) => {
+    try {
+      const { tag } = req.params;
+      var resp = await SSO.fetchServiceLetter(tag);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
     }
   },
 

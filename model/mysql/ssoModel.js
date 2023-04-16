@@ -1374,6 +1374,13 @@ module.exports = {
     return res;
   },
 
+  // SERVICE LETTERS MODELS
+  
+  fetchServiceLetter: async (tag) => {
+    const res = await db.query("select * from ais.service_letter where tag = '"+tag+"' and status = 1");
+    return res && res[0];
+  },
+
   // DEFERMENT MODELS
   fetchDefer: async () => {
     const res = await db.query(
