@@ -246,10 +246,7 @@ module.exports = {
         }
         res = dm;
       }
-
-    }
-      
-    return res;
+    } return res;
   },
 
   fetchStudentRT: async (indexno = null, academic_sem  = null) => {
@@ -257,15 +254,10 @@ module.exports = {
     /* NB : Resit courses for the same academic_sem should be loaded for registration */
     let res = [];
     if (indexno && academic_sem){
-      const sql = "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester,x.id as resit_id,x.scheme_id from ais.resit_data x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id where x.taken = 0 and x.paid = 1 and x.indexno = '" +
-      indexno +
-      "' and s.academic_sem = "
-      + academic_sem;
-        res = await db.query(sql);
-        console.log(sql,res)
-    
-    }
-    return res;
+       const sql = "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester,x.id as resit_id,x.scheme_id from ais.resit_data x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id where x.taken = 0 and x.paid = 1 and x.indexno = '" + indexno + "' and s.academic_sem = " + academic_sem;
+       res = await db.query(sql);
+       console.log(sql,res)
+    }  return res;
   },
 
   fetchRegMeta: async (prog_id = null, semester = null) => {
@@ -290,6 +282,23 @@ module.exports = {
           session_id +
           " and indexno = '" +
           indexno +
+          "'"
+      );
+    }
+    return res;
+  },
+
+  removeRegDataByCourse: async (indexno = null, session_id = null, course_id = null) => {
+    // Core & Non-Major Electives
+    let res;
+    if (indexno && session_id && course_id){
+      res = await db.query(
+        "delete from ais.assessment where session_id = " +
+          session_id +
+          " and indexno = '" +
+          indexno +
+          "' and course_id = '" +
+          course_id +
           "'"
       );
     }

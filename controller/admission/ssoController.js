@@ -1317,6 +1317,7 @@ module.exports = {
     try {
       const { tag } = req.params;
       var resp = await SSO.fetchServiceLetter(tag);
+      console.log(resp)
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {
@@ -1436,6 +1437,78 @@ module.exports = {
         .json({ success: false, data: null, msg: "Something wrong !" });
     }
   },
+
+
+  // SERVICE LETTERS
+
+  fetchServiceLetters: async (req, res) => {
+    try {
+      var letters = await SSO.fetchServiceLetters();
+      if (letters && letters.length > 0) {
+        res.status(200).json({ success: true, data: letters });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res.status(200).json({
+        success: false,
+        data: null,
+        msg: "Something went wrong error !",
+      });
+    }
+  },
+
+  postServiceLetter: async (req, res) => {
+    try {
+      const { id } = req.body;
+      console.log(req.body);
+      var resp;
+      if (id > 0) {
+        // Updates
+        resp = await SSO.updateServiceLetter(id, req.body);
+      } else {
+        // Insert
+        req.body.status = 0;
+        resp = await SSO.insertServiceLetter(req.body);
+      }
+
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteServiceLetter: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteServiceLetter(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
 
   // ENTRANCE CONTROLS
 
@@ -1937,6 +2010,42 @@ module.exports = {
   processBacklog: async (req, res) => {
     try {
       var regs = await SSO.processBacklog(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: { data: regs } });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  processBacklogCourseAdd: async (req, res) => {
+    try {
+      var regs = await SSO.processBacklogCourseAdd(req.body);
+      if (regs) {
+        res.status(200).json({ success: true, data: { data: regs } });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  processBacklogCourseDel: async (req, res) => {
+    try {
+      var regs = await SSO.processBacklogCourseDel(req.body);
       if (regs) {
         res.status(200).json({ success: true, data: { data: regs } });
       } else {

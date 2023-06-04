@@ -11,6 +11,8 @@ const { getGrade, isTrailed } = require("../../utils/helper");
 const delay = require('delay');
 const path = require('path');
 const fs = require('fs');
+const { Queue } = require('async-await-queue');
+const queue = new Queue(2, 100);
 
 
 
@@ -840,10 +842,10 @@ module.exports = {
     );
     if (sid && sid.length > 0) {
       var sql =
-        "select distinct h.serial, h.* from ais.shortlist h where h.session_id = " +
+        "select distinct h.serial, h.* from ais.fetchshortlist h where h.session_id = " +
         sid[0].session_id;
       var cql =
-        "select count(distinct(serial)) as total from ais.shortlist h where h.session_id = " +
+        "select count(distinct(serial)) as total from ais.fetchshortlist h where h.session_id = " +
         sid[0].session_id;
 
       const size = 50;
@@ -1376,15 +1378,38 @@ module.exports = {
 
   // SERVICE LETTERS MODELS
   
+  fetchServiceLetters: async () => {
+    const res = await db.query("select * from ais.service_letter order by id desc");
+    return res;
+  },
+
   fetchServiceLetter: async (tag) => {
     const res = await db.query("select * from ais.service_letter where tag = '"+tag+"' and status = 1");
     return res && res[0];
+  },
+  
+  insertServiceLetter: async (data) => {
+    const res = await db.query("insert into ais.service_letter set ?", data);
+    return res;
+  },
+
+  updateServiceLetter: async (id, data) => {
+    const res = await db.query(
+      "update ais.service_letter set ? where id = " + id,
+      data
+    );
+    return res;
+  },
+
+  deleteServiceLetter: async (id) => {
+    const res = await db.query("delete from ais.service_letter where id = " + id);
+    return res;
   },
 
   // DEFERMENT MODELS
   fetchDefer: async () => {
     const res = await db.query(
-      "select a.*,date_format(a.verified_at,'%M %d, %Y') as verified_at,upper(concat(s.fname,' ',s.lname)) as name from ais.deferment a left join ais.student s on a.indexno = s.indexno order by id desc"
+      "select a.*,x.academic_year,date_format(a.verified_at,'%M %d, %Y') as verified_at,upper(concat(s.fname,' ',s.lname)) as name from ais.deferment a left join ais.student s on a.indexno = s.indexno left join utility.session x on x.id = a.session_id order by id desc"
     );
     return res;
   },
@@ -1627,7 +1652,6 @@ module.exports = {
 
   fetchRegsList: async (session_id, query) => {
     const { level, prog_id, major_id } = query;
-    console.log(query);
     var sql;
     if (major_id && prog_id && level) {
       sql =
@@ -1749,79 +1773,106 @@ module.exports = {
 
     // Determine Streams for Year 1 - Using doa and choose session_id for stream
     // Send Back Report of unqualified Year 1 - for selected streams
-    const sx = await db.query(
-      `select * from utility.session where session_id = ${session_id}`
-    );
-    const sts = await db.query(
-      `select *,date_format(doa,"%m") as mon from ais.fetchstudents where prog_id = ${prog_id} and ceil(semester/2) = ${year_group} and indexno <> 'UNIQUE' and complete_status = 0 and defer_status = 0`
-    );
+    const sx = await db.query(`select * from utility.session where id = ${session_id}`);
+    const sts = await db.query(`select *, date_format(doa,"%m") as mon from ais.fetchstudents where prog_id = ${prog_id} and ceil(semester/2) = ${year_group} and indexno <> 'UNIQUE' and complete_status = 0 and defer_status = 0`);
     const sall = await Promise.all(
       sts?.map(async (st) => {
         // If semester in [1,2] and mon == '01' && session.stream == ' -- Get January streams session
         // Use Main streams session
-        const sm = await db.query(
-          `select * from ais.assessment where session_id = ${session_id} and indexno = '${st.indexno}'`
-        );
-
-        if (sm && sm.length <= 0) {
-          /* FETCH MOUNTED COURSES */
-
-          const { major_id, indexno, scheme_id } = st;
-          var courses = [];
-          const ce = await Student.fetchStudentCE(prog_id, semester); // Get Core & General Electives
-          const me = await Student.fetchStudentME(major_id, prog_id, semester); // Get Majoring Electives
-          //const rt = await Student.fetchStudentRT(indexno); // Get Trailed Courses
-          if (ce.length > 0) {
-            for (var row of ce) {
-              courses.push(row.course_id);
-              courses.push({
-                course_id: row.course_id,
-                credit: row.credit,
-                semester,
-                indexno,
-                class_score: 0,
-                exam_score: 0,
-                total_score: 0,
-                score_type: "N",
-                session_id,
-                scheme_id,
-                flag_visible: 0,
-              });
+        queue.run(async () => {
+          const sm = await db.query(`select * from ais.assessment where session_id = ${session_id} and indexno = '${st.indexno}'`);
+          if (sm && sm.length <= 0) {
+            /* FETCH MOUNTED COURSES */
+            const { major_id, indexno, scheme_id } = st;
+            var courses = [];
+            const ce = await Student.fetchStudentCE(prog_id, semester); // Get Core & General Electives
+            const me = await Student.fetchStudentME(major_id, prog_id, semester); // Get Majoring Electives
+            //const rt = await Student.fetchStudentRT(indexno); // Get Trailed Courses
+            console.log('GENERAL:  ', ce)
+            console.log('MAJORS:  ', me)
+            if (ce.length > 0) {
+              for (var row of ce) {
+                courses.push({
+                  course_id: row.course_id,
+                  credit: row.credit,
+                  semester,
+                  indexno,
+                  class_score: 0,
+                  exam_score: 0,
+                  total_score: 0,
+                  score_type: "N",
+                  session_id,
+                  scheme_id,
+                  flag_visible: 0,
+                });
+              }
             }
-          }
-          if (me.length > 0) {
-            for (var row of me) {
-              courses.push(row.course_id);
-              courses.push({
-                course_id: row.course_id,
-                credit: row.credit,
-                semester,
-                indexno,
-                class_score: 0,
-                exam_score: 0,
-                total_score: 0,
-                score_type: "N",
-                session_id,
-                scheme_id,
-                flag_visible: 0,
-              });
+            if (me.length > 0) {
+              for (var row of me) {
+                courses.push({
+                  course_id: row.course_id,
+                  credit: row.credit,
+                  semester,
+                  indexno,
+                  class_score: 0,
+                  exam_score: 0,
+                  total_score: 0,
+                  score_type: "N",
+                  session_id,
+                  scheme_id,
+                  flag_visible: 0,
+                });
+              }
             }
-          }
-          /* REGISTER MOUNTED COURSES */
-          if (courses.length > 0) {
-            const rem = await Student.removeRegData(indexno, session_id);
-            if (rem) {
+            /* REGISTER MOUNTED COURSES */
+            if (courses.length > 0) {
               for (var row of courses) {
-                resp = await Student.insertRegData(row);
+                const resp = await Student.insertRegData(row);
+                console.log(resp)
               }
             }
           }
-        }
+        })
       })
     );
     return sall;
   },
 
+  processBacklogCourseAdd: async (data) => {
+    const { session_id, semester, course_id, scheme_id, indexno, score_type } = data;
+    const cs = await db.query(`select * from utility.course where id = ${course_id}`);
+    const st = await db.query(`select * from ais.fetchstudents where indexno = ${indexno}`);
+    const sm = await db.query(`select * from ais.assessment where session_id = ${session_id} and indexno = '${indexno}' and course_id = '${course_id}' and score_type = '${score_type}'`);
+          
+    if (cs && st && sm && st.length > 0 && cs.length > 0 && sm.length <= 0) {
+      var row = {
+        course_id,
+        credit: cs[0].credit,
+        semester,
+        indexno,
+        class_score: 0,
+        exam_score: 0,
+        total_score: 0,
+        score_type,
+        session_id,
+        scheme_id,
+        flag_visible: 0,
+      };
+      const resp = await Student.insertRegData(row);
+      return resp;
+    } return null;
+  },
+
+  processBacklogCourseDel: async (data) => {
+    const { session_id, course_id, indexno } = data;
+    const sm = await db.query(`select * from ais.assessment where session_id = ${session_id} and indexno = '${indexno}' and course_id = '${course_id}'`);
+          
+    if (sm && sm.length > 0) {
+      const resp = await Student.removeRegDataByCourse(indexno,session_id,course_id);
+      console.log(resp)
+      return resp;
+    } return null;
+  },
 
   processBackview: async (data) => {
     const { session_id, prog_id, year_group, course_id } = data;
@@ -4954,12 +5005,9 @@ module.exports = {
   },
 
   moveToFees: async (id, amount, refno, transid) => {
-    const rs = await db.query(
-      "update fms.transaction set transtype_id = 2 where id = " + id
-    );
-    console.log(rs);
-    const ms = await SR.updateStudFinance(id, refno, amount, transid);
-    console.log(ms);
+    const rs = await db.query("update fms.transaction set transtype_id = 2 where id = " + id);
+    const session_id = await SR.getActiveSessionByRefNo(refno);
+    const ms = await SR.updateStudFinance(id, session_id,refno, amount, transid);
     if (rs && ms) return rs;
     return null;
   },

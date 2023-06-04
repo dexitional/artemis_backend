@@ -126,8 +126,8 @@ module.exports = {
     return res;
   },
 
-  updateStudFinance: async (tid, refno, amount, transid) => {
-    const session_id = await SSO.getActiveSessionByRefNo(refno);
+  updateStudFinance: async (tid, session_id, refno, amount, transid) => {
+    
     const fin = await db.query(
       "select * from fms.studtrans where tid = " + tid
     );
