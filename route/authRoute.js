@@ -410,14 +410,14 @@ Router.get("/setupstaffaccess", async (req, res) => {
       const pwd = nanoid();
       console.log(pwd);
       const ins = await db.query("insert into identity.user set ?", {
-        group_id: 02,
+        group_id: 2,
         tag: s.staff_no,
         username: s.inst_mail.trim(),
         password: sha1(pwd),
       });
       if (ins.insertId > 0) {
         await db.query("insert into identity.photo set ?", {
-          group_id: 02,
+          group_id: 2,
           tag: s.staff_no,
           uid: ins.insertId,
           path: "./public/cdn/photo/none.png",

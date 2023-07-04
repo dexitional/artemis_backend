@@ -1,7 +1,7 @@
 {
-  "name": "eduhub",
+  "name": "aucc_backend",
   "version": "1.0.0",
-  "description": "Eduhub Backend in Node.js",
+  "description": "AUCC Backend - Express",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/dexitional/pos#readme",
   "dependencies": {
-    "s": "^2.1.4",
+    "async-await-queue": "^2.1.4",
     "axios": "^0.21.4",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.1",
@@ -41,6 +41,7 @@
     "nodemailer": "^6.7.2",
     "p-queue": "^6.6.2",
     "request": "^2.88.2",
+    "s": "^2.1.4",
     "sha1": "^1.1.1"
   },
   "devDependencies": {

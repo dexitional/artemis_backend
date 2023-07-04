@@ -1914,7 +1914,7 @@ module.exports = {
           //email = (isExist && isExist.length > 0) ? `${username}${isExist.length+1}@st.aucc.edu.gh` : email
           const pwd = nanoid();
           const ins = await db.query("insert into identity.user set ?", {
-            group_id: 01,
+            group_id: 1,
             tag: s.refno,
             username: email,
             password: sha1(pwd),
@@ -1969,7 +1969,7 @@ module.exports = {
 
   fetchRegsList: async (req, res) => {
     try {
-      var session = await SSO.getActiveSessionByMode(01);
+      var session = await SSO.getActiveSessionByMode(1);
       var regs = await SSO.fetchRegsList(session.id, req.query);
       if (regs && regs.length > 0) {
         res
@@ -1990,7 +1990,7 @@ module.exports = {
 
   fetchMountList: async (req, res) => {
     try {
-      var session = await SSO.getActiveSessionByMode(01);
+      var session = await SSO.getActiveSessionByMode(1);
       var regs = await SSO.fetchMountList(session.academic_sem);
       if (regs && regs.length > 0) {
         res.status(200).json({ success: true, data: { data: regs, session } });
