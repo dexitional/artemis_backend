@@ -1386,10 +1386,15 @@ module.exports = {
   },
 
   setDefaultLetter: async (id) => {
-    await db.query("update P06.letter set status = 0");
-    const res = await db.query(
-      "update P06.letter set status = 1 where id =" + id
-    );
+    let res;
+    const lt = await db.query("select * from P06.letter where id =" + id);
+    if(lt && lt.length > 0){
+      await db.query("update P06.letter set status = 0 where tag = '"+lt[0].tag+"'");
+      res = await db.query(
+        "update P06.letter set status = 1 where id =" + id
+      );
+    }
+   
     return res;
   },
 

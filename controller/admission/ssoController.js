@@ -1268,6 +1268,7 @@ module.exports = {
   setDefaultLetter: async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(req.params)
       var resp = await SSO.setDefaultLetter(id);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
