@@ -389,9 +389,9 @@ module.exports = {
       "select * from ais.resit_data where paid = 0 and indexno = '" + indexno + "'"
     );
     const resm = await db.query(
-      "select amount from fms.servicefee where transtype_id = 03"
+      "select amount_ghc from fms.servicefee where transtype_id = 03"
     );
-    if (res && resm && resm.length > 0) return res.length * resm[0].amount;
+    if (res && resm && resm.length > 0) return res.length * resm[0].amount_ghc;
     return 0.0;
   },
 
@@ -400,9 +400,9 @@ module.exports = {
       "select * from ais.graduation where indexno = '" + indexno + "'"
     );
     const resm = await db.query(
-      "select amount from fms.servicefee where transtype_id = 04"
+      "select amount_ghc from fms.servicefee where transtype_id = 04"
     );
-    if (res && resm && resm.length > 0) return res.length * resm[0].amount;
+    if (res && resm && resm.length > 0) return res.length * resm[0].amount_ghc;
     return 0.0;
   },
 };
