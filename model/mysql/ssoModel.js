@@ -920,7 +920,6 @@ module.exports = {
   },
 
   admitApplicant: async (data) => {
-    console.log(data);
     // Fetch active session for acdemic session (vs )
     const vs = await db.query("select * from P06.session where status = 1");
     // Fetch step_profile [ biodata, study_mode ] (sp)
@@ -935,8 +934,16 @@ module.exports = {
     const pg = await db.query(
       "select * from utility.program where id = " + data.program_id
     );
+    // Fetch Admitted Info
+    const ad = await db.query(
+      "select * from p06.admitted where serial = " + data.serial
+    );
+    // Fetch User Info
+    const ud = await db.query(
+      "select * from identity.user where tag = '" + data.serial+"'"
+    );
 
-    if (sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0) {
+    if (sg && sp && vs && ad && ud && vs.length > 0 && sp.length > 0 && sg.length > 0  && ad.length <= 0  && ud.length <= 0) {
       // Fetch fms.billinfo for bill_id for freshers bill (bl)
       var bl, bql;
       if (sp[0].resident_country == 84 || sp[0].resident_country == "GH") {
@@ -997,12 +1004,14 @@ module.exports = {
         password,
       };
       await db.query("insert into P06.admitted set ?", da);
+      
       // Update into P06.step_profile tbl
       const dz = { flag_admit: 1 };
       await db.query(
         "update P06.applicant set ? where serial = " + data.serial,
         dz
       );
+      
       // Insert data into ais.student
       const dp = {
         refno: data.serial,
@@ -1032,9 +1041,11 @@ module.exports = {
         disability: sp[0].disabled,
       };
       await db.query("insert into ais.student set ?", dp);
+      
       // Insert into ais.mail
       const dm = { refno: data.serial, mail: email };
       await db.query("insert into ais.mail set ?", dm);
+      
       // Insert data into identity.user
       const du = {
         group_id: 1,
@@ -1043,6 +1054,7 @@ module.exports = {
         password: sha1(password),
       };
       await db.query("insert into identity.user set ?", du);
+      
       // Insert Photo into Database
 
       if (bid) {
@@ -1057,17 +1069,22 @@ module.exports = {
           amount: bl[0].amount,
         };
         await db.query("insert into fms.studtrans set ?", df);
+
         // Insert Discount (Payment)
-        const dj = {
-          session_id: vs[0].academic_session_id,
-          cr_id: bid,
-          cr_type: 'BILL',
-          refno: data.serial,
-          narrative: `DISCOUNT ON ${bl[0].narrative} FEES`,
-          currency: bl[0].currency,
-          amount: -1 * bl[0].discount,
-        };
-        await db.query("insert into fms.studtrans set ?", df);
+        if(bl[0].discount > 0){
+          const dj = {
+            session_id: vs[0].academic_session_id,
+            cr_id: bid,
+            cr_type: 'BILL',
+            refno: data.serial,
+            narrative: `DISCOUNT ON ${bl[0].narrative} FEES`,
+            currency: bl[0].currency,
+            amount: -1 * bl[0].discount,
+          };
+          await db.query("insert into fms.studtrans set ?", dj);
+        }
+        
+        
       }
       return {
         ...da,
@@ -2039,10 +2056,14 @@ module.exports = {
     const js = await db.query(
      `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
     );
+
+    const ts = await db.query(
+      `select * from ais.service_letter where tag = 'tra' order by id desc limit 1`
+     );
     
     if (js && js.length > 0) {
       for(const sv of js){
-        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)) }
+        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
         // Data By Courses
         if(mdata[sv.session_title]){
           mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]

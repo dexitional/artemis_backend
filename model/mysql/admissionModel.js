@@ -1,3 +1,4 @@
+const moment = require('moment')
 var db = require("../../config/mysql");
 
 module.exports = {
@@ -151,6 +152,8 @@ module.exports = {
   insReplaceProfileTbl: async (data) => {
     const id = data.profile_id;
     delete data.profile_id;
+    if(data.dob) data.dob = moment(data.dob).format('YYYY-MMM-DD')
+
     var res;
     if (id != "") {
       res = await db.query(
