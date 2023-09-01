@@ -934,17 +934,21 @@ module.exports = {
     const pg = await db.query(
       "select * from utility.program where id = " + data.program_id
     );
-    // Fetch Admitted Info
-    const ad = await db.query(
-      "select * from p06.admitted where serial = " + data.serial
-    );
-    // Fetch User Info
-    const ud = await db.query(
-      "select * from identity.user where tag = '" + data.serial+"'"
-    );
+    
+    // // Fetch Admitted Info
+    // const ad = await db.query(
+    //   "select * from p06.admitted where serial = " + data.serial
+    // );
+    // // Fetch User Info
+    // const ud = await db.query(
+    //   "select * from identity.user where tag = '" + data.serial+"'"
+    // );
 
-    if (sg && sp && vs && ad && ud && vs.length > 0 && sp.length > 0 && sg.length > 0  && ad.length <= 0  && ud.length <= 0) {
+    console.log("TEST WORK: 11",ad)
+      
+    if (sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0) {
       // Fetch fms.billinfo for bill_id for freshers bill (bl)
+
       var bl, bql;
       if (sp[0].resident_country == 84 || sp[0].resident_country == "GH") {
         const group_code =
@@ -1003,7 +1007,7 @@ module.exports = {
         username: email,
         password,
       };
-      await db.query("insert into P06.admitted set ?", da);
+      await db.query("insert ignore into P06.admitted set ?", da);
       
       // Update into P06.step_profile tbl
       const dz = { flag_admit: 1 };
@@ -1040,11 +1044,11 @@ module.exports = {
         religion_id: sp[0].religion,
         disability: sp[0].disabled,
       };
-      await db.query("insert into ais.student set ?", dp);
+      await db.query("insert ignore into ais.student set ?", dp);
       
       // Insert into ais.mail
       const dm = { refno: data.serial, mail: email };
-      await db.query("insert into ais.mail set ?", dm);
+      await db.query("insert ignore into ais.mail set ?", dm);
       
       // Insert data into identity.user
       const du = {
@@ -1053,7 +1057,7 @@ module.exports = {
         username: email,
         password: sha1(password),
       };
-      await db.query("insert into identity.user set ?", du);
+      await db.query("insert ignore into identity.user set ?", du);
       
       // Insert Photo into Database
 

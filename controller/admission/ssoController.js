@@ -1073,10 +1073,11 @@ module.exports = {
   admitApplicant: async (req, res) => {
     try {
       const vs = await SSO.admitApplicant(req.body);
+      console.log(vs)
       if (vs) {
         const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`;
         //console.log(msg)
-        const send = sms(vs.phone, msg);
+        const send = await sms(vs.phone, msg);
         console.log(send);
         res.status(200).json({ success: true, data: vs });
       } else {
@@ -3755,7 +3756,7 @@ module.exports = {
         }
       }
       if (count) {
-        //const su = await SSO.updateBill(b.bid,{post_status:1})
+        const su = await SSO.updateBill(b.bid,{post_status:1})
         //console.log(su)
         res.status(200).json({ success: true, data: count });
       } else {
@@ -4664,7 +4665,6 @@ module.exports = {
         session,
       } = req.body;
       var resp;
-      console.log(type);
       if (type == "fees") {
         resp = await SSO.finReportFees(startdate, endate);
       } else if (type == "others") {
