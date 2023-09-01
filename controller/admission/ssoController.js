@@ -3724,6 +3724,7 @@ module.exports = {
       var bl = await SSO.fetchBill(id);
       var b = bl[0];
       const sem = getSemestersByCode(b.group_code);
+      const dsem = getSemestersByCode(b.discount_code);
       const sess = await SSO.getActiveSessionByMode(1);
       var count;
       if (b.post_status == 0) {
@@ -3734,15 +3735,22 @@ module.exports = {
             b.amount,
             b.prog_id,
             sem,
-            sess
+            sess?.id,
+            b.discount,
+            dsem,
+            b.currency
           );
         } else if (b.post_type == "INT") {
           count = await SSO.sendStudentBillInt(
             b.bid,
             b.narrative,
             b.amount,
+            b.prog_id,
             sem,
-            sess
+            sess?.id,
+            b.discount,
+            dsem,
+            b.currency
           );
         }
       }

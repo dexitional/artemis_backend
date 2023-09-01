@@ -1386,16 +1386,14 @@ module.exports = {
   },
 
   setDefaultLetter: async (id) => {
-    let res;
+    var res;
     const lt = await db.query("select * from P06.letter where id =" + id);
     if(lt && lt.length > 0){
       await db.query("update P06.letter set status = 0 where tag = '"+lt[0].tag+"'");
       res = await db.query(
         "update P06.letter set status = 1 where id =" + id
       );
-    }
-   
-    return res;
+    } return res;
   },
 
   // SERVICE LETTERS MODELS
@@ -3667,6 +3665,14 @@ module.exports = {
     }
     return resp;
   },
+
+
+  // b.bid,
+  // b.narrative,
+  // b.amount,
+  // b.prog_id,
+  // sem,
+  // sess
 
   sendStudentBillGh: async (
     bid,
