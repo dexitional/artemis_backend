@@ -112,7 +112,6 @@ module.exports = {
         "update ais.student s set ? where (refno = '"+refno+"' or indexno = '"+refno+"')",
         { transact_account: bal[0].amount }
       );
-      console.log(ups.affectedRows)
       return ups.affectedRows;
     }
     return null;

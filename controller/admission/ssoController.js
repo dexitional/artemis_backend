@@ -1073,12 +1073,9 @@ module.exports = {
   admitApplicant: async (req, res) => {
     try {
       const vs = await SSO.admitApplicant(req.body);
-      console.log(vs)
       if (vs) {
         const msg = `Congrats ${vs.fname}! You have been offered admission into the ${vs.program} program, Visit the portal to accept the offer and for more information. Goto https://portal.aucc.edu.gh/applicant )`;
-        //console.log(msg)
         const send = await sms(vs.phone, msg);
-        console.log(send);
         res.status(200).json({ success: true, data: vs });
       } else {
         res
@@ -2105,12 +2102,13 @@ module.exports = {
   processSingleBacklog: async (req, res) => {
     try {
       var regs = await SSO.processSingleBacklog(req.body);
+      console.log(regs)
       if (regs) {
         res.status(200).json({ success: true, data: { data: regs } });
       } else {
         res
           .status(200)
-          .json({ success: false, data: null, msg: "No records!" });
+          .json({ success: false, data: null, msg: "Student registered against session!" });
       }
     } catch (e) {
       console.log(e);
@@ -2134,9 +2132,11 @@ module.exports = {
         i = 0;
 
       var session = await SSO.getActiveSessionByMode(1);
-      stream_main && stream_main != "null"
-        ? stream.add(stream_main)
-        : stream.add(session && session.id);
+      // stream_main && stream_main != "null"
+      //   ? stream.add(stream_main)
+      //   : stream.add(session && session.id);
+
+      stream_main && stream_main != "null" && stream.add(stream_main)
 
       /*
       for (var s of await SSO.fetchEntriesSessions()) {
@@ -2147,6 +2147,8 @@ module.exports = {
         streams += m + (i == stream.size - 1 ? "" : ",");
         i++;
       });
+
+      console.log("MAIN TEST:",streams,unit_id,keyword,page)
 
       var sheets = await SSO.fetchScoresheets(streams, unit_id, page, keyword);
       if (sheets && sheets.data.length > 0) {
@@ -2581,10 +2583,12 @@ module.exports = {
       req.body.cal_entry_end == ""
     )
       req.body.cal_entry_end = null;
+    if(id <= 0)
+      req.body.progress_status = 0;
     req.body.mode_id = 1;
 
+
     try {
-      console.log(req.body);
       var resp =
         id <= 0
           ? await SSO.insertAISCalendar(req.body)

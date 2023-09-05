@@ -36,7 +36,6 @@ const runBills = async () => {
 
 const cleanBills = async () => {
   console.log("RUNNING CLEAN BILLS ....")
-  
   var count = 0;
   var bills = await SSO.fetchUnpublisedBills();
   if(bills && bills.length > 0){

@@ -386,7 +386,8 @@ Router.get("/setupstaffno", async (req, res) => {
 });
 
 Router.get("/fixfinance", async (req, res) => {
-  const ss = await db.query("select s.refno as sid,t.id as tid from fms.transaction t left join ais.student s on t.refno in (s.refno,s.indexno) and t.transtype_id in (2,4) where t.refno is not null");
+  // const ss = await db.query("select s.refno as sid,t.id as tid from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on t.refno in (s.refno,s.indexno) where t.transtype_id in (2,3,4,8) and t.refno is not null and m.tid is null");
+  const ss = await db.query("select s.refno as sid,t.id as tid from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on t.refno in (s.refno,s.indexno) where t.transtype_id in (2,4) and t.refno is not null and m.tid is null");
   var count = 0;
   if (ss.length > 0) {
     for (var s of ss) {

@@ -934,7 +934,7 @@ module.exports = {
     const pg = await db.query(
       "select * from utility.program where id = " + data.program_id
     );
-    
+
     // // Fetch Admitted Info
     // const ad = await db.query(
     //   "select * from p06.admitted where serial = " + data.serial
@@ -944,8 +944,7 @@ module.exports = {
     //   "select * from identity.user where tag = '" + data.serial+"'"
     // );
 
-    console.log("TEST WORK: 11",ad)
-      
+     
     if (sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0) {
       // Fetch fms.billinfo for bill_id for freshers bill (bl)
 
@@ -1223,10 +1222,10 @@ module.exports = {
         religion_id: sp[0].religion,
         disability: sp[0].disabled,
       };
-      await db.query("insert into ais.student set ?", dp);
+      await db.query("insert ignore into ais.student set ?", dp);
       // Insert into ais.mail
       const dm = { refno: data.serial, mail: email };
-      await db.query("insert into ais.mail set ?", dm);
+      await db.query("insert ignore into ais.mail set ?", dm);
       // Insert data into identity.user
       const du = {
         group_id: 1,
@@ -1238,7 +1237,7 @@ module.exports = {
         "select * from identity.user where tag = '" + data.serial + "'"
       );
       if (isDu && isDu.length == 0)
-        await db.query("insert into identity.user set ?", du);
+        await db.query("insert ignore into identity.user set ?", du);
 
       if (bid) {
         // Insert Academic Fees or Bill charged
@@ -2000,7 +1999,7 @@ module.exports = {
       `select * from ais.assessment where session_id = ${session_id} and indexno = '${indexno}'`
     );
 
-    //console.log("Sess",semester, sx)
+    //console.log("Sess",semester, sx,sm,st)
     if (sm && sm.length == 0) {
       /* FETCH MOUNTED COURSES */
       const { major_id, prog_id, scheme_id } = st[0];
@@ -2044,7 +2043,6 @@ module.exports = {
       }
       /* REGISTER MOUNTED COURSES */
       if (courses.length > 0) {
-        console.log("courses",courses)
         const rem = await Student.removeRegData(indexno, session_id);
         if (rem) {
           for (var row of courses) {
@@ -2053,8 +2051,7 @@ module.exports = {
         }
       }
       return courses;
-    }
-    return null
+    } return null
   },
 
   // TRANSCRIPT/TRANSWIFT - AIS MODELS
@@ -2094,6 +2091,13 @@ module.exports = {
       streams +
       "') > 0 ";
 
+    // var sql =
+    //   "select * from ais.fetchsheets where session_id = " +
+    //   streams;
+    // var cql =
+    //   "select count(*) as total from ais.fetchsheets where session_id = " +
+    //   streams;
+
     var units = unit_id;
     if (unit_id) {
       var unit = await db.query(
@@ -2114,8 +2118,8 @@ module.exports = {
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `;
-      cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `;
+      sql += ` and (lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%') `;
+      cql += ` and (lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%') `;
     }
 
     if (units) {
@@ -2125,7 +2129,8 @@ module.exports = {
 
     sql += ` order by session_id desc,prog_id,semester,major_id`;
     sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
-
+    
+    console.log("KOBBY SQL: ", sql)
     const ces = await db.query(cql);
     const res = await db.query(sql);
     const count = Math.ceil(ces[0].total / size);
@@ -2179,8 +2184,8 @@ module.exports = {
     const offset = pg * size || 0;
 
     if (keyword) {
-      sql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `;
-      cql += ` and lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%' `;
+      sql += ` and (lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%') `;
+      cql += ` and (lower(course_name) like '%${keyword.toLowerCase()}%' or course_code like '%${keyword}%' or lower(program_name) like '%${keyword.toLowerCase()}%' or lower(unit_name) like '%${keyword.toLowerCase()}%') `;
     }
 
     sql += ` order by session_id desc,prog_id,semester,major_id`;
@@ -3872,7 +3877,9 @@ module.exports = {
     var count = 0;
     //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
     //if(st) count = st.affectedRows
-    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,3,4,8) and m.tid is null order by tid");
+    
+    // const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,3,4,8) and m.tid is null and lower(t.refno) <> 'null' order by tid");
+    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null and lower(t.refno) <> 'null' order by tid");
     if (st && st.length > 0) {
       for (const s of st) {
         const session_id = await SR.getActiveSessionByRefNo(s.refno);
@@ -3885,31 +3892,30 @@ module.exports = {
     return count;
   },
 
-  retireAccountTransact: async () => {
-    var count = 0;
-    //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
-    //if(st) count = st.affectedRows
-    //const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
+  // retireAccountTransact: async () => {
+  //   var count = 0;
+  //   //const st = await db.query("insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative) select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,i.id as session_id,concat('Online Fees Payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id left join utility.session i on i.mode_id = p.mode_id where t.transtype_id in (2) and m.tid is null and i.`default` = 1 order by tid")
+  //   //if(st) count = st.affectedRows
+  //   //const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,4) and m.tid is null order by tid");
     
-    const st = await db.query("select t.transtype_id,t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id where (t.id not in (select tid from fms.studtrans where tid is not null)) order by t.id desc");
-    console.log(st.length)
-    if (st && st.length > 0) {
-      for (const s of st) {
-        console.log("REC",s)
-        if([2,4].includes(parseInt(s.transtype_id))){
-          console.log("PASSED",s)
-          const session_id = await SR.getActiveSessionByRefNo(s.refno);
-          delete s.transtype_id;
-          const dt = { ...s, session_id };
-          const ins = await db.query("insert into fms.studtrans set ?", dt);
-          console.log(ins)
-          if (ins && ins.insertId > 0) count += 1;
-        }
-      }
-    }
-    //insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative)
-    return count;
-  },
+  //   // const st = await db.query("select t.transtype_id,t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id where (t.id not in (select tid from fms.studtrans where tid is not null)) order by t.id desc");
+  //   const st = await db.query("select t.transtype_id,t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online academic fees, Student	ID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id where t.transtype_id in (2,4) and (t.id not in (select tid from fms.studtrans where tid is not null)) order by t.id desc");
+  //   if (st && st.length > 0) {
+  //     for (const s of st) {
+  //       //if([2,4].includes(parseInt(s.transtype_id))){
+  //         console.log("PASSED",s)
+  //         const session_id = await SR.getActiveSessionByRefNo(s.refno);
+  //         delete s.transtype_id;
+  //         const dt = { ...s, session_id };
+  //         const ins = await db.query("insert into fms.studtrans set ?", dt);
+  //         console.log(ins)
+  //         if (ins && ins.insertId > 0) count += 1;
+  //      // }
+  //     }
+  //   }
+  //   //insert into fms.studtrans(tid,refno,amount,transdate,currency,session_id,narrative)
+  //   return count;
+  // },
 
   retireResitTransact: async () => {
     var count = 0;
@@ -3937,7 +3943,7 @@ module.exports = {
       const dt = { ...st[0], session_id };
       const ins = await db.query("insert into fms.studtrans set ?", dt);
     } 
-    const rt = SR.retireAccountByRefno(refno)
+    const rt = await SR.retireAccountByRefno(refno)
     return rt
   },
 
@@ -3948,7 +3954,7 @@ module.exports = {
     );
     if (st && st.length > 0) {
       for (let s of st) {
-        const rt = SR.retireAccountByRefno(s.refno)
+        const rt = await SR.retireAccountByRefno(s.refno)
         if (rt > 0) count++;
         await delay(100)
       }
@@ -4497,17 +4503,21 @@ module.exports = {
 
   // PROGRESS STUDENT
   progressLevel: async (sid) => {
-    const ss = await db.query(
-      "select s.*,p.indexno from utility.session s left join ais.progression p on s.id = p.session_id where s.id = " +
-        sid
-    );
-    if (ss && ss.length > 0 && !ss[0].indexno) {
+    // const ss = await db.query("select s.*,p.indexno from utility.session s left join ais.progression p on s.id = p.session_id where s.id = " +sid);
+    const ss = await db.query("select s.* from utility.session s  where s.id = " +sid);
+    // if (ss && ss.length > 0 && !ss[0].indexno) {
+    if (ss && ss.length > 0) {
       const { tag, academic_year } = ss[0];
       const year = academic_year.split("/")[1];
+      // const query =
+      //   tag == "MAIN"
+      //     ? `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where !((date_format(doa,'%m') = '01' and year(doa) = '${year}')) and (s.complete_status = 0 and s.defer_status = 0 and s.indexno is not null)`
+      //     : `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where (date_format(doa,'%m') = '01' and year(doa) = '${year}') and (s.complete_status = 0 and s.defer_status = 0 and s.indexno is not null)`;
+
       const query =
         tag == "MAIN"
-          ? `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where !((date_format(doa,'%m') = '01' and year(doa) = '${year}')) and (s.complete_status = 0 and s.defer_status = 0)`
-          : `select s.refno,s.indexno,s.semester,s.doa,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where date_format(doa,'%m') = '01' and year(doa) = '${year}' and s.complete_status = 0 and s.defer_status = 0`;
+          ? `select s.refno,s.indexno,s.semester,s.doa,s.entry_semester,date_format(doa,'%m') as mon,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where !((date_format(doa,'%m') = '01' and entry_semester <= 1 and semester in (1,2)) or (date_format(doa,'%m') = '01' and entry_semester <= 3 and semester in (3,4))) and (s.complete_status = 0 and s.defer_status = 0 and s.indexno is not null)`
+          : `select s.refno,s.indexno,s.semester,s.doa,s.entry_semester,date_format(doa,'%m') as mon,s.complete_status,p.stype,p.semesters from ais.fetchstudents s left join utility.program p on s.prog_id = p.id where ((date_format(doa,'%m') = '01' and entry_semester <= 1 and semester in (1,2)) or (date_format(doa,'%m') = '01' and entry_semester <= 3 and semester in (3,4))) and (s.complete_status = 0 and s.defer_status = 0 and s.indexno is not null)`;
       const st = await db.query(query);
       if (st && st.length > 0) {
         for (s of st) {
@@ -4517,10 +4527,12 @@ module.exports = {
               "' and session_id = " +
               sid
           );
+          
           if (chk && chk.length <= 0) {
+
             var { semester, semesters, complete_status, indexno } = s;
             if (s) {
-              const sem = semester + 2;
+              const sem = semester + 1;
               if (sem <= semesters) {
                 semester = sem;
                 complete_status = 0;
@@ -4528,6 +4540,7 @@ module.exports = {
                 semester = 0;
                 complete_status = 1;
               }
+              
               // Update Student Profile
               await db.query(
                 "update ais.student set ? where indexno = '" + indexno + "'",
@@ -4543,7 +4556,11 @@ module.exports = {
             }
           }
         }
+
+        // Update Progession Status in Calendar
+        await db.query("update utility.session set ? where id = "+sid, { progress_status: 1 });
         return true;
+
       }
     }
     return null;
@@ -4793,8 +4810,7 @@ module.exports = {
 
   fetchOtherPayments: async (page, keyword) => {
     var sql = "select * from ais.fetchtrans where transtype_id not in (1,2)";
-    var cql =
-      "select count(*) as total from ais.fetchtrans where transtype_id not in (1,2)";
+    var cql = "select count(*) as total from ais.fetchtrans where transtype_id not in (1,2)";
 
     const size = 10;
     const pg = parseInt(page);
