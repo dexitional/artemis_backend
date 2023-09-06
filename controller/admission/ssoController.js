@@ -3728,9 +3728,11 @@ module.exports = {
       const { id } = req.body;
       var bl = await SSO.fetchBill(id);
       var b = bl[0];
-      const sem = getSemestersByCode(b.group_code);
-      const dsem = getSemestersByCode(b.discount_code);
+      const sem = getSemestersByCode(b.group_code || '0000');
+      const dsem = getSemestersByCode(b.discount_code || '0000');
       const sess = await SSO.getActiveSessionByMode(1);
+      
+      
       var count;
       if (b.post_status == 0) {
         if (b.post_type == "GH") {
@@ -3745,6 +3747,15 @@ module.exports = {
             dsem,
             b.currency
           );
+          console.log( b.bid,
+            b.narrative,
+            b.amount,
+            b.prog_id,
+            sem,
+            sess?.id,
+            b.discount,
+            dsem,
+            b.currency)
         } else if (b.post_type == "INT") {
           count = await SSO.sendStudentBillInt(
             b.bid,
@@ -3760,7 +3771,7 @@ module.exports = {
         }
       }
       if (count) {
-        const su = await SSO.updateBill(b.bid,{post_status:1})
+        const su = await SSO.updateBill(b.bid, { post_status: 1 })
         //console.log(su)
         res.status(200).json({ success: true, data: count });
       } else {

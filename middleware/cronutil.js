@@ -11,8 +11,8 @@ const runBills = async () => {
     var resp = {};
     if(bl && bl.length > 0){
       for(var b of bl){
-        const sem = getSemestersByCode(b.group_code)
-        const dsem = getSemestersByCode(b.discount_code)
+        const sem = getSemestersByCode(b.group_code || '0000')
+        const dsem = getSemestersByCode(b.discount_code || '0000')
         var data;
         if(b.post_status == 1){
           if(b.post_type == 'GH'){

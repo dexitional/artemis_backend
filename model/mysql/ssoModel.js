@@ -1864,7 +1864,7 @@ module.exports = {
   processBacklogCourseAdd: async (data) => {
     const { session_id, semester, course_id, scheme_id, indexno, score_type } = data;
     const cs = await db.query(`select * from utility.course where id = ${course_id}`);
-    const st = await db.query(`select * from ais.fetchstudents where indexno = ${indexno}`);
+    const st = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
     const sm = await db.query(`select * from ais.assessment where session_id = ${session_id} and indexno = '${indexno}' and course_id = '${course_id}' and score_type = '${score_type}'`);
           
     if (cs && st && sm && st.length > 0 && cs.length > 0 && sm.length <= 0) {
@@ -3572,7 +3572,6 @@ module.exports = {
         "select b.*,p.`short` as program_name from fms.billinfo b left join utility.program p on p.id = b.prog_id where b.post_status = 1 and find_in_set(b.session_id,'" +
         sessions +
         "') > 0";
-      console.log(sql);
       res = await db.query(sql);
     }
     return res;
@@ -3696,27 +3695,13 @@ module.exports = {
   ) => {
     var count = 0,
       dcount = 0;
-    const sts = await db.query(
-      sem 
-       ? "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +sem +"') > 0"
-       : ""
-    );
-    const dts = await db.query(
-      dsem
-      ? "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +dsem +"') > 0"
-      : ""
-    );
+    const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +sem +"') > 0");
+    const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +" and s.entry_group = 'GH' and find_in_set(s.semester,'" +dsem +"') > 0");
     if (sts && sts.length > 0) {
       for (var st of sts) {
         const session_id = await SR.getActiveSessionByRefNo(st.refno);
         if (session_id == sess) {
-          const isExist = await db.query(
-            "select * from fms.studtrans where refno = '" +
-              st.refno +
-              "' and cr_id = " +
-              bid +
-              " and amount > 0"
-          );
+          const isExist = await db.query("select * from fms.studtrans where refno = '" +st.refno +"' and cr_id = " +bid +" and amount > 0");
           if (isExist && isExist.length <= 0) {
             const ins = await db.query("insert into fms.studtrans set ?", {
               narrative: bname,
@@ -3772,22 +3757,9 @@ module.exports = {
     dsem,
     currency
   ) => {
-    var count = 0,
-      dcount = 0;
-    const sts = await db.query(
-      "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +
-        prog_id +
-        "  and s.entry_group = 'INT' and find_in_set(s.semester,'" +
-        sem +
-        "') > 0"
-    );
-    const dts = await db.query(
-      "select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +
-        prog_id +
-        "  and s.entry_group = 'INT' and find_in_set(s.semester,'" +
-        dsem +
-        "') > 0"
-    );
+    var count = 0, dcount = 0;
+    const sts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +"  and s.entry_group = 'INT' and find_in_set(s.semester,'" +sem +"') > 0");
+    const dts = await db.query("select s.refno,s.indexno from ais.student s where s.complete_status = 0 and s.defer_status = 0 and s.prog_id  = " +prog_id +"  and s.entry_group = 'INT' and find_in_set(s.semester,'" +dsem +"') > 0");
 
     if (sts.length > 0) {
       for (var st of sts) {

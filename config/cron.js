@@ -27,8 +27,8 @@ cron.schedule('*/5 * * * *', () => {
 });
 
 
-// Schedule @ EVERY 15 MINUTES
-cron.schedule('*/15 * * * *', async function() {
+// Schedule @ EVERY 10 MINUTES
+cron.schedule('*/10 * * * *', async function() {
     const cmd = "echo cron"; // Command Bash terminal
     exec(cmd, async function(error, stdout, stderr) {
       if(error){ console.log(error) }
