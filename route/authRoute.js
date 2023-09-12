@@ -86,8 +86,6 @@ Router.get("/sso/studentids/:id", SSOController.fetchVcost);
 
 
 
-
-
 /* EVS MODULE ROUTES */
 Router.get("/evs/data/:id/:tag", SSOController.fetchEvsData);
 Router.post("/evs/data", SSOController.postEvsData);
@@ -273,10 +271,6 @@ Router.get("/ais/religions", SSOController.fetchReligions);
 Router.get("/ais/religions/:id", SSOController.fetchReligion);
 Router.post("/ais/religions", SSOController.postReligion);
 Router.delete("/ais/religions/:id", SSOController.deleteReligion);
-
-
-
-
 
 
 

@@ -119,7 +119,7 @@ module.exports = {
 
   retireAssessmentTotal: async (session_id) => {
     const res = await db.query(
-      "update ais.assessment set total_score = (class_score+exam_score) where session_id = " +
+      "update ais.assessment set total_score = (class_score+exam_score) where (class_score is not null and exam_score is not null) and session_id = " +
         session_id
     );
     return res;

@@ -2266,11 +2266,13 @@ module.exports = {
     return data;
   },
 
-  saveSheet: async (data) => {
+  saveSheet: async (id,data) => {
     var count = 0;
     var sid = 0;
+    const sheet = await db.query("select * from ais.sheet where id = "+id)
     const keys = Object.keys(data);
-    if (keys.length > 0) {
+    if (keys.length > 0 && sheet.length > 0) {
+      const flag_visible = sheet[0].flag_certified || 0;
       for (var key of keys) {
         const keyinfo = key.split("_");
         if (keyinfo.length > 0) {

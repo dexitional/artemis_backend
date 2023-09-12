@@ -1658,6 +1658,7 @@ module.exports = {
     delete req.body.major_name;
     delete req.body.name;
     delete req.body.doc;
+    delete req.body.min_credit_total;
     console.log(req.body);
     try {
       var resp =
@@ -2333,7 +2334,9 @@ module.exports = {
 
   saveSheet: async (req, res) => {
     try {
-      var resp = await SSO.saveSheet(req.body);
+      const { sid,data } = req.body;
+      console.log(sid,data)
+      var resp = await SSO.saveSheet(sid,data);
       if (resp > 0) {
         res.status(200).json({ success: true, data: resp });
       } else {
