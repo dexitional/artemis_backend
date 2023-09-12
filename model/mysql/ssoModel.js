@@ -7,7 +7,7 @@ const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
 const Student = require("../../model/mysql/studentModel");
 const { getUsername } = require("../../middleware/util");
 const SR = require("../../model/mysql/sharedModel");
-const { getGrade, isTrailed } = require("../../utils/helper");
+const { getGrade, isTrailed, getFgpa } = require("../../utils/helper");
 const delay = require('delay');
 const path = require('path');
 const fs = require('fs');
@@ -2623,6 +2623,121 @@ module.exports = {
     );
     return res;
   },
+
+
+  // GRADUATION -AIS
+
+  fetchGraduation: async (page, keyword) => {
+    var sql = "select id,title,member_count,`default`,status, upper(date_format(session_date,'%M %d, %Y')) as session_date, upper(date_format(start_date,'%M %d, %Y')) as start_date, upper(date_format(end_date,'%M %d, %Y')) as end_date from ais.graduation g";
+    var cql = "select count(*) as total from ais.graduation g";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += ` where g.title like '%${keyword.toLowerCase()}%'`;
+      cql += ` where g.title like '%${keyword.toLowerCase()}%'`;
+    }
+
+    sql += ` order by g.id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+
+  insertAISGraduation: async (data) => {
+    const res = await db.query("insert into ais.graduation set ?", data);
+    return res;
+  },
+
+  updateAISGraduation: async (id, data) => {
+    const res = await db.query("update ais.graduation set ? where id = " + id,data);
+    return res;
+  },
+
+  deleteAISGraduation: async (id) => {
+    const res = await db.query("delete from ais.graduation where id = " + id);
+    return res;
+  },
+
+  activateAISGraduation: async (id) => {
+    const cs = await db.query("select * from ais.graduation where id = " + id);
+    const vs = await db.query("update ais.graduation set `default` = 0 where id <> " + id );
+    const res = await db.query("update ais.graduation set `default` = 1 where id = " + id);
+    return res;
+  },
+
+  genGradList: async (id) => {
+    // Fetch all students with Completed = 0 and Total credit from Assessment >= program min Credit
+    // const sts = await db.query("select * from ais.fetchstudents s where s.complete_status = 1 and s.semester = 0 and s.graduate_status = 0 and s.min_credit_total <= (select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno)")
+    const sts = await db.query("select indexno,(select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno) as complete_credit from ais.fetchstudents s where s.complete_status = 1 and s.semester = 0 and s.graduate_status = 0 and s.min_credit_total <= (select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno)")
+    if(sts?.length > 0){
+      
+      const gds = [];
+      for(const st of sts){
+          // Check for Uncompleted Resit 
+          let failed_courses = new Set(), retaken_courses = new Set(), mdata = {};
+          const ax = await db.query("select * from ais.fetchbackviews where indexno = '"+st.indexno+"' order by session_id")
+          
+          if(ax.length > 0){
+            for(const x of ax){
+              if(x.resit_score > x.total_score && x.score_type == 'N') failed_courses.add(x.course_id) // Compute Trailed Courses
+              if(x.total_score >= x.resit_score && x.score_type == 'R') retaken_courses.add(x.course_id) // Compute Retaken Courses
+              
+              const zd = { ...x, grade: await getGrade(x.total_score, JSON.parse(x.grade_meta)) }
+              // Data By Courses
+              if(mdata[x.session_title]){
+                mdata[x.session_title] = [...mdata[x.session_title],{...zd}]
+              } else{
+                mdata[x.session_title] = [{...zd}]
+              }
+            }
+            
+            // Check If all failed courses are taken
+            if(failed_courses.size > 0){
+              failed_courses.forEach(cs => { 
+                if(retaken_courses.has(cs)) failed_courses.delete(cs)
+              })
+            }
+            
+            if(failed_courses.size == 0){
+              gds.push(st.indexno);
+              // Calculate FGPA of Student
+              const fgpa = getFgpa(mdata);
+              // Update Graduant data and flags to graduated
+              const dt = { graduate_status: 1, graduate_id: id, graduate_fgpa: fgpa, credits_done: st.complete_credit };
+              await db.query("update ais.student set ? where indexno = '"+st.indexno+"'", dt);
+            } 
+          
+          }
+      }
+      
+      if(gds?.length > 0){
+        await db.query("update ais.graduation set member_count = (member_count+"+gds?.length+") where id = "+id);
+        return true;
+      } 
+      else 
+        return null;
+    }
+  },
+
+  exportGradList: async (id) => {
+    // Fetch all students with Completed = 0 and Total credit from Assessment >= program min Credit
+    const sts = await db.query("select indexno,upper(lname) as lname,upper(fname) as fname,ifnull(upper(mname),'') as mname,name,program_name,department,graduate_fgpa as fgpa,credits_done from ais.fetchstudents s where s.complete_status = 1 and s.graduate_id = "+id+" order by department,prog_id,lname")
+    if(sts?.length > 0) return sts;
+    return null;
+  },
+
 
   getResitSessions: async () => {
     const ids = [];

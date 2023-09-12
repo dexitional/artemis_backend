@@ -234,7 +234,14 @@ Router.post("/ais/resits/score", SSOController.postResitScore);
 Router.post("/ais/resits/backlog", SSOController.postResitBacklog);
 Router.get("/ais/resits/register/:id", SSOController.registerResit);
 Router.get("/ais/resits/approve/:id", SSOController.approveResit);
-// TRANSCRIPT 
+// GRADUATION routes
+Router.get("/ais/graduation/", SSOController.fetchGraduation);
+Router.post("/ais/graduation", SSOController.postGraduation);
+Router.delete("/ais/graduation/:id", SSOController.deleteGraduation);
+Router.get("/ais/setgraduation/:id", SSOController.activateGraduation);
+Router.post("/ais/gengradlist", SSOController.genGradList);
+Router.post("/ais/exportgradlist", SSOController.exportGradList);
+// TRANSCRIPT routes
 Router.post("/ais/transcript", SSOController.postTranscript);
 // PROGRAM routes
 Router.get("/ais/programs", SSOController.fetchPrograms);
@@ -461,7 +468,7 @@ Router.get("/createviews", async (req, res) => {
   );
   // FETCH STUDENTS VIEW
   const v2 = await db.query(
-    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,p.stype,abs(p.semesters/2) as duration, m.title as major_name,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,j.title as department,p.scheme_id from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
+    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,p.stype,abs(p.semesters/2) as duration,p.credits as min_credit_total, m.title as major_name,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,j.title as department,p.scheme_id from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
   );
   // FETCH REGISTRATION LOGS VIEW
   const v3 = await db.query(
@@ -483,7 +490,7 @@ Router.get("/createviews", async (req, res) => {
   // FETCH BACKLOG OVERVIEW
   const v7 = await db.query(
     //"create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
-    "create view fetchbackviews as select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,i.title as session_title,i.academic_year as session_year,i.academic_sem as session_sem,s.name,s.refno,s.prog_id,s.program_name,s.major_name,s.session as mode,x.session_id,x.scheme_id,x.indexno,x.class_score,x.exam_score,x.total_score,x.semester,x.score_type,x.course_id,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id"
+    "create view fetchbackviews as select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,i.title as session_title,i.academic_year as session_year,i.academic_sem as session_sem,s.name,s.refno,s.prog_id,s.program_name,s.major_name,s.session as mode,x.session_id,x.scheme_id,x.indexno,x.class_score,x.exam_score,x.total_score,x.semester,x.score_type,x.course_id,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta,m.resit_score from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id"
   );
 
   // FETCH ADMISSION SHORLIST
