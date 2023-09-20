@@ -2133,23 +2133,21 @@ module.exports = {
         i = 0;
 
       var session = await SSO.getActiveSessionByMode(1);
-      // stream_main && stream_main != "null"
-      //   ? stream.add(stream_main)
-      //   : stream.add(session && session.id);
+      stream_main && stream_main != "null"
+        ? stream.add(stream_main)
+        : stream.add(session && session.id);
 
       stream_main && stream_main != "null" && stream.add(stream_main)
 
-      /*
-      for (var s of await SSO.fetchEntriesSessions()) {
-        stream.add(s.id);
-      }
-      */
+      
+      // for (var s of await SSO.fetchEntriesSessions()) {
+      //   stream.add(s.id);
+      // }
+     
       stream.forEach((m) => {
         streams += m + (i == stream.size - 1 ? "" : ",");
         i++;
       });
-
-      console.log("MAIN TEST:",streams,unit_id,keyword,page)
 
       var sheets = await SSO.fetchScoresheets(streams, unit_id, page, keyword);
       if (sheets && sheets.data.length > 0) {
@@ -2335,7 +2333,6 @@ module.exports = {
   saveSheet: async (req, res) => {
     try {
       const { sid,data } = req.body;
-      console.log(sid,data)
       var resp = await SSO.saveSheet(sid,data);
       if (resp > 0) {
         res.status(200).json({ success: true, data: resp });
@@ -2389,6 +2386,26 @@ module.exports = {
     }
   },
 
+  
+  finalizeSheet: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.finalizeSheet(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Sheet not published!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong!" });
+    }
+  },
+
   certifySheet: async (req, res) => {
     try {
       const { id, sno } = req.params;
@@ -2412,6 +2429,7 @@ module.exports = {
     try {
       const { id } = req.params;
       var resp = await SSO.uncertifySheet(id);
+      console.log(resp)
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {
@@ -2792,8 +2810,8 @@ module.exports = {
   genGradList: async (req, res) => {
     try {
       const { id } = req.body;
-      var resp = await SSO.genGradList(id);
-      console.log(resp);
+      var session = await SSO.getActiveSessionByMode(1);
+      var resp = await SSO.genGradList(id,session.id);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {
@@ -3119,7 +3137,6 @@ module.exports = {
 
   
   postResitBacklog: async (req, res) => {
-    console.log(req.body)
     try {
       var resp = await SSO.saveResitBacklog(req.body);
       console.log(resp)
@@ -4208,6 +4225,48 @@ module.exports = {
         .json({ success: false, data: null, msg: "Something went wrong !" });
     }
   },
+  
+
+  releaseRegistrant: async (req, res) => {
+    try {
+      const { refno } = req.body;
+      var resp = await SSO.releaseRegistrant(refno);
+      console.log(refno,resp)
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No record!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  pardonRegistrant: async (req, res) => {
+    try {
+      const { refno } = req.body;
+      var resp = await SSO.pardonRegistrant(refno);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No record!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+  
+
 
   postPayment: async (req, res) => {
     const { id, refno } = req.body;

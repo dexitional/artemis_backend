@@ -2130,16 +2130,17 @@ module.exports = {
     sql += ` order by session_id desc,prog_id,semester,major_id`;
     sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
     
-    console.log("KOBBY SQL: ", sql)
     const ces = await db.query(cql);
     const res = await db.query(sql);
     const count = Math.ceil(ces[0].total / size);
-
+    
     // Update Registered Students & Assessment Completion Percentage
     if (res && res.length > 0) {
-      res.forEach(async (row) => {
+      res.map(async row => {
         //let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and (find_in_set(p.unit_id,'${units}') > 0 or p.unit_id is null)`
-        let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`;
+        // let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`;
+        let asl = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${row.session_id} and x.course_id=${row.course_id} and s.prog_id = ${row.prog_id} and x.semester = ${row.semester} and s.session = '${row.session}' order by s.lname`;
+        
         const ares = await db.query(asl);
         const num = ares.length;
         var ratio = 0;
@@ -2152,8 +2153,7 @@ module.exports = {
         }
 
         const data = { regcount: num, complete_ratio: ratio };
-        console.log(data, asl);
-
+        //console.log(data, asl);
         await db.query("update ais.sheet set ? where id = " + row.id, data);
       });
     }
@@ -2199,7 +2199,8 @@ module.exports = {
     if (res && res.length > 0) {
       res.forEach(async (row) => {
         //let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and (find_in_set(p.unit_id,'${units}') > 0 or p.unit_id is null)`
-        let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`;
+        // let asl = `select x.* from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id where s.session = '${row.session}' and s.semester = ${row.semester} and x.course_id = ${row.course_id} and x.session_id = ${row.session_id} and s.prog_id = ${row.prog_id}`;
+        let asl = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${row.session_id} and x.course_id=${row.course_id} and s.prog_id = ${row.prog_id} and x.semester = ${row.semester} and s.session = '${row.session}' order by s.lname`;
         const ares = await db.query(asl);
         const num = ares.length;
         var ratio = 0;
@@ -2208,7 +2209,7 @@ module.exports = {
           for (let s of ares) {
             if (s.total_score && s.total_score > 0) sum += 1;
           }
-          ratio = (sum / num) * 100;
+          ratio = ((sum / num) * 100).toFixed(2);
         }
 
         const data = { regcount: num, complete_ratio: ratio };
@@ -2258,6 +2259,7 @@ module.exports = {
             class: { name: c_name, value: c_value },
             exam: { name: e_name, value: e_value },
             scheme: r.grade_meta,
+            flag_visible: r.flag_visible
           };
           data.push(dt);
         }
@@ -2283,18 +2285,8 @@ module.exports = {
           const type = keyinfo[3];
           const value = data[key];
           // Update Database with Record
-          const dt =
-            type == "c" ? { class_score: value } : { exam_score: value };
-          const ups = await db.query(
-            "update ais.assessment set ? where session_id = " +
-              session_id +
-              " and course_id = " +
-              course_id +
-              " and indexno = '" +
-              indexno +
-              "'",
-            dt
-          );
+          const dt = type == "c" ? { class_score: value, flag_visible } : { exam_score: value, flag_visible };
+          const ups = await db.query("update ais.assessment set ? where session_id = " +session_id +" and course_id = "+course_id +" and indexno = '"+indexno +"'",dt);
           if (ups && ups.affectedRows > 0) count += 1;
         }
       }
@@ -2322,13 +2314,108 @@ module.exports = {
     return false;
   },
 
+  finalizeSheetBySession: async (id) => {
+    const sess = await db.query("select * from ais.sheet where session_id = "+id)
+    if(sess && sess.length > 0){
+       var mcount = 0;
+       // Fetch Resit Fee
+       const rfee = await db.query("select * from fms.servicefee where transtype_id = 03");
+       for(const vs of sess){
+
+          const res = await db.query("update ais.sheet set flag_finalize = 1 where id = " +vs.id);
+          var count = 0;
+          if (res && res.affectedRows > 0) {
+          
+              let sql = `select x.*,grade_meta,resit_score,s.refno,s.entry_group from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme m on x.scheme_id = m.id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
+              const rs = await db.query(sql);
+              if (rs && rs.length > 0) {
+                for (var r of rs) {
+                    count += 1;
+                    // Trailed logics
+                    const trailed = isTrailed(r.total_score,r.resit_score)
+                    if(trailed){
+                       // Record Trailed Papers into Resit Table
+                      const insGet = await db.query("select * from ais.resit_data where session_id = " +r.session_id +" and course_id = " +r.course_id +" and indexno = '" +r.indexno +"'");
+                      if(insGet && insGet.length <= 0){
+                        
+                        const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id }
+                        const insRep = await db.query("insert into ais.resit_data set ? ",dt);
+                        
+                        // Stage Charge for Resit
+                        const ct = { refno: r.refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', name: `RESIT CHARGE - ${r.refno}`,  type:'RESIT', post_status: 1 }
+                        const ch = await db.query("insert into fms.charge set ? ", ct);
+                        
+                        if(ch && ch.insertId > 0){
+                          // Stage Resit Charge into Studtrans
+                          const ft = { refno: r.refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', narrative: `RESIT CHARGE - ${r.refno}`, session_id: r.session_id, cr_id: ch.insertId, cr_type:'CHARGE' }
+                          const insTrans = await db.query("insert into fms.studtrans set ? ", ft);
+                        }
+      
+                      }
+                    }
+                }
+              }
+          }
+          mcount += count;
+      }
+      return mcount;
+    }
+    return null;
+  },
+
+
+  finalizeSheet: async (id) => {
+    
+    const res = await db.query("select * from ais.sheet where id = " + id);
+    var count = 0;
+   
+    if (res && res.length > 0) {
+      const resx = await db.query("update ais.sheet set flag_finalize = 1 where id = " +id);
+      if (resx && resx.affectedRows > 0) {
+        
+        const vs = res[0];
+        let sql = `select x.*,grade_meta,resit_score,s.refno,s.entry_group from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme m on x.scheme_id = m.id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
+        const rs = await db.query(sql);
+        
+        // Fetch Resit Fee
+        const rfee = await db.query("select * from fms.servicefee where transtype_id = 03");
+        
+        if (rs && rs.length > 0) {
+          for (var r of rs) {
+              count += 1;
+              // Trailed logics
+              const trailed = isTrailed(r.total_score,r.resit_score)
+              if(trailed){
+                
+                // Record Trailed Papers into Resit Table
+                const insGet = await db.query("select * from ais.resit_data where session_id = " +r.session_id +" and course_id = " +r.course_id +" and indexno = '" +r.indexno +"'");
+                if(insGet && insGet.length <= 0){
+                  
+                  const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id }
+                  const insRep = await db.query("insert into ais.resit_data set ? ",dt);
+                  
+                  // Stage Charge for Resit
+                  const ct = { refno: r.refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', name: `RESIT CHARGE, COURSEID_${vs.course_id} - ${r.refno}`,  type:'RESIT', post_status: 1 }
+                  const ch = await db.query("insert into fms.charge set ? ", ct);
+                  
+                  if(ch && ch.insertId > 0){
+                    // Insert Resit Charges into studtrans
+                    const ft = { refno: r.refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', narrative: `RESIT CHARGE, COURSEID_${vs.course_id} - ${r.refno}`, session_id: r.session_id, cr_id: ch.insertId, cr_type:'CHARGE' }
+                    const insTrans = await db.query("insert into fms.studtrans set ? ", ft);
+                  }
+
+                }
+              }
+          }
+        }
+      }
+    }
+    return count;
+  },
+
   certifySheet: async (id, sno) => {
     const res = await db.query(
-      "update ais.sheet set flag_certified = 1,certified_by = '" +
-        sno +
-        "' where id = " +
-        id
-    );
+      "update ais.sheet set flag_certified = 1, certified_by = '" +sno +"' where id = " +id);
     var count = 0;
     if (res && res.affectedRows > 0) {
       const resx = await db.query("select * from ais.sheet where id = " + id);
@@ -2349,30 +2436,7 @@ module.exports = {
                 "'"
             ); 
 
-            if (ups && ups.affectedRows > 0){
-              count += 1;
-              // Trailed logics
-              const trailed = isTrailed(r.total_score,r.resit_score)
-              if(trailed){
-                // Record Trailed Papers into Resit Table
-                const insGet = await db.query(
-                  "select * from ais.resit_data where session_id = " +
-                    r.session_id +
-                    " and course_id = " +
-                    r.course_id +
-                    " and indexno = '" +
-                    r.indexno +
-                    "'"
-                );
-                if(insGet && insGet.length <= 0){
-                  const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id }
-                  const insRep = await db.query(
-                    "insert into ais.resit_data set ? ", 
-                    dt
-                  );
-                }
-              }
-            } 
+            if (ups && ups.affectedRows > 0) count += 1;
           }
         }
       }
@@ -2381,41 +2445,29 @@ module.exports = {
   },
 
   uncertifySheet: async (id) => {
-    const res = await db.query(
-      "update ais.sheet set flag_certified = 0 where id = " + id
-    );
+    const res = await db.query("select * from ais.sheet where id = " + id);
     var count = 0;
-    if (res && res.affectedRows > 0) {
-      const resx = await db.query("select * from ais.sheet where id = " + id);
-      if (resx && resx.length > 0) {
-        const vs = resx[0];
+    if (res && res.length > 0) {
+      const resx = await db.query("update ais.sheet set flag_certified = 0 where id = " + id);
+      if (resx && resx.affectedRows > 0) {
+        const vs = res[0];
         let sql = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
         const rs = await db.query(sql);
+        
         if (rs && rs.length > 0) {
-          for (var r of rs) {
-            const ups = await db.query(
-              "update ais.assessment set flag_visible = 0 where session_id = " +
-                r.session_id +
-                " and course_id = " +
-                r.course_id +
-                " and indexno = '" +
-                r.indexno +
-                "'"
-            );
-            if (ups && ups.affectedRows > 0){
-              count += 1;
-              // Remove Trailed Papers inside Resit Table
-              const insGet = await db.query(  
-                "delete from ais.resit_data where session_id = " +
-                  r.session_id +
-                  " and course_id = " +
-                  r.course_id +
-                  " and indexno = '" +
-                  r.indexno +
-                  "'"
-              );
-            } 
-          }
+          const idx = rs.map(r => `'${r.indexno}'`).join(",");
+          const ups = await db.query("update ais.assessment set flag_visible = 0 where session_id = " +vs.session_id +" and course_id = " +vs.course_id +" and indexno in (" +idx +")");
+          if(ups.affectedRows > 0) count+= ups.affectedRows;
+          // Remove Trailed Papers inside Resit Table
+          // const insGet = await db.query(  
+          //   "delete from ais.resit_data where session_id = " +
+          //     r.session_id +
+          //     " and course_id = " +
+          //     r.course_id +
+          //     " and indexno = '" +
+          //     r.indexno +
+          //     "'"
+          // );
         }
       }
     }
@@ -2617,12 +2669,8 @@ module.exports = {
 
   activateAISCalendar: async (id) => {
     const cs = await db.query("select * from utility.session where id = " + id);
-    const vs = await db.query(
-      "update utility.session set `default` = 0 where tag = '" + cs[0].tag + "'"
-    );
-    const res = await db.query(
-      "update utility.session set `default` = 1 where id = " + id
-    );
+    const vs = await db.query("update utility.session set `default` = 0 where tag = '" + cs[0].tag + "'");
+    const res = await db.query("update utility.session set `default` = 1 where id = " + id);
     return res;
   },
 
@@ -2679,12 +2727,14 @@ module.exports = {
     return res;
   },
 
-  genGradList: async (id) => {
+  genGradList: async (id,session_id) => {
     // Fetch all students with Completed = 0 and Total credit from Assessment >= program min Credit
     // const sts = await db.query("select * from ais.fetchstudents s where s.complete_status = 1 and s.semester = 0 and s.graduate_status = 0 and s.min_credit_total <= (select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno)")
-    const sts = await db.query("select indexno,(select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno) as complete_credit from ais.fetchstudents s where s.complete_status = 1 and s.semester = 0 and s.graduate_status = 0 and s.min_credit_total <= (select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno)")
+    const sts = await db.query("select indexno,refno,entry_group,(select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno) as complete_credit from ais.fetchstudents s where s.complete_status = 1 and s.semester = 0 and s.graduate_status = 0 and s.min_credit_total <= (select sum(credit) as credit from ais.assessment x where x.indexno = s.indexno)")
     if(sts?.length > 0){
-      
+      // Fetch Graduation Fees
+      const rfee = await db.query("select * from fms.servicefee where transtype_id = 04");
+              
       const gds = [];
       for(const st of sts){
           // Check for Uncompleted Resit 
@@ -2719,6 +2769,15 @@ module.exports = {
               // Update Graduant data and flags to graduated
               const dt = { graduate_status: 1, graduate_id: id, graduate_fgpa: fgpa, credits_done: st.complete_credit };
               await db.query("update ais.student set ? where indexno = '"+st.indexno+"'", dt);
+              
+              // Stage Charges - charge tbl & studtrans tbl
+              const ct = { refno: st.refno, amount: st.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: st.entry_group == 'GH' ? 'GHC':'USD', name: `GRADUATION FEES - ${st.refno}`,  type:'GRADUATION', post_status: 1 }
+              const ch = await db.query("insert into fms.charge set ? ", ct);
+              if(ch && ch.insertId > 0){
+                // Stage Late Fine into Studtrans
+                const ft = { refno: st.refno, amount: st.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: st.entry_group == 'GH' ? 'GHC':'USD', narrative: `GRADUATION FEES - ${st.refno}`, session_id, cr_id: ch.insertId, cr_type:'CHARGE' }
+                const insTrans = await db.query("insert into fms.studtrans set ? ", ft);
+              }
             } 
           
           }
@@ -3519,29 +3578,28 @@ module.exports = {
   },
 
   fetchUnpaidResits: async (indexno,limit) => {
-    const res = await db.query("select * from ais.fetchresits where paid = 0 and indexno = '"+indexno+"' limit " + limit);
+    const res = await db.query("select id from ais.resit_data where paid = 0 and indexno = '"+indexno+"' limit " + limit);
     return res;
   },
 
 
   updateResitScore: async (id,data) => {
     const dt = { raw_score:data.raw_score, total_score:data.total_score }
-    const rs = await db.query("update ais.resit_score set ? where id = "+id, dt);
+    const rs = await db.query("update ais.resit_data set ? where id = "+id, dt);
     if (rs) return rs;
     return null;
   },
 
   updateResitData: async (id,data) => {
-    const rs = await db.query("update ais.resit_score set ? where id = "+id, data);
+    const rs = await db.query("update ais.resit_data set ? where id in ("+id+")", data);
     if (rs) return rs;
     return null;
   },
 
   saveResitBacklog: async (data) => {
-    const { course_id,indexno,total_score,session_id:rid } = data
+    const { course_id,indexno,total_score,session_id:rid, resit_id } = data
     // Get Previous Original score 
     const ss = await db.query("select x.*,p.semesters,u.academic_sem from ais.assessment x left join ais.student s on s.indexno = x.indexno left join utility.program p on s.prog_id = p.id left join utility.session u on x.session_id = u.id where x.course_id = "+course_id+" and x.indexno = '"+indexno+"'");
-    console.log(ss)
     if(ss.length > 1) return 'dups'
     if(ss.length > 0){
       const sm = ss[0]
@@ -3550,15 +3608,34 @@ module.exports = {
       console.log(sx)
       const num = sx && sx.length || 0;
       let dt;
+      
       // Calculate Semester number from resit session_id
       if([sm.semesters,sm.semesters-1].includes(sm.semester)){
         // If Final Year -- replace assessment and Log orinal data
-        const dm = { resit_id:null, assessment: JSON.stringify(ss[0]), created_at: Date.now()}
-        await db.query("insert into ais.resit_replace set ?", dm);
+        if(resit_id > 0){
+          const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
+          await db.query("update ais.resit_data set ? where id = "+resit_id, dm); // If Resit ID
+        
+        } else {
+          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 1, action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
+          await db.query("insert into ais.resit_data set ?", dm); // No Resit ID
+        }
+
         dt = { total_score, class_score:null, exam_score:null, score_type:'R', flag_visible: 1 }
         await db.query("update ais.assessment set ? where course_id = "+course_id+" and indexno = '"+indexno+"'", dt);
-      }
-      if(sm.semester < sm.semesters-1){
+     
+      
+      } else if(sm.semester < sm.semesters-1){
+
+        if(resit_id > 0){
+          const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'APPEND' }
+          await db.query("update ais.resit_data set ? where id = "+resit_id, dm); // If Resit ID
+        
+        } else {
+          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 1, action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
+          await db.query("insert into ais.resit_data set ?", dm); // No Resit ID
+        }
+        
         // Check If Not Final Year -- Insert record into assessment table
         dt = { scheme_id,course_id,indexno,credit,session_id:rid,semester:semester+num,total_score,score_type:'R',flag_visible:1 }
         await db.query("insert into ais.assessment set ?", dt);
@@ -3568,30 +3645,29 @@ module.exports = {
     return null;
   },
 
+  
   registerResit: async (id) => {
-    // Get Resit info 
-    // Get Current Registration Session - Compare with trailed session sem-num and run
-    // Insert into resit_score
     let res;
-    const rs = await db.query("select * from ais.resit_data r left join ais.fetchresits s on r.id = s.id where r.id = " + id);
+    const rs = await db.query("select * from ais.fetchresits r where r.id = " + id);
     if (rs && rs.length > 0){
       const session_id = await SR.getActiveSessionByRefNo(rs[0].refno);
       if(session_id){
         const sess = await db.query("select * from utility.session where id = " + session_id);
         if(sess && sess.length > 0){
           if(sess[0].academic_sem == rs[0].session_sem){
-            const dt = { reg_session_id: sess[0].id, resit_id: rs[0].id }
-            res = await db.query("insert into ais.resit_score set ?", dt)
+            const dt = { reg_session_id: sess[0].id }
+            res = await db.query("update ais.resit_data set ? where id = "+id, dt)
           }
         }
       }
     }
     return res;
   },
+  
 
   approveResit: async (id) => {
     let res;
-    const rs = await db.query("select s.*,r.course_id,indexno from ais.resit_score s left join ais.fetchresits r on s.resit_id = r.id where s.resit_id ="+id);
+    const rs = await db.query("select * from ais.fetchresits where resit_id ="+id);
     if (rs && rs.length > 0){
       const { course_id,indexno,total_score } = rs[0]
       const as = await db.query("select * from ais.assessment where course_id = "+course_id+" and indexno = '"+indexno+"'");
@@ -3612,9 +3688,7 @@ module.exports = {
         }
       }
       // Update approved in resit_score tbl to approved
-      res = await db.query("update ais.resit_score set approved = 1 where resit_id = "+id)
-      // Update take status in resit_data tbl to taken
-      res = await db.query("update ais.resit_data set taken = 1 where id = "+id)
+      res = await db.query("update ais.resit_data  set approved = 1, taken = 1 where id = "+id)
     }
     return res;
   },
@@ -4633,7 +4707,7 @@ module.exports = {
               // Update Student Profile
               await db.query(
                 "update ais.student set ? where indexno = '" + indexno + "'",
-                { semester, complete_status }
+                { semester, complete_status, flag_fees_pardon: 0 }
               );
               // Log Progression
               await db.query("insert into ais.progression set ?", {
@@ -5154,6 +5228,47 @@ module.exports = {
   },
 
 
+  releaseRegistrant: async (refno) => {
+    // Check whether Registration Extension is still opened 
+    const st = await Student.fetchStudentProfile(refno)
+    if(st && moment().isBefore(st[0].extend_period)){
+      const check = await db.query("select * from fms.charge c left join fms.studtrans s on c.id = s.cr_id where s.cr_type = 'CHARGE' and c.type = 'FINE' and s.refno = '"+refno+"'");
+      if(check && check.length <= 0){
+        console.log(st)
+        const r = st[0]
+        // Fetch Resit Fee
+        const rfee = await db.query("select * from fms.servicefee where transtype_id = 08");
+        // Stage Charges - charge tbl & studtrans tbl
+        const ct = { refno: refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', name: `LATE REGISTRATION FINE - ${r.refno}`,  type:'FINE', post_status: 1 }
+        const ch = await db.query("insert into fms.charge set ? ", ct);
+        
+        if(ch && ch.insertId > 0){
+          // Stage Late Fine into Studtrans
+          const ft = { refno: r.refno, amount: r.entry_group == 'GH' ? rfee[0].amount_ghc : rfee[0].amount_usd , currency: r.entry_group == 'GH' ? 'GHC':'USD', narrative: `LATE REGISTRATION FINE - ${r.refno}`, session_id: r.session_id, cr_id: ch.insertId, cr_type:'CHARGE' }
+          const insTrans = await db.query("insert into fms.studtrans set ? ", ft);
+        }
+
+        // Update Student Flag
+        const ups = await db.query("update ais.student set ? where refno = '"+refno+"'", { flag_fees_pardon: 1})
+        if(ups.affectedRows > 0) return ups.affectedRows;
+      }
+    }
+    return null;
+  },
+
+
+  pardonRegistrant: async (refno) => {
+    // Check whether Registration Extension is still opened 
+    const st = await Student.fetchStudentProfile(refno)
+    if(st && st.length > 0){
+      // Update Student Flag
+      const ups = await db.query("update ais.student set ? where refno = '"+refno+"'", { flag_fees_pardon: 1 })
+      if(ups.affectedRows > 0) return ups.affectedRows;
+    }
+    return null;
+  },
+
+
    // CHARGES - FMS
 
    fetchCharges: async (page, keyword) => {
@@ -5207,6 +5322,19 @@ module.exports = {
     const resm = await db.query("delete from fms.studtrans where cr_id = " + id);
     const res = await db.query("delete from fms.charge where id = " + id);
     return res;
+  },
+
+  stageCharge: async (refno,amount,currency,type,session_id) => {
+    let res;
+    // Create charge and use InsertID for studtrans
+    const dt = { name: `${type?.toUpperCase()} CHARGE - ${refno}`, refno, amount, post_status: 1 }
+    const ins = await db.query("insert into fms.charge set ?", dt)
+    // Create record in studtrans
+    if(ins.insertId > 0){
+      const ft = { narrative: `${type?.toUpperCase()} CHARGE - ${refno}`, refno, amount, currency,  cr_id: ins.insertId, cr_type: 'CHARGE', session_id }
+      res = await db.query("insert into fms.charge set ?", dt)
+    }
+    return res && res.insertId;
   },
 
 

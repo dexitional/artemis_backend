@@ -3,7 +3,7 @@ var db = require("../../config/mysql");
 module.exports = {
   fetchServices: async () => {
     const sql =
-      "select id as serviceId,title as serviceName from fms.transtype where status = 1 and visibility = 'PUBLIC'";
+      "select id as serviceId,title as serviceName,f.amount_ghc as serviceChargeInGHC,f.amount_usd as serviceChargeInUSD from fms.transtype t left join fms.servicefee f on t.id = f.transtype_id where t.status = 1 and t.visibility = 'PUBLIC'";
     const res = await db.query(sql);
     return res;
   },

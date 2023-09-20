@@ -67,28 +67,13 @@ module.exports = {
   // PROFILE MODELS
 
   fetchStudentProfile: async (refno) => {
+    
     var session;
-
-    /* 
-       "select s.*,date_format(s.doa,'%m') as admission_code,s.semester,s.entry_semester,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,p.scheme_id from ais.student s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id where (s.refno = '" +
-        refno +
-        "' or s.indexno = '" +
-        refno +
-        "')"
-    */
-    const query =
-      "select *,date_format(doa,'%m') as admission_code from ais.fetchstudents where (refno = '" +
-      refno +
-      "' or indexno = '" +
-      refno +
-      "')";
-
+    const query ="select *,date_format(doa,'%m') as admission_code from ais.fetchstudents where (refno = '" +refno +"' or indexno = '" +refno +"')";
     const st = await db.query(query);
 
     if (st && st.length > 0) {
-      const sx = await db.query(
-        "select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id from utility.session where `default` = 1 and status = 1"
-      );
+      const sx = await db.query("select *,substr(admission_code,1,2) as admission_code,title as session_name,academic_year as session_year,academic_sem as session_semester,id as session_id,cal_register_extend as extend_period from utility.session where `default` = 1 and status = 1");
       if (sx && sx.length == 1) session = sx[0];
       if (sx && sx.length > 1) {
         if (st[0].semester <= 2 && st[0].admission_code == "01") {
@@ -109,13 +94,7 @@ module.exports = {
   },
 
   fetchStProfile: async (refno) => {
-    const res = await db.query(
-      "select * from ais.student where refno = '" +
-        refno +
-        "' or indexno = '" +
-        refno +
-        "'"
-    );
+    const res = await db.query("select * from ais.student where (refno = '" +refno +"' or indexno = '" +refno +"')");
     return res;
   },
 
@@ -384,25 +363,27 @@ module.exports = {
     return null;
   },
 
-  fetchResitAccount: async (indexno = null) => {
-    const res = await db.query(
-      "select * from ais.resit_data where paid = 0 and indexno = '" + indexno + "'"
-    );
-    const resm = await db.query(
-      "select amount_ghc from fms.servicefee where transtype_id = 03"
-    );
+  fetchResitAccount: async (indexno = null, currency = null) => {
+    const res = await db.query("select * from ais.resit_data where paid = 0 and indexno = '" + indexno + "'");
+    const resm = await db.query("select amount_ghc, amount_usd from fms.servicefee where transtype_id = 03");
     if (res && resm && resm.length > 0) return res.length * resm[0].amount_ghc;
     return 0.0;
   },
 
-  fetchGraduationAccount: async (indexno = null) => {
-    const res = await db.query(
-      "select * from ais.graduation where indexno = '" + indexno + "'"
-    );
+  fetchGraduationAccount: async (currency = null) => {
+    // const res = await db.query(
+    //   "select * from ais.graduation where indexno = '" + indexno + "'"
+    // );
+    const resm = await db.query("select amount_ghc, amount_usd from fms.servicefee where transtype_id = 04");
+    if (resm && resm.length > 0) return resm[0].amount_ghc;
+    return 0.0;
+  },
+
+  fetchLateFineAccount: async (currency = null) => {
     const resm = await db.query(
-      "select amount_ghc from fms.servicefee where transtype_id = 04"
+      "select amount_ghc, amount_usd from fms.servicefee where transtype_id = 08"
     );
-    if (res && resm && resm.length > 0) return res.length * resm[0].amount_ghc;
+    if (resm && resm.length > 0) return resm[0].amount_ghc;
     return 0.0;
   },
 };

@@ -108,8 +108,7 @@ module.exports = {
   retireAccountByRefno: async (refno) => {
     const bal = await db.query("select ifnull(sum(amount),0) as amount from fms.studtrans where refno = '"+refno+"'");
     if (bal && bal.length > 0) {
-      const ups = await db.query(
-        "update ais.student s set ? where (refno = '"+refno+"' or indexno = '"+refno+"')",
+      const ups = await db.query("update ais.student s set ? where (refno = '"+refno+"' or indexno = '"+refno+"')",
         { transact_account: bal[0].amount }
       );
       return ups.affectedRows;

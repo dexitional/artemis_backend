@@ -32,22 +32,25 @@ module.exports = {
     const refno = req.params.refno;
     try {
       // OTHER services
-      if (refno && parseInt(type) !== 1) {
+      if (refno && type != 1) {
         var dt, ft;
+        
         const st = await Student.fetchStudentProfile(refno);
         if (st && st.length > 0) {
+          
           dt = {
             studentId: st[0].refno,
             indexNo: st[0].indexno,
             name: `${st[0].lname ? st[0].lname.trim() : ""}, ${
               st[0].fname ? st[0].fname.trim() : ""
             } ${st[0].mname ? " " + st[0].mname.trim() : ""}`,
-            program: `${st[0].program_name}${
+            program: `${st[0].program_name}${ 
               st[0].major_name ? "- " + st[0].major_name : ""
             }`,
             year: st[0].semester ? Math.ceil(st[0].semester / 2) : "none",
             serviceId: type,
           };
+          
           switch (parseInt(type)) {
             case 2:
               ft = await Student.fetchFeesAccount(st[0].refno);
@@ -57,11 +60,16 @@ module.exports = {
               break; // Retire resit account on successful payment ( flag paid to '1')
             case 4:
               ft = await Student.fetchGraduationAccount(st[0].indexno);
-              break; // Automate graduation insertion after second sem certified result
+              break; // Fetch Graduation Fees 
+            case 8:
+              ft = await Student.fetchLateFineAccount(st[0].indexno);
+              break; // Fetch Late Registration Fine 
           }
+          
           res
             .status(200)
             .json({ success: true, data: { ...dt, serviceCharge: ft } });
+        
         } else {
           res.status(200).json({
             success: false,
@@ -71,7 +79,7 @@ module.exports = {
         }
 
         // VOUCHER services
-      } else if (type && parseInt(type) === 1) {
+      } else if (type == 1) {
         const st = await SSO.fetchVoucherGroups();
         res
           .status(200)
@@ -107,6 +115,7 @@ module.exports = {
         formId,
         sessionId,
       } = req.body;
+      
       const dt = {
         collector_id: cl.id,
         transtype_id: serviceId,
@@ -120,12 +129,14 @@ module.exports = {
 
       /* VOUCHER SERVICE */
       if (serviceId == 1) {
+        
         if (!sessionId || sessionId == "")
           res.status(200).json({
             success: false,
             data: null,
             msg: `No Admission Session indicated!`,
           }); // Check for Required but Empty field and return error
+
         const ins = await SSO.sendTransaction(dt);
         if (ins) {
           const vouch = await SSO.sellVoucher(
@@ -154,6 +165,7 @@ module.exports = {
                 serviceId,
               },
             });
+          
           } else {
             res.status(200).json({
               success: false,
@@ -161,19 +173,26 @@ module.exports = {
               msg: `Voucher quota exhausted`,
             });
           }
+       
         } else {
           res
             .status(200)
             .json({ success: false, data: null, msg: `Transaction failed` });
         }
 
-        /* OTHER PAYMENT SERVICE (ACADEMIC FEES, RESIT, GRADUATION) */
+      
+      
+      /* OTHER PAYMENT SERVICE (ACADEMIC FEES, RESIT, GRADUATION, ATTESTATION, PROFICIENCY, TRANSCRIPT, LATE FINE ) */
+
       } else {
+        
         const st = await Student.fetchStudentProfile(studentId);
         const ins = await SSO.sendTransaction(dt);
         //const studentId = st[0].refno;
         if (ins) {
+          
           /* ACADEMIC FEES PAYMENT */
+          
           if (serviceId == 2) {
             // Send to studtrans tbl, If Payservice = Academic Fees
             const dt = {
@@ -186,24 +205,19 @@ module.exports = {
             const insm = await SSO.savePaymentToAccount(dt);
             if(insm && insm.insertId > 0)
               await SR.retireAccountByRefno(studentId)
-    
-            // Send SMS to Buyer
-            //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
-            //if(insm) await sms(st[0].phone,msg)
           }
           
+         
           /* RESIT PAYMENTS */
+          
           if (serviceId == 3) {
             // Retire Number of Resit Papers
             const resit_charge = await Student.fetchResitAccount(st[0].indexno);
             const pay_count = Math.floor(resit_charge % amountPaid);
             const resits = await SSO.fetchUnpaidResits(st[0].indexno,pay_count)
-            var count = 0;
-            for(const rs of resits){
-              // Update Paid Status of resit_data
-              const ups = await SSO.updateResitData(rs.id,{ paid:1 })
-              if(ups.affectedRows > 0) count += 1
-            }
+            const idx = resits.map(r => r.id).join(',')
+            // Update Paid Status of resit_data or papers
+            const ups = await SSO.updateResitData(idx,{ paid:1 })
             // Send to studtrans tbl, If Payservice = Resit Fees
             const dt = {
               tid: ins.insertId,
@@ -215,12 +229,11 @@ module.exports = {
             const insm = await SSO.savePaymentToAccount(dt);
             if(insm && insm.insertId > 0)
               await SR.retireAccountByRefno(studentId)
-            // Send SMS to Buyer
-            //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
-            //if(insm) await sms(buyerPhone,msg)
           }
 
+         
           /* GRADUATION FEES */
+
           if (serviceId == 4) {
             // Send to studtrans tbl, If Payservice = Academic Fees
             const dt = {
@@ -233,13 +246,27 @@ module.exports = {
             const insm = await SSO.savePaymentToAccount(dt);
             if(insm && insm.insertId > 0)
               await SR.retireAccountByRefno(studentId)
-    
-            // Send SMS to Buyer
-            //const msg = `Hi ${studentId}! You paid ${currency} ${amountPaid}, TransactId: ${transRef}`
-            //if(insm) await sms(buyerPhone,msg)
           }
+
+
+          /* LATE FINE */
+
+          if (serviceId == 8) {
+            const dt = {
+              tid: ins.insertId,
+              refno: studentId,
+              amount: -1 * amountPaid,
+              currency,
+              narrative: `Academic fine payment, StudentID: ${studentId}`,
+            };
+            const insm = await SSO.savePaymentToAccount(dt);
+            if(insm && insm.insertId > 0)
+              await SR.retireAccountByRefno(studentId)
+          }
+
+
           res.status(200).json({
-            success: true,
+            success: true,          
             data: { transId: ins.insertId, studentId, serviceId },
           });
         } else {

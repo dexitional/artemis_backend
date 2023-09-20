@@ -186,6 +186,7 @@ Router.get("/ais/loadsheet/:id", SSOController.loadSheet);
 Router.post("/ais/savesheet", SSOController.saveSheet);
 Router.post("/ais/importsheet/:id", SSOController.importSheet);
 Router.get("/ais/publishsheet/:id/:sno", SSOController.publishSheet);
+Router.get("/ais/finalizesheet/:id", SSOController.finalizeSheet);
 Router.get("/ais/certifysheet/:id/:sno", SSOController.certifySheet);
 Router.get("/ais/uncertifysheet/:id", SSOController.uncertifySheet);
 Router.get("/ais/loadcourselist/:id", SSOController.loadCourseList);
@@ -305,6 +306,9 @@ Router.post("/fms/feestrans", SSOController.postPayment);
 Router.delete("/fms/feestrans/:id", SSOController.deletePayment);
 Router.post("/fms/genindexno", SSOController.generateIndexNo);
 Router.get("/fms/movetofees/:id", SSOController.movePaymentToFees);
+Router.post("/fms/releasereg", SSOController.releaseRegistrant);
+Router.post("/fms/pardonreg", SSOController.releaseRegistrant);
+
 
 // CHARGES
 Router.get("/fms/charges/", SSOController.fetchCharges);
@@ -458,7 +462,7 @@ Router.get("/alertapplicants", async (req, res) => {
 Router.get("/createviews", async (req, res) => {
   // FETCH SCORESHEETS VIEW
   const v1 = await db.query(
-    "create view fetchsheets as select s.*,p.short as program_name,m.title as major_name,c.title as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name,s.regcount,s.complete_ratio from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
+    "create view fetchsheets as select s.*,p.short as program_name,m.title as major_name,c.title as course_name,c.course_code,c.credit,n.title as calendar,n.tag as stream,t.title as unit_name from ais.sheet s left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.course c on s.course_id = c.id left join utility.session n on n.id = s.session_id left join utility.unit t on t.id = s.unit_id"
   );
   // FETCH STUDENTS VIEW
   const v2 = await db.query(
@@ -479,9 +483,10 @@ Router.get("/createviews", async (req, res) => {
   );
   // FETCH RESIT VIEW
   const v6 = await db.query(
-    "create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
+   // "create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
+    "create view fetchresits as select s.refno,r.*,ifnull(r.reg_session_id,0) as register,r.id as reg_id,upper(c.title) as course_name,c.credit,c.course_code,upper(p.short) as program_name,upper(j.title) as major_name,upper(concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname)) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
   );
-  // FETCH BACKLOG OVERVIEW
+  // FETCH BACKLOG OVERVIEW 
   const v7 = await db.query(
     //"create view fetchresits as select s.refno,r.*,ifnull(x.id,0) as register,x.id as reg_id,x.raw_score,x.total_score,x.approved,c.title as course_name,c.credit,c.course_code,p.short as program_name,j.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, i.title as session_name,i.academic_sem as session_sem,i.academic_year as session_year,i.tag as session_tag,m.grade_meta,m.resit_score from ais.resit_data r left join ais.resit_score x on r.id = x.resit_id left join ais.student s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id left join utility.scheme m on r.scheme_id = m.id left join utility.program p on s.prog_id = p.id left join ais.major j on s.major_id = j.id left join utility.session i on r.session_id = i.id"
     "create view fetchbackviews as select upper(concat(i.title,' - ',if(i.tag = 'MAIN','MAIN STREAM','JAN STREAM'))) as session_name,i.title as session_title,i.academic_year as session_year,i.academic_sem as session_sem,s.name,s.refno,s.prog_id,s.program_name,s.major_name,s.session as mode,x.session_id,x.scheme_id,x.indexno,x.class_score,x.exam_score,x.total_score,x.semester,x.score_type,x.course_id,(ceil(x.semester/2)*100) as level,c.course_code,c.title as course_name,c.credit,m.grade_meta,m.resit_score from ais.assessment x left join ais.fetchstudents s on s.indexno = x.indexno left join utility.course c on c.id = x.course_id left join utility.scheme m on x.scheme_id = m.id left join utility.session i on i.id = x.session_id"
