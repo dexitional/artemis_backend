@@ -2707,6 +2707,141 @@ module.exports = {
   },
 
 
+  // RESIT CALENDAR CONTROLS - AIS
+
+  fetchResitCalendar: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchResitCalendar(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  postResitCalendar: async (req, res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if (
+      req.body.start_date == "Invalid date" ||
+      req.body.start_date == ""
+    )
+      req.body.start_date = null;
+    if (
+      req.body.end_date == "Invalid date" ||
+      req.body.end_date == ""
+    )
+      req.body.end_date = null;
+    
+
+    try {
+      var resp =
+        id <= 0
+          ? await SSO.insertResitCalendar(req.body)
+          : await SSO.updateResitCalendar(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteResitCalendar: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteResitCalendar(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  activateResitCalendar: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.activateResitCalendar(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  resitMembers: async (req, res) => {
+    try {
+      const { calendar_id } = req.body;
+      var resp = await SSO.resitMembers(calendar_id);
+      console.log(resp);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  resitStats: async (req, res) => {
+    try {
+      const { calendar_id } = req.body;
+      var resp = await SSO.resitStats(calendar_id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+
   // GRADUATION - AIS
 
   fetchGraduation: async (req, res) => {

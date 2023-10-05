@@ -174,7 +174,7 @@ module.exports = {
         const me = await Student.fetchStudentME(major_id, prog_id, semester); // Get Majoring Electives
         const rt = await Student.fetchStudentRT(indexno,session_semester); // Get Trailed Courses
         const mt = await Student.fetchRegMeta(prog_id, semester); // Get Registration
-        console.log(rt)
+        
         if (ce.length > 0) {
           for (var row of ce) {
             if (row.type == "E")
@@ -182,13 +182,14 @@ module.exports = {
             if (row.type == "C") courses.core.push({ ...row, selected: false });
           }
         }
+
         if (me.length > 0) {
           for (var row of me) {
-            if (row.type == "E")
-              courses.elective.push({ ...row, selected: false });
+            if (row.type == "E") courses.elective.push({ ...row, selected: false });
           }
         }
-        if (rt.length > 0) {
+
+        if (rt.length > 0) {  
           for (var row of rt) {
             /*
                 if(session_semester == 1){ // Courses Trailed in First Semeter Only
@@ -206,6 +207,7 @@ module.exports = {
               });
           }
         }
+
         if (mt.length > 0) {
           let mdata = mt[0];
           const mj = JSON.parse(mt[0].info).find((r) => r.major_id == major_id);
@@ -244,7 +246,9 @@ module.exports = {
       } = req.body;
       var resp;
       if (indexno) {
+        
         var courses = [], resit_ids = [];
+        
         if (core && core.length > 0) {
           // Core
           for (var row of core) {
@@ -264,6 +268,7 @@ module.exports = {
               });
           }
         }
+
         if (elective && elective.length > 0) {
           // Elective
           for (var row of elective) {
@@ -283,12 +288,15 @@ module.exports = {
               });
           }
         }
+
         if (trail && trail.length > 0) {
           // Trail
           for (var row of trail) {
             const rem = Student.removeResitLog(row.resit_id);
             if (row.selected || row.lock == 1){
-              /* NB: Resit Selected for Registration is First Logged in [resit_score] and (Appended or Replaced) in [assessment] on Approval in Assessment tbl
+             /* NB: Resit Selected for Registration is First Logged in [resit_data] and (Appended or Replaced) in [assessment] on Approval in Assessment tbl */
+             const ins = Student.insertResitLog(indexno, row.resit_id,session_id,row.semester);
+             /*
               courses.push({
                 course_id: row.course_id,
                 credit: row.credit,
@@ -303,7 +311,7 @@ module.exports = {
                 flag_visible: 0,
               });
               */
-              const ins = Student.insertResitLog(indexno, row.resit_id,session_id);
+             
             }
           }
         }

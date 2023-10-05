@@ -235,7 +235,6 @@ module.exports = {
     if (indexno && academic_sem){
        const sql = "select c.title as course_name,c.credit,c.id as course_id,c.course_code,x.paid,x.semester,x.id as resit_id,x.scheme_id from ais.resit_data x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id where x.taken = 0 and x.paid = 1 and x.indexno = '" + indexno + "' and s.academic_sem = " + academic_sem;
        res = await db.query(sql);
-       console.log(sql,res)
     }  return res;
   },
 
@@ -288,20 +287,23 @@ module.exports = {
     // Remove Resit_score Registration log
     let res;
     if (resit_id ){
-      res = await db.query("delete from ais.resit_score where resit_id = "+resit_id);
+      res = await db.query("delete from ais.resit_data where id = "+resit_id);
     }
     return res;
   },
 
-  insertResitLog: async (indexno = null, resit_id = null, reg_session_id = null) => {
+  insertResitLog: async (indexno = null, resit_id = null, reg_session_id = null, semester = null) => {
     let res;
-    if (indexno && resit_id){
+    if (indexno && resit_id && semester){
       // Log Resit Registration in resit_score table
+      // Semester or Level of student when course was trailed - for accurate "REPLACE/APPEND" ( Not the current Semester of student )
       try{
-          const sql = "select if(s.semester in (p.semesters,(p.semesters-1)),true,false) as final from ais.student s left join utility.program p on s.prog_id = p.id where s.indexno = '"+indexno+"'";
+          //const sql = "select if(s.semester in (p.semesters,(p.semesters-1)),true,false) as final from ais.student s left join utility.program p on s.prog_id = p.id where s.indexno = '"+indexno+"'";
+          const sql = `select if(${semester} in (p.semesters,(p.semesters-1)),true,false) as final from ais.student s left join utility.program p on s.prog_id = p.id where s.indexno = '${indexno}'`;
           const { final } = (await db.query(sql))[0]
-          const dt = { resit_id,reg_session_id,action_type: final ? 'REPLACE':'APPEND',approved:0, created_at: new Date() }
-          const ins = await db.query("insert into ais.resit_score set ?", dt)
+          //const dt = { reg_session_id, action_type: final ? 'REPLACE':'APPEND',  approved:0, created_at: new Date() }
+          const dt = { reg_session_id }
+          const ins = await db.query("update ais.resit_data set ? where id = "+resit_id, dt)
           res = ins;
       } catch(e){
         console.log(e)

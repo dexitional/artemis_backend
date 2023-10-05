@@ -201,6 +201,13 @@ Router.delete("/ais/calendar/:id", SSOController.deleteCalendar);
 Router.get("/ais/setcalendar/:id", SSOController.activateCalendar);
 Router.post("/ais/stagesheet", SSOController.stageSheet);
 Router.post("/ais/progress", SSOController.progressLevel);
+// RESIT CALENDAR routes
+Router.get("/ais/rcalendar/", SSOController.fetchResitCalendar);
+Router.post("/ais/rcalendar", SSOController.postResitCalendar);
+Router.delete("/ais/rcalendar/:id", SSOController.deleteResitCalendar);
+Router.get("/ais/setrcalendar/:id", SSOController.activateResitCalendar);
+Router.post("/ais/resitmembers", SSOController.resitMembers);
+Router.post("/ais/resitstats", SSOController.resitStats);
 // INFORMER routes
 Router.get("/ais/informer/", SSOController.fetchInformer);
 Router.post("/ais/informer", SSOController.postInformer);
