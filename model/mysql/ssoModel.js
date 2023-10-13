@@ -2079,6 +2079,66 @@ module.exports = {
     return { data: mdata }
   },
 
+  // PROFICIENCY - AIS MODELS
+  fetchProficiency: async (indexno) => {
+    var mdata = {}
+    const js = await db.query(
+     `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
+    );
+
+    const ts = await db.query(
+      `select * from ais.service_letter where tag = 'tra' order by id desc limit 1`
+     );
+    
+    if (js && js.length > 0) {
+      for(const sv of js){
+        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
+        // Data By Courses
+        if(mdata[sv.session_title]){
+          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
+        }else{
+          mdata[sv.session_title] = [{...zd}]
+        }
+      }
+    }
+    return { data: mdata }
+  },
+
+  // ATTESTATION - AIS MODELS
+  fetchAttestation: async (indexno) => {
+    const letter = await db.query(`select * from ais.service_letter where tag = 'att' order by id desc limit 1`);
+    const student = await db.query(`select * from ais.fetchStudents where indexno = '${indexno}'`);
+    return { letter,student } 
+  },
+
+  // INTRODUCTORY - AIS MODELS
+  fetchIntroLetter: async (indexno) => {
+    var mdata = {}
+    const js = await db.query(
+     `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
+    );
+
+    const ts = await db.query(
+      `select * from ais.service_letter where tag = 'tra' order by id desc limit 1`
+     );
+    
+    if (js && js.length > 0) {
+      for(const sv of js){
+        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
+        // Data By Courses
+        if(mdata[sv.session_title]){
+          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
+        }else{
+          mdata[sv.session_title] = [{...zd}]
+        }
+      }
+    }
+    return { data: mdata }
+  },
+
+
+
+
   // SCORESHEETS - AIS MODELS
 
   fetchScoresheets: async (streams, unit_id, page, keyword) => {
@@ -2244,6 +2304,7 @@ module.exports = {
     const res = await db.query("select * from ais.sheet where id = " + id);
     if (res && res.length > 0) {
       const vs = res[0];
+      // let sql = `select x.*,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name,c.grade_meta from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme c on c.id = x.scheme_id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
       let sql = `select x.*,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name,c.grade_meta from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme c on c.id = x.scheme_id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
       const rs = await db.query(sql);
       if (rs && rs.length > 0) {
@@ -2383,6 +2444,7 @@ module.exports = {
         
         // Fetch Resit Fee
         const rfee = await db.query("select * from fms.servicefee where transtype_id = 03");
+        const rcal = await db.query("select * from ais.resit_calendar where `default` = 1");
         
         if (rs && rs.length > 0) {
           for (var r of rs) {
@@ -2395,7 +2457,7 @@ module.exports = {
                 const insGet = await db.query("select * from ais.resit_data where session_id = " +r.session_id +" and course_id = " +r.course_id +" and indexno = '" +r.indexno +"'");
                 if(insGet && insGet.length <= 0){
                   
-                  const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id }
+                  const dt = { session_id:vs.session_id, course_id:vs.course_id, indexno: r.indexno, semester:r.semester, scheme_id:r.scheme_id, calendar_id: rcal[0].id }
                   const insRep = await db.query("insert into ais.resit_data set ? ",dt);
                   
                   // Stage Charge for Resit
@@ -2452,7 +2514,7 @@ module.exports = {
     const res = await db.query("select * from ais.sheet where id = " + id);
     var count = 0;
     if (res && res.length > 0) {
-      const resx = await db.query("update ais.sheet set flag_certified = 0 where id = " + id);
+      const resx = await db.query("update ais.sheet set flag_certified = 0, certified_by = null where id = " + id);
       if (resx && resx.affectedRows > 0) {
         const vs = res[0];
         let sql = `select x.* from ais.assessment x left join ais.student s on x.indexno = s.indexno where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
@@ -2735,12 +2797,12 @@ module.exports = {
   },
 
   resitMembers: async (id) => {
-    const res = await db.query("select * from ais.resit_calendar where id = " + id);
+    const res = await db.query("select s.indexno,upper(s.lname) as lname,upper(s.fname) as fname,ifnull(upper(s.mname),'') as mname,s.name,s.program_name,s.department,upper(c.title) as course_name,c.course_code,r.* from ais.resit_data r left join ais.fetchstudents s on r.indexno = s.indexno left join utility.course c on r.course_id = c.id where calendar_id = "+id+" order by r.course_id,s.prog_id,s.lname");
     return res;
   },
 
   resitStats: async (id) => {
-    const res = await db.query("select * from ais.resit_calendar where id = " + id);
+    const res = await db.query("select c.course_code as code,upper(c.title) as title,count(*) as members from ais.resit_data r left join utility.course c on r.course_id = c.id where r.calendar_id = " + id+" group by r.course_id having count(r.course_id) > 0");
     return res;
   },
 
@@ -3270,6 +3332,58 @@ module.exports = {
     return null;
   },
 
+
+
+  // TRANSWIFT - AIS
+
+  fetchTranswifts: async (page, keyword) => {
+    var sql =
+      "select r.*,s.name,s.indexno,s.refno,t.amount,t.transtag from ais.transwift r left join ais.fetchstudents s on s.indexno = r.indexno left join fms.transaction t on r.tid = t.id";
+    var cql =
+      "select count(*) as total from ais.transwift r left join ais.fetchstudents s on s.indexno = r.indexno left join fms.transaction t on r.tid = t.id";
+
+    const size = 10;
+    const pg = parseInt(page);
+    const offset = pg * size || 0;
+
+    if (keyword) {
+      sql += " where s.name like '%"+keyword.toLowerCase()+"%' or s.indexno like '%"+keyword.toLowerCase()+"%' or s.refno like '%"+keyword.toLowerCase()+"%' ";
+      cql += " where s.name like '%"+keyword.toLowerCase()+"%' or s.indexno like '%"+keyword.toLowerCase()+"%' or s.refno like '%"+keyword.toLowerCase()+"%' ";
+    }
+
+    sql += ` order by r.id desc`;
+    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+
+    const ces = await db.query(cql);
+    const res = await db.query(sql);
+    const count = Math.ceil(ces[0].total / size);
+
+    return {
+      totalPages: count,
+      totalData: ces[0].total,
+      data: res,
+    };
+  },
+
+  fetchTranswift: async (id) => {
+    const res = await db.query("select * from ais.transwift where id = " + id);
+    return res;
+  },
+
+  insertTranswift: async (data) => {
+    const res = await db.query("insert into ais.transwift set ?", data);
+    return res;
+  },
+
+  updateTranswift: async (id, data) => {
+    const res = await db.query("update ais.transwift set ? where id = " + id,data);
+    return res;
+  },
+
+  deleteTranswift: async (id) => {
+    const res = await db.query("delete from ais.transwift where id = " + id);
+    return res;
+  },
 
 
   // PROGRAM - AIS
@@ -5104,6 +5218,11 @@ module.exports = {
 
   fetchPayment: async (id) => {
     const res = await db.query("select * from ais.fetchtrans where id = " + id);
+    return res;
+  },
+
+  fetchTransactionByRef: async (ref) => {
+    const res = await db.query("select * from fms.transaction where transtag = '"+ref+"'");
     return res;
   },
 

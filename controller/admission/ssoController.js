@@ -2806,7 +2806,6 @@ module.exports = {
     try {
       const { calendar_id } = req.body;
       var resp = await SSO.resitMembers(calendar_id);
-      console.log(resp);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
       } else {
@@ -2815,7 +2814,6 @@ module.exports = {
           .json({ success: false, data: null, msg: "Action failed!" });
       }
     } catch (e) {
-      console.log(e);
       res
         .status(200)
         .json({ success: false, data: null, msg: "Something wrong !" });
@@ -3332,13 +3330,112 @@ module.exports = {
   
 
   // TRANSCRIPT & RESULTS
+
+  fetchTranswifts: async (req, res) => {
+    try {
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var sheets = await SSO.fetchTranswifts(page, keyword);
+      if (sheets && sheets.data.length > 0) {
+        res.status(200).json({ success: true, data: sheets });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something went wrong !" });
+    }
+  },
+
+  fetchTranswift: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.fetchTranswift(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No records" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
+  postTranswift: async (req, res) => {
+    const { id,payref } = req.body;
+    try {
+      const trans = await SSO.fetchTransactionByRef(payref)
+      console.log(payref,trans)
+      if(!trans?.length) return res.status(200).json({ success: false, data: null, msg: "Invalid Payment Reference or Receipt No. !" });
+      req.body = { ...req.body, tid: trans[0]?.id || 0 }
+      
+      var resp = 
+        id <= 0
+          ? await SSO.insertTranswift(req.body)
+          : await SSO.updateTranswift(id, req.body);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res.status(200).json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res.status(200).json({ success: false, data: null, msg: "Something wrong happened!" });
+    }
+  },
+
+  deleteTranswift: async (req, res) => {
+    try {
+      const { id } = req.params;
+      var resp = await SSO.deleteTranswift(id);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "Action failed!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong !" });
+    }
+  },
+
   
   postTranscript: async (req, res) => {
-    console.log(req.body)
     try {
       const { indexno } = req.body
       var resp = await SSO.fetchTranscript(indexno);
-      console.log(resp)
+      if (resp) {
+        res.status(200).json({ success: true, data: resp.data });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Initial Assessment for Course!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened !" });
+    }
+  },
+
+  postAttestation: async (req, res) => {
+    try {
+      const { indexno } = req.body
+      var resp = await SSO.fetchAttestation(indexno);
       if (resp) {
         res.status(200).json({ success: true, data: resp.data });
       } else {
