@@ -3436,12 +3436,32 @@ module.exports = {
     try {
       const { indexno } = req.body
       var resp = await SSO.fetchAttestation(indexno);
+      console.log(resp.student)
       if (resp) {
-        res.status(200).json({ success: true, data: resp.data });
+        res.status(200).json({ success: true, data: resp });
       } else {
         res
           .status(200)
-          .json({ success: false, data: null, msg: "No Initial Assessment for Course!" });
+          .json({ success: false, data: null, msg: "No Records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened !" });
+    }
+  },
+
+  postIntroLetter: async (req, res) => {
+    try {
+      const { indexno } = req.body
+      var resp = await SSO.fetchIntroLetter(indexno);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Records!" });
       }
     } catch (e) {
       console.log(e);

@@ -254,7 +254,7 @@ Router.post("/ais/transwift", SSOController.postTranswift);
 Router.delete("/ais/transwift/:id", SSOController.deleteTranswift);
 Router.post("/ais/transcript", SSOController.postTranscript);
 Router.post("/ais/proficiency", SSOController.postTranscript);
-Router.post("/ais/introductory", SSOController.postTranscript);
+Router.post("/ais/introletter", SSOController.postIntroLetter);
 Router.post("/ais/attestation", SSOController.postAttestation);
 // PROGRAM routes
 Router.get("/ais/programs", SSOController.fetchPrograms);
@@ -477,7 +477,7 @@ Router.get("/createviews", async (req, res) => {
   );
   // FETCH STUDENTS VIEW
   const v2 = await db.query(
-    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,p.stype,abs(p.semesters/2) as duration,p.credits as min_credit_total, m.title as major_name,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,j.title as department,p.scheme_id from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
+    "create view fetchstudents as select s.*,u.uid,u.flag_locked,u.flag_disabled,p.short as program_name,p.long as program_name_long,p.stype,abs(p.semesters/2) as duration,p.credits as min_credit_total, m.title as major_name,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,j.title as department,p.scheme_id from ais.student s left join identity.user u on s.refno = u.tag left join utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join utility.unit j on p.unit_id = j.id"
   );
   // FETCH REGISTRATION LOGS VIEW
   const v3 = await db.query(

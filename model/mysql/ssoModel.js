@@ -2081,59 +2081,23 @@ module.exports = {
 
   // PROFICIENCY - AIS MODELS
   fetchProficiency: async (indexno) => {
-    var mdata = {}
-    const js = await db.query(
-     `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
-    );
-
-    const ts = await db.query(
-      `select * from ais.service_letter where tag = 'tra' order by id desc limit 1`
-     );
-    
-    if (js && js.length > 0) {
-      for(const sv of js){
-        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
-        // Data By Courses
-        if(mdata[sv.session_title]){
-          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
-        }else{
-          mdata[sv.session_title] = [{...zd}]
-        }
-      }
-    }
-    return { data: mdata }
+    const letter = await db.query(`select * from ais.service_letter where tag = 'pro' order by id desc limit 1`);
+    const student = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
+    return { letter: letter[0], student: student[0] } 
   },
 
   // ATTESTATION - AIS MODELS
   fetchAttestation: async (indexno) => {
     const letter = await db.query(`select * from ais.service_letter where tag = 'att' order by id desc limit 1`);
-    const student = await db.query(`select * from ais.fetchStudents where indexno = '${indexno}'`);
-    return { letter,student } 
+    const student = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
+    return { letter: letter[0], student: student[0] } 
   },
 
   // INTRODUCTORY - AIS MODELS
   fetchIntroLetter: async (indexno) => {
-    var mdata = {}
-    const js = await db.query(
-     `select * from ais.fetchbackviews where indexno = '${indexno}' order by session_id`
-    );
-
-    const ts = await db.query(
-      `select * from ais.service_letter where tag = 'tra' order by id desc limit 1`
-     );
-    
-    if (js && js.length > 0) {
-      for(const sv of js){
-        const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
-        // Data By Courses
-        if(mdata[sv.session_title]){
-          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
-        }else{
-          mdata[sv.session_title] = [{...zd}]
-        }
-      }
-    }
-    return { data: mdata }
+    const letter = await db.query(`select * from ais.service_letter where tag = 'int' order by id desc limit 1`);
+    const student = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
+    return { letter: letter[0], student: student[0] } 
   },
 
 
