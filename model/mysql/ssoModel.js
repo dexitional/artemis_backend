@@ -1572,6 +1572,18 @@ module.exports = {
     const size = 10;
     const pg = parseInt(page);
     const offset = pg * size || 0;
+    keyword = keyword?.split(" ")[0]; // Added Search with spacings
+    
+    // if(keyword.length){
+    //   sql += ` where`;
+    //   cql += ` where`;
+      
+    //   for(let i = 0; i <= keyword.length; i++){
+    //     const word = keyword[i]
+    //     sql += ` fname like '%${word}%' or lname like '%${word}%' or refno = '${word}' or indexno = '${word}'${i < keyword.length-1 ? ' or':''}`;
+    //     cql += ` fname like '%${word}%' or lname like '%${word}%' or refno = '${word}' or indexno = '${word}'${i < keyword.length-1 ? ' or':''}`;
+    //   }
+    // }
 
     if (keyword) {
       sql += ` where fname like '%${keyword}%' or lname like '%${keyword}%' or refno = '${keyword}' or indexno = '${keyword}'`;
@@ -1579,7 +1591,8 @@ module.exports = {
     }
 
     sql += ` order by complete_status asc,prog_id asc,lname asc, fname asc`;
-    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    //sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    sql += ` limit ${offset},${size}`;
 
     const ces = await db.query(cql);
     const res = await db.query(sql);
@@ -2080,13 +2093,13 @@ module.exports = {
   },
 
   // PROFICIENCY - AIS MODELS
-  fetchProficiency: async (indexno) => {
+  fetchProficient: async (indexno) => {
     const letter = await db.query(`select * from ais.service_letter where tag = 'pro' order by id desc limit 1`);
     const student = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
     return { letter: letter[0], student: student[0] } 
   },
 
-  // ATTESTATION - AIS MODELS
+  // ATTESTATION - AIS MODELSp
   fetchAttestation: async (indexno) => {
     const letter = await db.query(`select * from ais.service_letter where tag = 'att' order by id desc limit 1`);
     const student = await db.query(`select * from ais.fetchstudents where indexno = '${indexno}'`);
@@ -2152,7 +2165,9 @@ module.exports = {
     }
 
     sql += ` order by session_id desc,prog_id,semester,major_id`;
-    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    
+    //sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    sql += ` limit ${offset},${size}`;
     
     const ces = await db.query(cql);
     const res = await db.query(sql);
@@ -2213,7 +2228,9 @@ module.exports = {
     }
 
     sql += ` order by session_id desc,prog_id,semester,major_id`;
-    sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    
+    //sql += !keyword ? ` limit ${offset},${size}` : ` limit ${size}`;
+    sql += ` limit ${offset},${size}`;
 
     const ces = await db.query(cql);
     const res = await db.query(sql);
@@ -2323,6 +2340,73 @@ module.exports = {
     if (count > 0) await SR.retireAssessmentTotal(sid); // Return Assessment for Session
     return count;
   },
+
+  loadStudSheet: async (id) => {
+    var data = [], name = "";
+   
+      // let sql = `select x.*,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name,c.grade_meta from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.scheme c on c.id = x.scheme_id where x.session_id=${vs.session_id} and x.course_id=${vs.course_id} and s.prog_id = ${vs.prog_id} and x.semester = ${vs.semester} and s.session = '${vs.session}' order by s.lname`;
+      let sql = `select x.*,s.refno,concat(s.lname,', ',s.fname,ifnull(concat(' ',s.mname),'')) as name,concat(c.title,' (',if(c.tag = 'MAIN','MAIN','JAN'),')') as title,o.title as course,o.course_code as code from ais.assessment x left join ais.student s on x.indexno = s.indexno left join utility.session c on c.id = x.session_id left join utility.course o on o.id = x.course_id where x.indexno = '${id}'`;
+      const rs = await db.query(sql);
+      
+      if (rs && rs.length > 0) {
+        name = rs[0].name;
+        for (var r of rs) {
+          const c_name = `${r.session_id}_${r.course_id}_${r.indexno}_c`;
+          const c_value = r.class_score;
+          const e_name = `${r.session_id}_${r.course_id}_${r.indexno}_e`;
+          const e_value = r.exam_score;
+          const t_name = `${r.session_id}_${r.course_id}_${r.indexno}_t`;
+          const t_value = r.total_score;
+          
+          let dt = {
+            session: r.title,
+            indexno: r.indexno,
+            refno: r.refno,
+            year: Math.ceil(r.semester/2),
+            course: r.course,
+            code: r.code,
+            class: { name: c_name, value: c_value },
+            exam: { name: e_name, value: e_value },
+            total: { name: t_name, value: t_value },
+            type: r.score_type,
+            flag_visible: r.flag_visible
+          };
+
+          data.push(dt);
+        }
+      }
+   
+    return { data, name };
+  },
+
+  saveStudSheet: async (data) => {
+    var count = 0;
+    var sid = 0;
+
+    const keys = Object.keys(data);
+    if (keys.length > 0) {
+      for (var key of keys) {
+        const keyinfo = key.split("_");
+        if (keyinfo.length > 0) {
+          sid = keyinfo[0];
+          const session_id = keyinfo[0];
+          const course_id = keyinfo[1];
+          const indexno = keyinfo[2];
+          const type = keyinfo[3];
+          // const flag_visible = keyinfo[4];
+          const flag_visible = 1;
+          const value = data[key];
+          // Update Database with Record
+          const dt = type == "c" ? { class_score: value, flag_visible } :  type == "e" ? { exam_score: value, flag_visible } : { total_score: value, flag_visible };
+          const ups = await db.query("update ais.assessment set ? where session_id = " +session_id +" and course_id = "+course_id +" and indexno = '"+indexno +"'",dt);
+          if (ups && ups.affectedRows > 0) count += 1;
+        }
+      }
+    }
+    if (count > 0) await SR.retireAssessmentTotal(sid); // Return Assessment for Session
+    return count;
+  },
+
 
   retireAssessmentTotal: async (session_id) => {
     const res = await db.query(

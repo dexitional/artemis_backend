@@ -152,7 +152,7 @@ module.exports = {
   insReplaceProfileTbl: async (data) => {
     const id = data.profile_id;
     delete data.profile_id;
-    if(data.dob) data.dob = moment(data.dob).format('YYYY-MM-DD')
+    if(data.dob) data.dob = moment(data.dob).format('YYYY-MMM-DD')
 
     var res;
     if (id != "") {
@@ -182,7 +182,6 @@ module.exports = {
   },
 
   insReplaceEducationTbl: async (serial, data) => {
-    console.log(data)
     var res;
     if (data.length > 0 && data[0].institute_name) {
       const rs = await db.query(

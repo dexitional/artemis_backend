@@ -1659,6 +1659,7 @@ module.exports = {
     delete req.body.name;
     delete req.body.doc;
     delete req.body.min_credit_total;
+    delete req.body.program_name_long;
     console.log(req.body);
     try {
       var resp =
@@ -2334,6 +2335,46 @@ module.exports = {
     try {
       const { sid,data } = req.body;
       var resp = await SSO.saveSheet(sid,data);
+      if (resp > 0) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: " No Data Loaded!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong!" });
+    }
+  },
+
+  loadStudSheet: async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log("test: ",id)
+      var resp = await SSO.loadStudSheet(id);
+      console.log(resp)
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: " No Data Loaded!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong!" });
+    }
+  },
+
+  saveStudSheet: async (req, res) => {
+    try {
+      const { data } = req.body;
+      var resp = await SSO.saveStudSheet(data);
       if (resp > 0) {
         res.status(200).json({ success: true, data: resp });
       } else {
@@ -3471,6 +3512,26 @@ module.exports = {
     }
   },
 
+  postProficient: async (req, res) => {
+    try {
+      const { indexno } = req.body
+      var resp = await SSO.fetchProficient(indexno);
+      if (resp) {
+        res.status(200).json({ success: true, data: resp });
+      } else {
+        res
+          .status(200)
+          .json({ success: false, data: null, msg: "No Records!" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(200)
+        .json({ success: false, data: null, msg: "Something wrong happened !" });
+    }
+  },
+
+
 
   // PROGRAMS - AIS
 
@@ -4104,7 +4165,7 @@ module.exports = {
       const { id, refno } = req.body;
       const resp = await SSO.attachBill(id, refno);
       if (resp) {
-        await SSO.updateBill(id, { post_status: 0 });
+        //await SSO.updateBill(id, { post_status: 1 });
         res.status(200).json({ success: true, data: resp });
       } else {
         res

@@ -184,6 +184,8 @@ Router.post("/ais/assignsheet", SSOController.assignSheet);
 Router.post("/ais/unassignsheet", SSOController.unassignSheet);
 Router.get("/ais/loadsheet/:id", SSOController.loadSheet);
 Router.post("/ais/savesheet", SSOController.saveSheet);
+Router.get("/ais/loadstudsheet/:id", SSOController.loadStudSheet);
+Router.post("/ais/savestudsheet", SSOController.saveStudSheet);
 Router.post("/ais/importsheet/:id", SSOController.importSheet);
 Router.get("/ais/publishsheet/:id/:sno", SSOController.publishSheet);
 Router.get("/ais/finalizesheet/:id", SSOController.finalizeSheet);
@@ -253,7 +255,7 @@ Router.get("/ais/transwift/:id", SSOController.fetchTranswift);
 Router.post("/ais/transwift", SSOController.postTranswift);
 Router.delete("/ais/transwift/:id", SSOController.deleteTranswift);
 Router.post("/ais/transcript", SSOController.postTranscript);
-Router.post("/ais/proficiency", SSOController.postTranscript);
+Router.post("/ais/proficient", SSOController.postProficient);
 Router.post("/ais/introletter", SSOController.postIntroLetter);
 Router.post("/ais/attestation", SSOController.postAttestation);
 // PROGRAM routes
@@ -392,13 +394,96 @@ Router.get("/setupstaffno", async (req, res) => {
   if (ss.length > 0) {
     var count = 1000;
     for (var s of ss) {
-      await db.query(
-        "update hrs.staff set staff_no = " + count + " where id = " + s.id
-      );
+      await db.query("update hrs.staff set staff_no = " + count + " where id = " + s.id);
       count++;
     }
   }
   res.json(ss);
+});
+
+// SCRIPTS
+Router.get("/runspecialbill", async (req, res) => {
+
+  /*
+  BILL ID BILL TYPE PROGRAMME PROGRAMME ID ACADEMIC YEAR YEAR TARGET SEMESTER STREAM SESSION ID
+
+26 Aca Fees BA. Comm 1 2021/2022 2 4 Sept 41
+25 Aca Fees BBA 2 2021/2022 1 3 Sept 41
+25 Aca Fees BBA 2 2021/2022 2 4 Sept 41
+21 Aca Fees BA. Comm 1 2021/2022 1 3 Jan 40
+21 Aca Fees BA. Comm 1 2021/2022 2 4 Jan 40
+
+19 Aca Fees MBA ACC & FIN 4 2021/2022 1 3 Jan 40
+1 Aca Fees BA. Comm 1 2021/2022 1 3 Sept 39
+1 Aca Fees BA. Comm 1 2021/2022 2 4 Sept 39
+  
+  */
+  const data = [
+    { bill_id: 76, prog_id: 1, session_id: 44, semester: 0 },
+    { bill_id: 86, prog_id: 3, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 69, prog_id: 4, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 63, prog_id: 2, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 62, prog_id: 1, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 52, prog_id: 3, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 50, prog_id: 5, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 3, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 4, month: '09' },
+    { bill_id: 43, prog_id: 1, session_id: 43, semester: 0, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 3, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 4, month: '09' },
+    { bill_id: 28, prog_id: 2, session_id: 41, semester: 0, month: '09' },
+    { bill_id: 27, prog_id: 1, session_id: 41, semester: 0, month: '09' },
+    { bill_id: 26, prog_id: 1, session_id: 41, semester: 3, month: '09' },
+    { bill_id: 26, prog_id: 1, session_id: 41, semester: 4, month: '09' },
+    { bill_id: 25, prog_id: 2, session_id: 41, semester: 3, month: '09' },
+    { bill_id: 25, prog_id: 2, session_id: 41, semester: 4, month: '09' },
+    { bill_id: 21, prog_id: 1, session_id: 40, semester: 3, month: '01' },
+    { bill_id: 21, prog_id: 1, session_id: 40, semester: 4, month: '01' },
+    { bill_id: 19, prog_id: 4, session_id: 40, semester: 3, month: '01' },
+    { bill_id: 1, prog_id: 1, session_id: 39, semester: 3, month: '09' },
+    { bill_id: 1, prog_id: 1, session_id: 39, semester: 4, month: '09' },
+  ]
+/*
+
+  Aug 21 - (l1- s5 ),(l2-s7),(l3-s0),(l4 - s0+1)   
+  | 2021/2022
+  Aug 22 - (l1 - s3 ),(l2-s5),(l3-s7),(l4 - s0)   | 2022/2023
+  Aug 23 - (l1 - s1 ),(l2-s3),(l3-s5),(l4 - s7),  | 2023/2024
+
+*/
+
+  for(const row of data){
+   
+      const bl = await db.query("select * from fms.billinfo where bid = " + row.bill_id);
+      const st = await db.query("select * from ais.student where prog_id = "+row.prog_id+" and semester = "+row.semester+" and format(doa,'%m') = '"+row.month+"'");
+      if (bl && st && bl.length > 0 && st.length > 0) {
+          for(const s of st){
+            const isExist = await db.query(
+              "select * from fms.studtrans where refno = '" +
+                s.refno +
+                "' and cr_id = " +
+                row.bill_id +
+                " and amount > 0"
+            );
+            if (isExist && isExist.length <= 0) {
+              const ins = await db.query("insert into fms.studtrans set ?", {
+                narrative: bl[0].narrative,
+                cr_id: row.bill_id,
+                cr_type: 'BILL',
+                amount: bl[0].amount,
+                refno: s.refno,
+                session_id: bl[0].session_id,
+                currency: bl[0].currency,
+              });
+              if (ins.insertId > 0) resp = 1;
+            }
+          }
+      }
+    
+  }
+   
 });
 
 Router.get("/fixfinance", async (req, res) => {
