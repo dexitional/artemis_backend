@@ -3834,21 +3834,21 @@ module.exports = {
     //if(ss.length > 1) return 'dups'
     if(ss.length > 0){
       const sm = ss[0]
-      const { scheme_id,credit,session_id,semester,academic_sem } = ss[0]
-      const sx = await db.query("select * from utility.session where id > "+session_id+" and id <= "+rid+" and tag = 'MAIN' and academic_sem = "+academic_sem);
+      const { scheme_id,credit,session_id,semester,academic_sem } = sm;
+      const sx = await db.query("select * from utility.session where id > "+session_id+" and id <= "+rid+" and tag = 'MAIN' and academic_sem = "+academic_sem); // All Resits are taken after a full Academic Year, which starts in "SEPT-MAIN" even if trailed in "JAN-SUB" academic session
       const num = sx && sx.length || 0;
       let dt;
       
       // Calculate Semester number from resit session_id
       if([sm.semesters,sm.semesters-1].includes(sm.semester)){
         // If Final Year -- replace assessment and Log orinal data
-        if(resit_id > 0){
+        if(Number(resit_id) > 0){
           // const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
           const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE', total_score }
           dt = await db.query("update ais.resit_data set ? where id = "+resit_id, dm); // If Resit ID
         
         } else {
-          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 1, action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
+          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 0, action_meta: JSON.stringify(ss[0]), action_type: 'REPLACE' }
           dt = await db.query("insert into ais.resit_data set ?", dm); // No Resit ID
         }
 
@@ -3858,13 +3858,13 @@ module.exports = {
       
       } else if(sm.semester < sm.semesters-1){
 
-        if(resit_id > 0){
+        if(Number(resit_id) > 0){
           // const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'APPEND' }
           const dm = { action_meta: JSON.stringify(ss[0]), action_type: 'APPEND', total_score }
           dt = await db.query("update ais.resit_data set ? where id = "+resit_id, dm); // If Resit ID
         
         } else {
-          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 1, action_meta: JSON.stringify(ss[0]), action_type: 'APPEND' }
+          const dm = { indexno,total_score,course_id,semester,session_id,scheme_id,reg_session_id:rid, paid_at: new Date(), paid:1, taken: 1,approved: 0, action_meta: JSON.stringify(ss[0]), action_type: 'APPEND' }
           dt = await db.query("insert into ais.resit_data set ?", dm); // No Resit ID
         }
         

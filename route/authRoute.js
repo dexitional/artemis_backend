@@ -203,13 +203,6 @@ Router.delete("/ais/calendar/:id", SSOController.deleteCalendar);
 Router.get("/ais/setcalendar/:id", SSOController.activateCalendar);
 Router.post("/ais/stagesheet", SSOController.stageSheet);
 Router.post("/ais/progress", SSOController.progressLevel);
-// RESIT CALENDAR routes
-Router.get("/ais/rcalendar/", SSOController.fetchResitCalendar);
-Router.post("/ais/rcalendar", SSOController.postResitCalendar);
-Router.delete("/ais/rcalendar/:id", SSOController.deleteResitCalendar);
-Router.get("/ais/setrcalendar/:id", SSOController.activateResitCalendar);
-Router.post("/ais/resitmembers", SSOController.resitMembers);
-Router.post("/ais/resitstats", SSOController.resitStats);
 // INFORMER routes
 Router.get("/ais/informer/", SSOController.fetchInformer);
 Router.post("/ais/informer", SSOController.postInformer);
@@ -234,6 +227,13 @@ Router.delete("/ais/letters/:id", SSOController.deleteServiceLetter);
 // STREAMS
 Router.get("/ais/streams", SSOController.fetchStreams);
 Router.get("/ais/sheetstreams", SSOController.fetchSheetStreams);
+// RESIT CALENDAR 
+Router.get("/ais/rcalendar/", SSOController.fetchResitCalendar);
+Router.post("/ais/rcalendar", SSOController.postResitCalendar);
+Router.delete("/ais/rcalendar/:id", SSOController.deleteResitCalendar);
+Router.get("/ais/setrcalendar/:id", SSOController.activateResitCalendar);
+Router.post("/ais/resitmembers", SSOController.resitMembers);
+Router.post("/ais/resitstats", SSOController.resitStats);
 // RESIT
 Router.get("/ais/resits", SSOController.fetchResits);
 Router.get("/ais/resitstreams", SSOController.fetchResitStreams);
@@ -242,7 +242,7 @@ Router.post("/ais/resits/score", SSOController.postResitScore);
 Router.post("/ais/resits/backlog", SSOController.postResitBacklog);
 Router.get("/ais/resits/register/:id", SSOController.registerResit);
 Router.get("/ais/resits/approve/:id", SSOController.approveResit);
-// GRADUATION routes
+// GRADUATION 
 Router.get("/ais/graduation/", SSOController.fetchGraduation);
 Router.post("/ais/graduation", SSOController.postGraduation);
 Router.delete("/ais/graduation/:id", SSOController.deleteGraduation);
@@ -420,10 +420,16 @@ Router.get("/runspecialbill", async (req, res) => {
   */
   const data = [
     { bill_id: 76, prog_id: 1, session_id: 44, semester: 0 },
-    { bill_id: 86, prog_id: 3, session_id: 44, semester: 2, month: '01' },
+    // { bill_id: 86, prog_id: 3, session_id: 44, semester: 2, month: '01' },
     { bill_id: 69, prog_id: 4, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 68, prog_id: 4, session_id: 44, semester: 2, month: '01' },
+
     { bill_id: 63, prog_id: 2, session_id: 44, semester: 2, month: '01' },
     { bill_id: 62, prog_id: 1, session_id: 44, semester: 2, month: '01' },
+
+    { bill_id: 57, prog_id: 3, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 56, prog_id: 5, session_id: 43, semester: 2, month: '09' },
+
     { bill_id: 52, prog_id: 3, session_id: 43, semester: 2, month: '09' },
     { bill_id: 50, prog_id: 5, session_id: 43, semester: 2, month: '09' },
     { bill_id: 45, prog_id: 2, session_id: 43, semester: 2, month: '09' },
@@ -445,6 +451,39 @@ Router.get("/runspecialbill", async (req, res) => {
     { bill_id: 1, prog_id: 1, session_id: 39, semester: 3, month: '09' },
     { bill_id: 1, prog_id: 1, session_id: 39, semester: 4, month: '09' },
   ]
+
+  const data1 = [
+    { bill_id: 76, prog_id: 1, session_id: 44, semester: 4 },
+    // { bill_id: 86, prog_id: 3, session_id: 44, semester: 2, month: '01' },
+    { bill_id: 69, prog_id: 4, session_id: 44, semester: 1, month: '01' },
+    { bill_id: 68, prog_id: 3, session_id: 44, semester: 1, month: '01' },
+    { bill_id: 63, prog_id: 2, session_id: 44, semester: 1, month: '01' },
+    { bill_id: 62, prog_id: 1, session_id: 44, semester: 1, month: '01' },
+    { bill_id: 57, prog_id: 3, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 56, prog_id: 5, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 52, prog_id: 3, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 50, prog_id: 5, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 45, prog_id: 2, session_id: 43, semester: 3, month: '09' },
+    { bill_id: 43, prog_id: 1, session_id: 43, semester: 4, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 1, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 2, month: '09' },
+    { bill_id: 42, prog_id: 1, session_id: 43, semester: 3, month: '09' },
+    { bill_id: 28, prog_id: 2, session_id: 41, semester: 3, month: '09' },
+    { bill_id: 27, prog_id: 1, session_id: 41, semester: 3, month: '09' },
+    { bill_id: 26, prog_id: 1, session_id: 41, semester: 1, month: '09' },
+    { bill_id: 26, prog_id: 1, session_id: 41, semester: 2, month: '09' },
+    { bill_id: 25, prog_id: 2, session_id: 41, semester: 1, month: '09' },
+    { bill_id: 25, prog_id: 2, session_id: 41, semester: 2, month: '09' },
+    { bill_id: 21, prog_id: 1, session_id: 40, semester: 1, month: '01' },
+    { bill_id: 21, prog_id: 1, session_id: 40, semester: 2, month: '01' },
+    { bill_id: 19, prog_id: 4, session_id: 40, semester: 1, month: '01' },
+    { bill_id: 1, prog_id: 1, session_id: 39, semester: 1, month: '09' },
+    { bill_id: 1, prog_id: 1, session_id: 39, semester: 2, month: '09' },
+  ]
+
+
 /*
 
   Aug 21 - (l1- s5 ),(l2-s7),(l3-s0),(l4 - s0+1)   
