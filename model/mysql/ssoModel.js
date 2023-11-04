@@ -1615,9 +1615,11 @@ module.exports = {
     defer_status,
     type,
     asession,
+    complete_status
   }) => {
-    var sql = "select * from ais.fetchstudents where complete_status = 0";
+    var sql = "select * from ais.fetchstudents";
     var res;
+    sql += ` where complete_status = ${complete_status ?? 0}`;
     if (prog_id) sql += ` and prog_id = ${prog_id}`;
     if (major_id) sql += ` and major_id = ${major_id}`;
     if (year_group) sql += ` and ceil(semester/2) = ${year_group}`;
@@ -2083,9 +2085,9 @@ module.exports = {
         const zd = { ...sv, grade: await getGrade(sv.total_score, JSON.parse(sv.grade_meta)), template: ts[0] }
         // Data By Courses
         if(mdata[sv.session_title]){
-          mdata[sv.session_title] = [...mdata[sv.session_title],{...zd}]
+          mdata[sv.session_title] = [ ...mdata[sv.session_title], { ...zd }]
         }else{
-          mdata[sv.session_title] = [{...zd}]
+          mdata[sv.session_title] = [{ ...zd }]
         }
       }
     }
@@ -2922,7 +2924,7 @@ module.exports = {
           
           if(ax.length > 0){
             for(const x of ax){
-              if(x.resit_score > x.total_score && x.score_type == 'N') failed_courses.add(x.course_id) // Compute Trailed Courses
+              if(x.resit_score >= x.total_score && x.score_type == 'N') failed_courses.add(x.course_id) // Compute Trailed Courses
               if(x.total_score >= x.resit_score && x.score_type == 'R') retaken_courses.add(x.course_id) // Compute Retaken Courses
               
               const zd = { ...x, grade: await getGrade(x.total_score, JSON.parse(x.grade_meta)) }

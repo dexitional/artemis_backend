@@ -5,6 +5,20 @@
     return (vs && vs.grade) || 'I';
   }
 
+  // const getGrade = (num,grades) => {
+  //   console.log("FIGURE: ", num)
+  //   if(!num) return 'I'
+  //   //num = parseFloat(num)
+    
+  //   const vs = grades && grades.find(row => {
+  //     console.log("MIN: ",row.min, "MAX: ",row.max)
+  //     return (Number.parseFloat(row.min) <= Number.parseFloat(num) && Number.parseFloat(num) <= Number.parseFloat(row.max))
+  //   })
+    
+  //   console.log(num, vs)
+  //   return (vs && vs.grade) || 'I';
+  // }
+
   const getPoint = (num,grades) => {
     num = parseFloat(num)
     const vs = grades && grades.find(row => row.min <= num && num <= row.max)
