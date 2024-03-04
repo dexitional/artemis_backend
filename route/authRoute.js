@@ -533,7 +533,6 @@ Router.get("/fixadmissiondups", async (req, res) => {
       const ssIds = ss?.map(r => r.serial).join(",");
       // Profile
       const sql = "select * from step_profile where serial in ("+ssIds+")";
-      console.log(sql)
       let pr = await db.query(sql);
       if(pr.length > 0){
         for(let p of pr){
@@ -543,26 +542,21 @@ Router.get("/fixadmissiondups", async (req, res) => {
         }
         // Delete All Non - First Index Profiles
         const del = await db.query("delete from step_profile where profile_id in ("+profileIds.join(",")+")");
-        console.log(del)
         count += del.affectedRows;
       }
     
-    // Guardian
-    let gu = await db.query("select * from step_guardian where serial in ("+ssIds+")");
-    if(gu.length > 0){
-      for(let p of gu){
-        const index = p.serial;
-        if(guardianMap.has(index)) guardianIds.push(p.guardian_id);
-        else guardianMap.set(index,[]);
-      }
-      // Delete All Non - First Index Guardians
-      const del = await db.query("delete from step_guardian where guardian_id in ("+guardianIds.join(",")+")");
-      console.log(del)
-    } 
-   
+      // Guardian
+      let gu = await db.query("select * from step_guardian where serial in ("+ssIds+")");
+      if(gu.length > 0){
+        for(let p of gu){
+          const index = p.serial;
+          if(guardianMap.has(index)) guardianIds.push(p.guardian_id);
+          else guardianMap.set(index,[]);
+        }
+        // Delete All Non - First Index Guardians
+        const del = await db.query("delete from step_guardian where guardian_id in ("+guardianIds.join(",")+")");
+      } 
   }
-  
- 
   res.json(count);
 });
 

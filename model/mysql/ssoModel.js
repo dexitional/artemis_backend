@@ -920,6 +920,7 @@ module.exports = {
   },
 
   admitApplicant: async (data) => {
+    const st = await db.query("select * from ais.student where refno = '"+data.serial+"'");
     // Fetch active session for acdemic session (vs )
     const vs = await db.query("select * from P06.session where status = 1");
     // Fetch step_profile [ biodata, study_mode ] (sp)
@@ -945,7 +946,7 @@ module.exports = {
     // );
 
      
-    if (sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0) {
+    if (st && sg && sp && vs && vs.length > 0 && sp.length > 0 && sg.length > 0 && st.length <= 0) {
       // Fetch fms.billinfo for bill_id for freshers bill (bl)
 
       var bl, bql;
