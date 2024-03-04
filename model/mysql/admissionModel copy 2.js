@@ -150,19 +150,16 @@ module.exports = {
   },
 
   insReplaceProfileTbl: async (data) => {
-    const { serial } = data;
+    const { profile_id:id, serial } = data;
     delete data.profile_id;
     if(data.dob) data.dob = moment(data.dob).format('YYYY-MM-DD')
-    const isExist = await db.query("select * from step_profile where serial = ?",serial);
-    if(isExist.length > 1){
-       for(let i = 1; i < isExist?.length; i++) {
-         const row = isExist[i];
-         await db.query("delete from step_profile where profile_id = ?", row?.profile_id)
-       }
-    }
+
     var res;
-    if (isExist?.length) {
-      res = await db.query("update step_profile set ? where serial = " + serial,data);
+    if (id != "") {
+      res = await db.query(
+        "update step_profile set ? where serial = " + serial,
+        data
+      );
     } else {
       res = await db.query("insert into step_profile set ?", data);
     }
@@ -174,13 +171,14 @@ module.exports = {
     delete data.guardian_id;
     const isExist = await db.query("select * from step_guardian where serial = ?",serial);
     if(isExist.length > 1){
-       for(let i = 1; i < isExist?.length; i++) {
+       for(let i = 1; i < isExist.length; i++) {
          const row = isExist[i];
          await db.query("delete from step_guardian where guardian_id = ?", row?.guardian_id)
        }
     }
     var res;
     if (isExist?.length) {
+      const id = isExist[0]?.guardian_id;
       res = await db.query("update step_guardian set ? where serial = ?",[ data,serial ]);
     } else {
       res = await db.query("insert into step_guardian set ?", data);
@@ -240,6 +238,7 @@ module.exports = {
 
   insReplaceEmploymentTbl: async (serial, data) => {
     var res;
+
     if (data && data.length > 0) {
       const rs = await db.query(
         "delete from step_employment where serial = " + serial

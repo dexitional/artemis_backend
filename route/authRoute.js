@@ -520,9 +520,50 @@ Router.get("/runspecialbill", async (req, res) => {
             }
           }
       }
-    
   }
+});
+
+Router.get("/fixadmissiondups", async (req, res) => {
+  // const ss = await db.query("select s.refno as sid,t.id as tid from fms.transaction t left join fms.studtrans m on t.id = m.tid left join ais.student s on t.refno in (s.refno,s.indexno) where t.transtype_id in (2,3,4,8) and t.refno is not null and m.tid is null");
+  const ss = await db.query("select serial from step_profile group by serial having count(*) > 1");
+  var count = 0;
+  const profileMap = new Map(), guardianMap = new Map();
+  const profileIds = [], guardianIds = [];
+  if(ss.length > 0){
+      const ssIds = ss?.map(r => r.serial).join(",");
+      // Profile
+      const sql = "select * from step_profile where serial in ("+ssIds+")";
+      console.log(sql)
+      let pr = await db.query(sql);
+      if(pr.length > 0){
+        for(let p of pr){
+          const index = p.serial;
+          if(profileMap.has(index)) profileIds.push(p.profile_id);
+          else profileMap.set(index,[]);
+        }
+        // Delete All Non - First Index Profiles
+        const del = await db.query("delete from step_profile where profile_id in ("+profileIds.join(",")+")");
+        console.log(del)
+        count += del.affectedRows;
+      }
+    
+    // Guardian
+    let gu = await db.query("select * from step_guardian where serial in ("+ssIds+")");
+    if(gu.length > 0){
+      for(let p of gu){
+        const index = p.serial;
+        if(guardianMap.has(index)) guardianIds.push(p.guardian_id);
+        else guardianMap.set(index,[]);
+      }
+      // Delete All Non - First Index Guardians
+      const del = await db.query("delete from step_guardian where guardian_id in ("+guardianIds.join(",")+")");
+      console.log(del)
+    } 
    
+  }
+  
+ 
+  res.json(count);
 });
 
 Router.get("/fixfinance", async (req, res) => {
