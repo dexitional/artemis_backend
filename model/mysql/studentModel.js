@@ -323,10 +323,7 @@ module.exports = {
 
   insertRegLog: async (data) => {
     // Registration Logs
-    const res = await db.query(
-      "insert into ais.`activity_register` set ?",
-      data
-    );
+    const res = await db.query("insert into ais.`activity_register` set ?",data);
     return res;
   },
 
@@ -334,33 +331,21 @@ module.exports = {
 
   fetchStudentResults: async (indexno = null) => {
     let res;
-    if (indexno)
-      res = await db.query(
-        "select concat(s.academic_year,' SEMESTER ',s.academic_sem) as name,c.title as course_name,x.credit,x.semester,c.id as course_id,c.course_code,x.class_score,x.exam_score,x.total_score,x.score_type,x.flag_visible,m.grade_meta from ais.assessment x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id left join utility.scheme m on m.id = x.scheme_id  where x.indexno = '" +
-          indexno +
-          "' order by s.id asc"
-      );
+    if (indexno) res = await db.query("select concat(s.academic_year,' SEMESTER ',s.academic_sem) as name,c.title as course_name,x.credit,x.semester,c.id as course_id,c.course_code,x.class_score,x.exam_score,x.total_score,x.score_type,x.flag_visible,m.grade_meta from ais.assessment x left join utility.course c on x.course_id = c.id left join utility.session s on s.id = x.session_id left join utility.scheme m on m.id = x.scheme_id  where x.indexno = '"+indexno +"' order by s.id asc");
     return res;
   },
 
   // FEES && CHARGES MODELS
 
   fetchFeesAccount: async (refno = null) => {
-    const res = await db.query(
-      "select ifnull(sum(amount),0) as total from fms.studtrans where refno = '" +
-        refno +
-        "'"
-    );
+    const res = await db.query("select ifnull(sum(amount),0) as total from fms.studtrans where refno = '" +refno +"'");
     if (res && res.length > 0) return res[0].total;
     return 0.0;
   },
 
   fetchStudentTrans: async (refno = null) => {
     const res = await db.query(
-      "select ifnull(s.fname,sx.fname) as fname,ifnull(s.mname,sx.mname) as mname,ifnull(s.lname,sx.lname) as lname,ifnull(p.`short`,px.`short`) as program_name,t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.cr_id = b.bid left join ais.student s on t.refno = s.refno left join ais.student sx on t.refno = sx.indexno left join utility.program p on s.prog_id = p.id left join utility.program px on sx.prog_id = px.id where t.refno = '" +
-        refno +
-        "'"
-    );
+      "select ifnull(s.fname,sx.fname) as fname,ifnull(s.mname,sx.mname) as mname,ifnull(s.lname,sx.lname) as lname,ifnull(p.`short`,px.`short`) as program_name,t.*,b.narrative as billname from fms.studtrans t left join fms.billinfo b on t.cr_id = b.bid left join ais.student s on t.refno = s.refno left join ais.student sx on t.refno = sx.indexno left join utility.program p on s.prog_id = p.id left join utility.program px on sx.prog_id = px.id where t.refno = '"+refno+"'");
     if (res && res.length > 0) return res;
     return null;
   },
@@ -372,19 +357,18 @@ module.exports = {
     return 0.0;
   },
 
-  fetchGraduationAccount: async (currency = null) => {
+  fetchGraduationAccount: async (indexno = null) => {
     // const res = await db.query(
     //   "select * from ais.graduation where indexno = '" + indexno + "'"
     // );
+    // Graduation Fees are different for Undergraduates & PostGraduates
     const resm = await db.query("select amount_ghc, amount_usd from fms.servicefee where transtype_id = 04");
     if (resm && resm.length > 0) return resm[0].amount_ghc;
     return 0.0;
   },
 
   fetchLateFineAccount: async (currency = null) => {
-    const resm = await db.query(
-      "select amount_ghc, amount_usd from fms.servicefee where transtype_id = 08"
-    );
+    const resm = await db.query("select amount_ghc, amount_usd from fms.servicefee where transtype_id = 08");
     if (resm && resm.length > 0) return resm[0].amount_ghc;
     return 0.0;
   },

@@ -1843,29 +1843,24 @@ module.exports = {
       const { refno } = req.params;
       var resp = await Student.fetchStProfile(refno);
       console.log(resp);
-      var ups;
+      //var ups;
       var email;
 
       if (resp && resp.length > 0) {
         const username = getUsername(resp[0].fname, resp[0].lname);
-        email = `${username}@st.aucc.edu.gh`;
-        const isExist = await Student.findEmail(email);
-        console.log(email);
-        console.log(isExist);
-        if (isExist && isExist.length > 0) {
-          email = `${username}${isExist.length + 1}@st.aucc.edu.gh`;
-          ups = await Student.updateStudentProfile(refno, {
-            institute_email: email,
-          });
-        } else {
-          ups = await Student.updateStudentProfile(refno, {
-            institute_email: email,
-          });
+        var notExist = true, count = 0;
+        while(notExist){
+          email = `${username}${count ? count : ''}@st.aucc.edu.gh`;
+          const isExist = await Student.findEmail(email);
+          if (isExist && isExist.length > 0) count++;
+          else notExist = false
         }
-      }
-
-      if (ups) {
+        
+        const ups = await Student.updateStudentProfile(refno, {
+          institute_email: email,
+        });
         res.status(200).json({ success: true, data: email });
+      
       } else {
         res
           .status(200)

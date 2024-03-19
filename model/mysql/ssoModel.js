@@ -4342,14 +4342,23 @@ module.exports = {
 
 
   retireStudentAccountByRefno: async (refno) => {
-    const st = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.studtrans m on t.id = m.tid left join fms.transtype j on t.transtype_id = j.id left join ais.student s on s.refno = t.refno left join utility.program p on p.id = s.prog_id  where t.transtype_id in (2,3,4,8) and m.tid is null order by tid");
-    if (st && st.length > 0) {
-      const session_id = await SR.getActiveSessionByRefNo(refno);
-      const dt = { ...st[0], session_id };
-      const ins = await db.query("insert into fms.studtrans set ?", dt);
-    } 
-    const rt = await SR.retireAccountByRefno(refno)
-    return rt
+    const sc = await db.query("select tid from fms.studtrans t where t.refno ='"+refno+"' and amount < 0");
+    const tr = await db.query("select t.id as tid,t.refno,(t.amount*-1) as amount,t.transdate,t.currency,concat('Online ',lower(j.title) ,' payment, StudentID: ',upper(t.refno)) as narrative from fms.transaction t left join fms.transtype j on t.transtype_id = j.id inner join fms.studtrans m on t.id = m.tid  where t.transtype_id in (2,3,4,8) and t.refno ='"+refno+"' order by tid");
+    const session_id = await SR.getActiveSessionByRefNo(refno);
+    const tc = sc.map(r => r.tid) || []
+    console.log(tc)
+    if(tr.length > 0 ){
+      for(const r of tr){
+         
+        if(!tc.includes(r.tid)){
+          const dt = { ...r, session_id };
+          const ins = await db.query("insert into fms.studtrans set ?", dt);
+        }
+      }
+      const rt = await SR.retireAccountByRefno(refno)
+      return rt
+    }
+    return null;
   },
 
   retireStudentAccount: async () => {

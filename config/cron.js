@@ -20,7 +20,7 @@ cron.schedule('*/5 * * * *', () => {
           // INFORMANT MESSAGES - AIS
           queue.run(() => runMsgDispatcher())
           // RUN ACADEMIC FEES INTO STUDENT ACCOUNT
-          // queue.run(() => runRetireAccountTransact())
+          queue.run(() => runRetireAccountTransact())
           
         }
     });
